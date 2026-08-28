@@ -12,17 +12,21 @@ enum class TransactionType {
     MISSED_TARGET,
     CHANGE_TARGET,
     CREATE_TASK,
-    COMPLETE_TASK
+    COMPLETE_TASK,
+    DELETE_TASK,
+    DELETE_HABIT
 }
 
 @Entity(tableName = "point_transactions")
-data class PointTransaction(
+data class PointTransactionEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    val timestamp: Long,
     val amount: Int,
     val type: TransactionType,
     val description: String,
-    val relatedId: Long? = null, // Habit or Task ID
-    val reference: String // Unique reference (e.g. UUID)
+    val createdAt: Long = System.currentTimeMillis(),
+    val habitId: Long? = null,
+    val taskId: Long? = null,
+    val streakCycleId: Long? = null,
+    val uniqueReference: String // e.g. habit_12_cycle_2_milestone_10
 )

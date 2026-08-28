@@ -20,21 +20,25 @@ sealed class HabitSchedule {
 }
 
 @Entity(tableName = "habits")
-data class Habit(
+data class HabitEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val name: String,
     val description: String = "",
-    val icon: String,
     val categoryId: Long,
+    val icon: String,
     val type: HabitType,
-    val targetValue: Double = 1.0,
+    val target: Double, // supports numeric measurable target
     val unit: String = "",
     val schedule: HabitSchedule,
-    val startDate: Long, // timestamp
+    val repeatType: String, // String representation for easier querying if needed
+    val startDate: Long,
     val isActive: Boolean = true,
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis(),
+    val deletedAt: Long? = null,
+    val color: Int,
     val currentStreak: Int = 0,
     val bestStreak: Int = 0,
-    val totalCompletions: Int = 0,
-    val color: Int
+    val totalCompletions: Int = 0
 )

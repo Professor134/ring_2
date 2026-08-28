@@ -2,17 +2,30 @@ package com.example.ring_2.logic
 
 import android.content.Context
 import android.net.Uri
-import java.io.File
+import com.example.ring_2.data.AppDatabase
+import java.io.FileInputStream
+import java.io.FileOutputStream
 
 object BackupService {
-    // Basic placeholder for backup logic
-    // In a real app, this would serialize the Room database to JSON or copy the .db file
     
-    fun exportBackup(context: Context, destinationUri: Uri) {
-        // Implementation for exporting database file
+    fun exportDatabase(context: Context, destinationUri: Uri) {
+        val dbFile = context.getDatabasePath("ring_database")
+        if (dbFile.exists()) {
+            context.contentResolver.openOutputStream(destinationUri)?.use { output ->
+                FileInputStream(dbFile).use { input ->
+                    input.copyTo(output)
+                }
+            }
+        }
     }
     
-    fun importBackup(context: Context, sourceUri: Uri) {
-        // Implementation for importing database file
+    fun importDatabase(context: Context, sourceUri: Uri) {
+        val dbFile = context.getDatabasePath("ring_database")
+        context.contentResolver.openInputStream(sourceUri)?.use { input ->
+            FileOutputStream(dbFile).use { output ->
+                input.copyTo(output)
+            }
+        }
+        // App should be restarted after import
     }
 }

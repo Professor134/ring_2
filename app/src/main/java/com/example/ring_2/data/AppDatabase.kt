@@ -7,15 +7,18 @@ import com.example.ring_2.data.model.*
 
 @Database(
     entities = [
-        Habit::class,
-        HabitRecord::class,
-        Task::class,
+        HabitEntity::class,
+        HabitProgressEntity::class,
+        StreakCycleEntity::class,
+        StreakMilestoneEntity::class,
+        PointTransactionEntity::class,
+        UserProgressEntity::class,
+        ProfileEntity::class,
+        TaskEntity::class,
         Category::class,
-        PointTransaction::class,
-        UserProfile::class,
         Achievement::class
     ],
-    version = 1,
+    version = 2, // Incremented version
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -23,6 +26,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun habitDao(): HabitDao
     abstract fun taskDao(): TaskDao
     abstract fun userDao(): UserDao
+    abstract fun categoryDao(): CategoryDao
 
     companion object {
         @Volatile
@@ -34,7 +38,15 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "ring_database"
-                ).build()
+                )
+                .addCallback(object : RoomDatabase.Callback() {
+                    override fun onCreate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                        super.onCreate(db)
+                        // Optional: Prepopulate default categories here via a coroutine
+                    }
+                })
+                .fallbackToDestructiveMigration()
+                .build()
                 INSTANCE = instance
                 instance
             }

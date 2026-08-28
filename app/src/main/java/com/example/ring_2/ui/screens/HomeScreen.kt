@@ -7,31 +7,47 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ring_2.data.model.HabitEntity
+import com.example.ring_2.data.model.HabitType
+import com.example.ring_2.logic.ScheduleEngine
 import com.example.ring_2.ui.MainViewModel
-import com.example.ring_2.logic.ScheduleManager
+import com.example.ring_2.ui.components.SectionHeader
 import com.example.ring_2.ui.components.HabitCard
+import com.example.ring_2.ui.components.NumericInputDialog
 import com.example.ring_2.ui.components.TaskCard
+import com.example.ring_2.ui.components.LineGraph
 import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
-fun HomeScreen(viewModel: MainViewModel, onAddHabit: () -> Unit, onAddTask: () -> Unit) {
+fun HomeScreen(
+    viewModel: MainViewModel,
+    onAddHabit: () -> Unit,
+    onAddTask: () -> Unit,
+    onHabitClick: (Long) -> Unit,
+    onTaskClick: (Long) -> Unit,
+    onSeeAllHabits: () -> Unit,
+    onSeeAllTasks: () -> Unit
+) {
     val habits by viewModel.allHabits.collectAsState()
+    val categories by viewModel.allCategories.collectAsState()
     val tasks by viewModel.allTasks.collectAsState()
+    val userProg by viewModel.userProgress.collectAsState()
+    val todayProgress by viewModel.todayProgress.collectAsState()
     val profile by viewModel.userProfile.collectAsState()
+
+    var showNumericDialogFor by remember { mutableStateOf<HabitEntity?>(null) }
     
-    val today = System.currentTimeMillis()
-    val todayHabits = habits.filter { ScheduleManager.isHabitActiveOnDate(it.schedule, it.startDate, today) }
-    val pendingTasks = tasks.filter { !it.isCompleted }
+    val today = getMidnightTimestamp(System.currentTimeMillis())
+    val todayHabits = habits.filter { ScheduleEngine.isHabitActiveOnDate(it.schedule, it.startDate, today) }
+    val pendingTasks = tasks.filter { !it.completed }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background
@@ -40,60 +56,150 @@ fun HomeScreen(viewModel: MainViewModel, onAddHabit: () -> Unit, onAddTask: () -
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(vertical = 16.dp)
         ) {
+            // 1. HEADER
             item {
-                HomeHeader(profile?.name ?: "User", profile?.elitePoints ?: 0)
+                HomeHeader(profile?.name?.ifEmpty { "User" } ?: "User", userProg?.currentPoints ?: 500)
             }
             
+            // 2. QUICK ACTION BUTTONS
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Button(
+                    QuickActionButton(
+                        text = "+ Add Habit",
                         onClick = onAddHabit,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E1E1E)),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = null, tint = Color(0xFF00E676))
-                        Spacer(Modifier.width(8.dp))
-                        Text("Add Habit", color = Color.White)
-                    }
-                    Button(
+                        modifier = Modifier.weight(1f)
+                    )
+                    QuickActionButton(
+                        text = "+ Add Task",
                         onClick = onAddTask,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E1E1E)),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = null, tint = Color(0xFF00E676))
-                        Spacer(Modifier.width(8.dp))
-                        Text("Add Task", color = Color.White)
-                    }
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
 
+            // 3. TODAY'S HABITS
+            if (todayHabits.isNotEmpty()) {
+                item {
+                    SectionHeader("Today's Habits", onSeeAll = onSeeAllHabits)
+                }
+
+                items(todayHabits) { habit ->
+                    val habitProgress = todayProgress.find { it.habitId == habit.id }
+                    val categoryName = categories.find { it.id == habit.categoryId }?.name ?: "Others"
+                    HabitCard(
+                        habit = habit,
+                        categoryName = categoryName,
+                        todayProgress = habitProgress,
+                        onClick = { onHabitClick(habit.id) },
+                        onComplete = { 
+                            if (habit.type == HabitType.YES_NO) {
+                                val newValue = if (habitProgress?.completed == true) 0.0 else habit.target
+                                viewModel.recordProgress(habit, newValue)
+                            } else {
+                                showNumericDialogFor = habit
+                            }
+                        }
+                    )
+                }
+            } else {
+                item {
+                    EmptyHabitState(onAddHabit)
+                }
+            }
+
+            // 8. TODAY'S TASKS
+            if (pendingTasks.isNotEmpty()) {
+                item {
+                    SectionHeader("Today's Tasks", onSeeAll = onSeeAllTasks)
+                }
+
+                items(pendingTasks) { task ->
+                    TaskCard(task, onClick = { onTaskClick(task.id) }, onComplete = { viewModel.completeTask(task) })
+                }
+            } else if (habits.isNotEmpty()) {
+                item {
+                    Text("No tasks for today", color = Color.Gray, fontSize = 14.sp, modifier = Modifier.padding(vertical = 8.dp))
+                }
+            }
+
+            // 9. TODAY'S GRAPH
             item {
-                SectionHeader("Today's habits", onSeeAll = {})
+                Spacer(Modifier.height(8.dp))
+                Text("Overall Growth", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                Spacer(Modifier.height(12.dp))
+                Surface(
+                    color = Color(0xFF1E1E1E),
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.fillMaxWidth().height(180.dp)
+                ) {
+                    LineGraph(
+                        dataPoints = listOf(20f, 45f, 30f, 70f, 60f, 85f, 78f),
+                        color = Color(0xFF00E676),
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
-
-            items(todayHabits) { habit ->
-                HabitCard(
-                    habit = habit,
-                    onClick = { /* navigate to detail */ },
-                    onComplete = { viewModel.completeHabit(habit) }
-                )
-            }
-
+            
             item {
-                SectionHeader("Today's tasks", onSeeAll = {})
+                Spacer(Modifier.height(16.dp))
             }
+        }
+    }
 
-            items(pendingTasks) { task ->
-                TaskCard(task, onComplete = { viewModel.completeTask(task) })
+    showNumericDialogFor?.let { habit ->
+        val habitProgress = todayProgress.find { it.habitId == habit.id }
+        NumericInputDialog(
+            title = "Today's Progress",
+            target = "${habit.target.toInt()} ${habit.unit}",
+            initialValue = habitProgress?.actualValue?.toInt()?.toString() ?: "",
+            onDismiss = { showNumericDialogFor = null },
+            onSave = { value, note ->
+                viewModel.recordProgress(habit, value, note)
+                showNumericDialogFor = null
             }
+        )
+    }
+}
+
+@Composable
+fun QuickActionButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.height(50.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E1E1E)),
+        shape = RoundedCornerShape(12.dp),
+        contentPadding = PaddingValues(0.dp)
+    ) {
+        Text(text, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+    }
+}
+
+@Composable
+fun EmptyHabitState(onAddHabit: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("No habits yet", color = Color.Gray, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Text(
+            "Create your first habit and start your RING.",
+            color = Color.DarkGray,
+            fontSize = 14.sp,
+            modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
+        )
+        Button(
+            onClick = onAddHabit,
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E676)),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Text("+ Add Habit", color = Color.Black, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -108,12 +214,18 @@ fun HomeHeader(name: String, points: Int) {
         Column {
             val calendar = Calendar.getInstance()
             val greeting = when (calendar.get(Calendar.HOUR_OF_DAY)) {
-                in 0..11 -> "Good morning"
-                in 12..16 -> "Good afternoon"
-                else -> "Good evening"
+                in 0..11 -> "Good Morning,"
+                in 12..16 -> "Good Afternoon,"
+                else -> "Good Evening,"
             }
             Text(
-                text = "$greeting, $name",
+                text = greeting,
+                style = MaterialTheme.typography.headlineSmall,
+                color = Color.White,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = name,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
@@ -129,29 +241,27 @@ fun HomeHeader(name: String, points: Int) {
         Surface(
             color = Color(0xFF1E1E1E),
             shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.size(width = 100.dp, height = 60.dp)
+            modifier = Modifier.size(width = 120.dp, height = 54.dp)
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(horizontal = 8.dp)
             ) {
-                Text("ELITE POINTS", fontSize = 10.sp, color = Color.Gray)
-                Text("$points", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color(0xFF00E676))
+                Text("ELITE POINTS", fontSize = 9.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                Text("$points", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF00E676))
             }
         }
     }
 }
 
-@Composable
-fun SectionHeader(title: String, onSeeAll: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Bottom
-    ) {
-        Text(title, style = MaterialTheme.typography.titleLarge, color = Color.White)
-        TextButton(onClick = onSeeAll) {
-            Text("See all", color = Color(0xFF00E676))
-        }
+private fun getMidnightTimestamp(time: Long): Long {
+    val calendar = Calendar.getInstance().apply {
+        timeInMillis = time
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
     }
+    return calendar.timeInMillis
 }
