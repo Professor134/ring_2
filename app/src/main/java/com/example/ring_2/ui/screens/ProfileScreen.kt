@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ring_2.ui.MainViewModel
+import com.example.ring_2.ui.components.ProfileAvatar
 import com.example.ring_2.ui.components.SectionHeader
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -37,12 +38,14 @@ fun ProfileScreen(
     val profile by viewModel.userProfile.collectAsState()
     val userProg by viewModel.userProgress.collectAsState()
     val profileStats by viewModel.profileStats.collectAsState()
+    
+    var showClearDataConfirmation by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Profile", color = Color.White, fontWeight = FontWeight.Bold) },
+                title = { Text("Profile", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
                 actions = {
                     IconButton(onClick = onEditProfile) {
@@ -66,21 +69,13 @@ fun ProfileScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(100.dp)
-                            .background(Color(profile?.avatarColor ?: 0xFF00E676.toInt()), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (profile?.photoUri != null) {
-                            // In a real app, use Coil to load photoUri
-                            Text(profile?.name?.take(1)?.uppercase() ?: "P", fontSize = 40.sp, fontWeight = FontWeight.Bold, color = Color.Black)
-                        } else {
-                            Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(60.dp), tint = Color.Black)
-                        }
-                    }
+                    ProfileAvatar(
+                        name = profile?.name?.ifEmpty { "User" } ?: "User",
+                        avatarColor = Color(profile?.avatarColor ?: 0xFF00E676.toInt()),
+                        photoUri = profile?.photoUri
+                    )
                     Spacer(Modifier.height(16.dp))
-                    Text(profile?.name?.ifEmpty { "User" } ?: "User", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text(profile?.name?.ifEmpty { "User" } ?: "User", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                     Text("Level ${userProg?.level ?: 1}", color = Color(0xFF00E676), fontWeight = FontWeight.Medium)
                     Text("${userProg?.currentPoints ?: 0} Elite Points", color = Color.Gray, fontSize = 14.sp)
                 }
@@ -108,7 +103,7 @@ fun ProfileScreen(
             item {
                 SectionHeader("Achievements")
                 Spacer(Modifier.height(12.dp))
-                AchievementRow()
+                AchievementRow(profileStats, userProg?.lifetimeEarnedPoints ?: 0)
             }
 
             // SECTION 4: ELITE POINT HISTORY
@@ -116,43 +111,37 @@ fun ProfileScreen(
                 Button(
                     onClick = onPointHistory,
                     modifier = Modifier.fillMaxWidth().height(56.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E1E1E)),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.AutoMirrored.Filled.List, contentDescription = null, tint = Color(0xFF00E676))
                         Spacer(Modifier.width(12.dp))
-                        Text("Elite Point History", color = Color.White)
+                        Text("Elite Point History", color = MaterialTheme.colorScheme.onSurface)
                         Spacer(Modifier.weight(1f))
                         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
                     }
                 }
             }
 
-            // SECTION 5 & 6: SETTINGS & THEME
             item {
-                SectionHeader("Settings")
-                Spacer(Modifier.height(12.dp))
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     SettingsItem("Appearance", Icons.Default.Settings, onAppearance)
                     SettingsItem("Notifications", Icons.Default.Notifications, onNotifications)
-                    SettingsItem("Backup & Restore", Icons.Default.Refresh, onBackupRestore)
+                    SettingsItem("Data Management", Icons.Default.Info, onBackupRestore)
                 }
-            }
-
-            item {
-                ThemeSelection()
             }
 
             // SECTION 7: DATA
             item {
-                SectionHeader("Data")
+                SectionHeader("Data Management")
                 Spacer(Modifier.height(12.dp))
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    DataButton("Export Backup", Icons.Default.Share, Color.White) {}
-                    DataButton("Import Backup", Icons.Default.AddCircle, Color.White) {}
+                    DataButton("Manage Import/Export", Icons.Default.Share, MaterialTheme.colorScheme.onSurface) {
+                        onBackupRestore()
+                    }
                     DataButton("Clear All Data", Icons.Default.Delete, Color.Red) {
-                        viewModel.clearAllData()
+                        showClearDataConfirmation = true
                     }
                 }
             }
@@ -163,24 +152,45 @@ fun ProfileScreen(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("RING", fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Color.White)
+                    Text("RING", fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = MaterialTheme.colorScheme.onBackground)
                     Text("Offline Habit & Productivity Tracker", color = Color.Gray, fontSize = 12.sp)
-                    Text("Version 1.0.0", color = Color.DarkGray, fontSize = 10.sp)
+                    Text("Version 1.2.0", color = Color.DarkGray, fontSize = 10.sp)
                 }
             }
         }
+    }
+    
+    if (showClearDataConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showClearDataConfirmation = false },
+            title = { Text("Clear All Data?") },
+            text = { Text("This will permanently delete all your habits, tasks, and point history. This action cannot be undone.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.clearAllData()
+                    showClearDataConfirmation = false
+                }) {
+                    Text("Clear Everything", color = Color.Red)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearDataConfirmation = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
 @Composable
 fun LevelCard(level: Int, lifetimeEarned: Int) {
     Surface(
-        color = Color(0xFF1E1E1E),
+        color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(20.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            Text("Level Progress", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 16.sp)
+            Text("Level Progress", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp)
             Spacer(Modifier.height(16.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Lv $level", fontWeight = FontWeight.Bold, color = Color(0xFF00E676))
@@ -195,7 +205,7 @@ fun LevelCard(level: Int, lifetimeEarned: Int) {
                 progress = { progress },
                 modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
                 color = Color(0xFF00E676),
-                trackColor = Color(0xFF333333)
+                trackColor = Color.Gray.copy(alpha = 0.2f)
             )
             Spacer(Modifier.height(12.dp))
             Text(
@@ -211,7 +221,7 @@ fun LevelCard(level: Int, lifetimeEarned: Int) {
 @Composable
 fun ProfileStatCard(modifier: Modifier, value: String, label: String) {
     Surface(
-        color = Color(0xFF1E1E1E),
+        color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(16.dp),
         modifier = modifier.height(90.dp)
     ) {
@@ -219,32 +229,58 @@ fun ProfileStatCard(modifier: Modifier, value: String, label: String) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(value, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text(value, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             Text(label, fontSize = 11.sp, color = Color.Gray)
         }
     }
 }
 
 @Composable
-fun AchievementRow() {
+fun AchievementRow(stats: Map<String, Int>, lifetimePoints: Int) {
+    val streak = stats["bestStreak"] ?: 0
+    val totalHabits = stats["totalHabits"] ?: 0
+    
     LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { AchievementCard("First Habit", "Create your first habit", Icons.Default.Star, isUnlocked = true) }
-        item { AchievementCard("Consistent", "7-Day Streak achieved", Icons.Default.ThumbUp, isUnlocked = false) }
-        item { AchievementCard("Elite", "Earn 1000 Points", Icons.Default.Favorite, isUnlocked = false) }
+        com.example.ring_2.logic.GamificationEngine.ACHIEVEMENTS.forEach { tier ->
+            val isUnlocked = when(tier.category) {
+                "Streak" -> streak >= tier.requirement
+                "Points" -> lifetimePoints >= tier.requirement
+                "Habits" -> totalHabits >= tier.requirement
+                else -> false
+            }
+            item {
+                AchievementCard(
+                    title = tier.title,
+                    desc = "${tier.requirement} ${tier.category}",
+                    icon = when(tier.level) {
+                        com.example.ring_2.logic.GamificationEngine.AchievementLevel.BRONZE -> Icons.Default.Star
+                        com.example.ring_2.logic.GamificationEngine.AchievementLevel.SILVER -> Icons.Default.ThumbUp
+                        com.example.ring_2.logic.GamificationEngine.AchievementLevel.GOLD -> Icons.Default.Favorite
+                    },
+                    levelColor = when(tier.level) {
+                        com.example.ring_2.logic.GamificationEngine.AchievementLevel.BRONZE -> Color(0xFFCD7F32)
+                        com.example.ring_2.logic.GamificationEngine.AchievementLevel.SILVER -> Color(0xFFC0C0C0)
+                        com.example.ring_2.logic.GamificationEngine.AchievementLevel.GOLD -> Color(0xFFFFD700)
+                    },
+                    isUnlocked = isUnlocked
+                )
+            }
+        }
     }
 }
 
 @Composable
-fun AchievementCard(title: String, desc: String, icon: ImageVector, isUnlocked: Boolean) {
+fun AchievementCard(title: String, desc: String, icon: ImageVector, levelColor: Color, isUnlocked: Boolean) {
     Surface(
-        color = Color(0xFF1E1E1E),
+        color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.size(width = 140.dp, height = 140.dp).then(if (!isUnlocked) Modifier.alpha(0.4f) else Modifier)
+        modifier = Modifier.size(width = 140.dp, height = 140.dp).then(if (!isUnlocked) Modifier.alpha(0.4f) else Modifier),
+        border = if (isUnlocked) androidx.compose.foundation.BorderStroke(1.dp, levelColor) else null
     ) {
         Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            Icon(icon, contentDescription = null, tint = if (isUnlocked) Color(0xFF00E676) else Color.Gray, modifier = Modifier.size(32.dp))
+            Icon(icon, contentDescription = null, tint = if (isUnlocked) levelColor else Color.Gray, modifier = Modifier.size(32.dp))
             Spacer(Modifier.height(12.dp))
-            Text(title, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 13.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            Text(title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             Text(desc, fontSize = 10.sp, color = Color.Gray, textAlign = androidx.compose.ui.text.style.TextAlign.Center, lineHeight = 12.sp)
         }
     }
@@ -254,14 +290,14 @@ fun AchievementCard(title: String, desc: String, icon: ImageVector, isUnlocked: 
 fun SettingsItem(label: String, icon: ImageVector, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
-        color = Color(0xFF1E1E1E),
+        color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(icon, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(16.dp))
-            Text(label, color = Color.White, fontSize = 14.sp)
+            Text(label, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
             Spacer(Modifier.weight(1f))
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color.DarkGray)
         }
@@ -269,17 +305,16 @@ fun SettingsItem(label: String, icon: ImageVector, onClick: () -> Unit) {
 }
 
 @Composable
-fun ThemeSelection() {
-    var selectedTheme by remember { mutableStateOf("Dark") }
+fun ThemeSelection(currentTheme: String, onThemeChange: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("THEME", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf("Dark", "Light", "System").forEach { theme ->
-                val isSelected = selectedTheme == theme
+                val isSelected = currentTheme == theme
                 Button(
-                    onClick = { selectedTheme = theme },
+                    onClick = { onThemeChange(theme) },
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = if (isSelected) Color(0xFF00E676) else Color(0xFF1E1E1E)),
+                    colors = ButtonDefaults.buttonColors(containerColor = if (isSelected) Color(0xFF00E676) else MaterialTheme.colorScheme.surface),
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Text(theme, color = if (isSelected) Color.Black else Color.Gray, fontSize = 12.sp)
@@ -294,7 +329,7 @@ fun DataButton(label: String, icon: ImageVector, color: Color, onClick: () -> Un
     OutlinedButton(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().height(50.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF333333)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray.copy(alpha = 0.2f)),
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {

@@ -4,8 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -125,17 +123,17 @@ fun HomeScreen(
                 }
             } else if (habits.isNotEmpty()) {
                 item {
-                    Text("No tasks for today", color = Color.Gray, fontSize = 14.sp, modifier = Modifier.padding(vertical = 8.dp))
+                    Text("No pending tasks for today", color = Color.Gray, fontSize = 14.sp, modifier = Modifier.padding(vertical = 8.dp))
                 }
             }
 
             // 9. TODAY'S GRAPH
             item {
                 Spacer(Modifier.height(8.dp))
-                Text("Overall Growth", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                Text("Overall Growth", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
                 Spacer(Modifier.height(12.dp))
                 Surface(
-                    color = Color(0xFF1E1E1E),
+                    color = MaterialTheme.colorScheme.surface,
                     shape = RoundedCornerShape(20.dp),
                     modifier = Modifier.fillMaxWidth().height(180.dp)
                 ) {
@@ -173,11 +171,11 @@ fun QuickActionButton(text: String, onClick: () -> Unit, modifier: Modifier = Mo
     Button(
         onClick = onClick,
         modifier = modifier.height(50.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E1E1E)),
+        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(12.dp),
         contentPadding = PaddingValues(0.dp)
     ) {
-        Text(text, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+        Text(text, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Medium)
     }
 }
 
@@ -221,14 +219,14 @@ fun HomeHeader(name: String, points: Int) {
             Text(
                 text = greeting,
                 style = MaterialTheme.typography.headlineSmall,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 fontWeight = FontWeight.Medium
             )
             Text(
                 text = name,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onBackground
             )
             val sdf = SimpleDateFormat("EEEE, MMMM d", Locale.getDefault())
             Text(
@@ -239,7 +237,7 @@ fun HomeHeader(name: String, points: Int) {
         }
         
         Surface(
-            color = Color(0xFF1E1E1E),
+            color = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier.size(width = 120.dp, height = 54.dp)
         ) {

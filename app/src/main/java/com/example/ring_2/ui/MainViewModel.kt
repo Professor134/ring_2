@@ -23,6 +23,9 @@ class MainViewModel(private val repository: MainRepository) : ViewModel() {
     val recentProgress = repository.getRecentProgress(System.currentTimeMillis() - 365 * 24 * 60 * 60 * 1000L)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val recentNotifications = repository.getNotificationsForLast3Days()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     private val _taskFilter = MutableStateFlow("All")
     val taskFilter: StateFlow<String> = _taskFilter.asStateFlow()
 
@@ -98,6 +101,12 @@ class MainViewModel(private val repository: MainRepository) : ViewModel() {
         }
     }
 
+    fun recordProgressForDate(habit: HabitEntity, date: Long, value: Double, note: String = "") {
+        viewModelScope.launch {
+            repository.recordHabitProgress(habit, date, value, note)
+        }
+    }
+
     fun addTask(task: TaskEntity, onResult: (Long) -> Unit = {}) {
         viewModelScope.launch {
             val id = repository.createTask(task)
@@ -132,6 +141,13 @@ class MainViewModel(private val repository: MainRepository) : ViewModel() {
     fun updateProfile(profile: ProfileEntity) {
         viewModelScope.launch {
             repository.updateProfile(profile)
+        }
+    }
+
+    fun updateThemePreference(theme: String) {
+        viewModelScope.launch {
+            val profile = userProfile.value ?: return@launch
+            repository.updateProfile(profile.copy(themePreference = theme))
         }
     }
 

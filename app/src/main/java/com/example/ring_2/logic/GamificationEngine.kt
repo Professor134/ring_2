@@ -34,11 +34,40 @@ object GamificationEngine {
 
     fun calculateLevelFromPoints(lifetimeEarned: Int): Int {
         var level = 1
-        while (lifetimeEarned >= calculateThresholdForLevel(level)) {
+        var threshold = 1000
+        while (lifetimeEarned >= threshold) {
             level++
+            threshold += (1000 * 1.5.pow(level - 1)).roundToInt()
         }
         return level
     }
+
+    /**
+     * Achievement Levels
+     */
+    enum class AchievementLevel { BRONZE, SILVER, GOLD }
+
+    data class AchievementTier(
+        val category: String,
+        val level: AchievementLevel,
+        val requirement: Int,
+        val title: String
+    )
+
+    val ACHIEVEMENTS = listOf(
+        // Streak based
+        AchievementTier("Streak", AchievementLevel.BRONZE, 7, "Consistent (Bronze)"),
+        AchievementTier("Streak", AchievementLevel.SILVER, 15, "Dedicated (Silver)"),
+        AchievementTier("Streak", AchievementLevel.GOLD, 30, "Unstoppable (Gold)"),
+        // Point based
+        AchievementTier("Points", AchievementLevel.BRONZE, 1000, "Elite Starter"),
+        AchievementTier("Points", AchievementLevel.SILVER, 3000, "Elite Pro"),
+        AchievementTier("Points", AchievementLevel.GOLD, 5000, "Elite Legend"),
+        // Completion based
+        AchievementTier("Habits", AchievementLevel.BRONZE, 5, "Habit Starter"),
+        AchievementTier("Habits", AchievementLevel.SILVER, 10, "Habit Master"),
+        AchievementTier("Habits", AchievementLevel.GOLD, 20, "Habit God")
+    )
 
     fun createTransaction(
         type: TransactionType,

@@ -15,7 +15,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ring_2.data.model.TaskEntity
 import com.example.ring_2.ui.MainViewModel
 import com.example.ring_2.ui.components.TaskCard
 
@@ -35,11 +34,11 @@ fun TasksScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Tasks", color = Color.White, fontWeight = FontWeight.Bold) },
+                title = { Text("Tasks", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
                 actions = {
                     Surface(
-                        color = Color(0xFF1E1E1E),
+                        color = MaterialTheme.colorScheme.surface,
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.padding(end = 16.dp)
                     ) {
@@ -83,7 +82,7 @@ fun TasksScreen(
                 item {
                     Box(modifier = Modifier.fillMaxWidth().height(300.dp), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("No tasks yet", color = Color.Gray, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                            Text("No tasks found", color = Color.Gray, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                             Spacer(Modifier.height(16.dp))
                             Button(
                                 onClick = onAddTask,
@@ -113,14 +112,14 @@ fun TaskStatsRow(stats: Triple<Int, Int, Int>) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         TaskStatCard(Modifier.weight(1f), stats.first.toString(), "Pending", Color.Red)
         TaskStatCard(Modifier.weight(1f), stats.second.toString(), "Completed", Color(0xFF00E676))
-        TaskStatCard(Modifier.weight(1f), stats.third.toString(), "Total", Color.White)
+        TaskStatCard(Modifier.weight(1f), stats.third.toString(), "Total", MaterialTheme.colorScheme.onSurface)
     }
 }
 
 @Composable
 fun TaskStatCard(modifier: Modifier, value: String, label: String, color: Color) {
     Surface(
-        color = Color(0xFF1E1E1E),
+        color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(16.dp),
         modifier = modifier.height(80.dp)
     ) {
@@ -146,7 +145,7 @@ fun TaskFiltersRow(current: String, onSelect: (String) -> Unit) {
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = Color(0xFF00E676),
                     selectedLabelColor = Color.Black,
-                    containerColor = Color(0xFF1E1E1E),
+                    containerColor = MaterialTheme.colorScheme.surface,
                     labelColor = Color.Gray
                 ),
                 shape = RoundedCornerShape(12.dp)

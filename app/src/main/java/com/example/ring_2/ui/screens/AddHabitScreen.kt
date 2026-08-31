@@ -15,12 +15,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ring_2.data.model.HabitEntity
 import com.example.ring_2.data.model.HabitSchedule
 import com.example.ring_2.data.model.HabitType
+import com.example.ring_2.logic.RingNotificationManager
 import com.example.ring_2.ui.MainViewModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -32,6 +34,7 @@ fun AddHabitScreen(
     habitId: Long? = null,
     onBack: () -> Unit,
 ) {
+    val context = LocalContext.current
     val habits by viewModel.allHabits.collectAsState()
     val userProg by viewModel.userProgress.collectAsState()
     val categories by viewModel.allCategories.collectAsState()
@@ -91,10 +94,10 @@ fun AddHabitScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text(if (isEditMode) "Edit Habit" else "Create Habit", color = Color.White) },
+                title = { Text(if (isEditMode) "Edit Habit" else "Create Habit", color = MaterialTheme.colorScheme.onBackground) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.White)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = MaterialTheme.colorScheme.onBackground)
                     }
                 },
                 actions = {
@@ -133,6 +136,27 @@ fun AddHabitScreen(
                                 } else {
                                     viewModel.addHabit(habit)
                                 }
+                                
+                                // Schedule reminders for Monthly/Yearly
+                                if (selectedRepeat == "Monthly" || selectedRepeat == "Yearly") {
+                                    val cal = Calendar.getInstance()
+                                    if (selectedRepeat == "Monthly") {
+                                        cal.set(Calendar.DAY_OF_MONTH, dayOfMonth.toIntOrNull() ?: 15)
+                                    } else {
+                                        cal.set(Calendar.MONTH, yearlyMonth - 1)
+                                        cal.set(Calendar.DAY_OF_MONTH, yearlyDay.toIntOrNull() ?: 15)
+                                    }
+                                    cal.set(Calendar.HOUR_OF_DAY, 8)
+                                    cal.set(Calendar.MINUTE, 0)
+                                    
+                                    RingNotificationManager.scheduleHabitReminder(
+                                        context = context,
+                                        habitId = habit.id,
+                                        title = "Habit Reminder: ${habit.name}",
+                                        timeMillis = cal.timeInMillis
+                                    )
+                                }
+                                
                                 onBack()
                             }
                         }, enabled = canSave) {
@@ -160,8 +184,8 @@ fun AddHabitScreen(
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("e.g. Morning walk", color = Color.Gray) },
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
                         focusedBorderColor = Color(0xFF00E676)
                     ),
                     shape = RoundedCornerShape(12.dp)
@@ -178,8 +202,8 @@ fun AddHabitScreen(
                     placeholder = { Text("Add a note (optional)", color = Color.Gray) },
                     minLines = 3,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
                         focusedBorderColor = Color(0xFF00E676)
                     ),
                     shape = RoundedCornerShape(12.dp)
@@ -204,7 +228,7 @@ fun AddHabitScreen(
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = Color(cat.color).copy(alpha = 0.8f),
                                 selectedLabelColor = Color.Black,
-                                containerColor = Color(0xFF1E1E1E),
+                                containerColor = MaterialTheme.colorScheme.surface,
                                 labelColor = Color.Gray
                             )
                         )
@@ -233,8 +257,8 @@ fun AddHabitScreen(
                             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White
+                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                             )
                         )
                     }
@@ -246,8 +270,8 @@ fun AddHabitScreen(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White
+                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                             )
                         )
                     }
@@ -289,8 +313,8 @@ fun AddHabitScreen(
                             label = { Text("Day of month") },
                             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White
+                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                             )
                         )
                     }
@@ -311,8 +335,8 @@ fun AddHabitScreen(
                                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedMonth) },
                                     modifier = Modifier.menuAnchor(),
                                     colors = OutlinedTextFieldDefaults.colors(
-                                        focusedTextColor = Color.White,
-                                        unfocusedTextColor = Color.White,
+                                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
                                         focusedBorderColor = Color(0xFF00E676)
                                     )
                                 )
@@ -338,8 +362,8 @@ fun AddHabitScreen(
                                 label = { Text("Day") },
                                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    focusedTextColor = Color.White,
-                                    unfocusedTextColor = Color.White,
+                                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
                                     focusedBorderColor = Color(0xFF00E676)
                                 )
                             )
@@ -352,14 +376,14 @@ fun AddHabitScreen(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("START DATE", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
                 Surface(
-                    color = Color(0xFF1E1E1E),
+                    color = MaterialTheme.colorScheme.surface,
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth().clickable { /* Show date picker */ }
                 ) {
                     Text(
                         text = SimpleDateFormat("MMMM d, yyyy", Locale.getDefault()).format(Date(startDate)),
                         modifier = Modifier.padding(16.dp),
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
@@ -394,7 +418,7 @@ fun AddHabitScreen(
 fun DayChip(day: String, isSelected: Boolean, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
-        color = if (isSelected) Color(0xFF00E676) else Color(0xFF1E1E1E),
+        color = if (isSelected) Color(0xFF00E676) else MaterialTheme.colorScheme.surface,
         shape = CircleShape,
         modifier = Modifier.size(40.dp)
     ) {
@@ -410,7 +434,7 @@ fun TypeButton(modifier: Modifier, text: String, isSelected: Boolean, onClick: (
         onClick = onClick,
         modifier = modifier,
         colors = ButtonDefaults.buttonColors(
-            containerColor = if (isSelected) Color(0xFF00E676) else Color(0xFF1E1E1E)
+            containerColor = if (isSelected) Color(0xFF00E676) else MaterialTheme.colorScheme.surface
         ),
         shape = RoundedCornerShape(12.dp)
     ) {

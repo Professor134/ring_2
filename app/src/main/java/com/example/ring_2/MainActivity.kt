@@ -8,8 +8,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -38,9 +40,17 @@ class MainActivity : ComponentActivity() {
         
         try {
             RingNotificationManager.createNotificationChannel(this)
+            com.example.ring_2.logic.MotivationManager.scheduleDailyMotivation(this)
             
             val database = AppDatabase.getDatabase(this)
-            val repository = MainRepository(database.habitDao(), database.taskDao(), database.userDao(), database.categoryDao())
+            val repository = MainRepository(
+                database.habitDao(), 
+                database.taskDao(), 
+                database.userDao(), 
+                database.categoryDao(),
+                database.notificationDao(),
+                database.achievementDao()
+            )
             val viewModel = ViewModelProvider(this, object : ViewModelProvider.Factory {
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
                     return MainViewModel(repository) as T
@@ -48,7 +58,16 @@ class MainActivity : ComponentActivity() {
             })[MainViewModel::class.java]
 
             setContent {
-                RingTheme {
+                val profile by viewModel.userProfile.collectAsState()
+                val themePref = profile?.themePreference ?: "System"
+                
+                RingTheme(
+                    darkTheme = when(themePref) {
+                        "Dark" -> true
+                        "Light" -> false
+                        else -> androidx.compose.foundation.isSystemInDarkTheme()
+                    }
+                ) {
                     val navController = rememberNavController()
                     MainScaffold(navController, viewModel)
                 }
@@ -73,7 +92,7 @@ fun MainScaffold(navController: NavHostController, viewModel: MainViewModel) {
 
     Scaffold(
         bottomBar = {
-            if (currentDestination?.route in listOf(Screen.Home.route, Screen.Habits.route, Screen.Tasks.route, Screen.Insights.route, Screen.Profile.route)) {
+            if (currentDestination?.route in listOf(Screen.Home.route, Screen.Habits.route, Screen.Tasks.route, Screen.Profile.route)) {
                 NavigationBar(
                     containerColor = Color(0xFF1E1E1E),
                     tonalElevation = 0.dp
@@ -82,7 +101,6 @@ fun MainScaffold(navController: NavHostController, viewModel: MainViewModel) {
                         Screen.Home,
                         Screen.Habits,
                         Screen.Tasks,
-                        Screen.Insights,
                         Screen.Profile
                     )
                     items.forEach { screen ->
@@ -133,16 +151,24 @@ fun MainScaffold(navController: NavHostController, viewModel: MainViewModel) {
                     onTaskClick = { id -> navController.navigate("edit_task/$id") }
                 ) 
             }
-            composable(Screen.Insights.route) { InsightsScreen(viewModel) }
             composable(Screen.Profile.route) { 
                 ProfileScreen(
                     viewModel = viewModel,
                     onEditProfile = { navController.navigate("edit_profile") },
                     onPointHistory = { navController.navigate("point_history") },
-                    onAppearance = {},
-                    onNotifications = {},
-                    onBackupRestore = {}
+                    onAppearance = { navController.navigate("appearance") },
+                    onNotifications = { navController.navigate("notifications_history") },
+                    onBackupRestore = { navController.navigate("data_management") }
                 ) 
+            }
+            composable("appearance") {
+                AppearanceScreen(viewModel, onBack = { navController.popBackStack() })
+            }
+            composable("data_management") {
+                DataManagementScreen(onBack = { navController.popBackStack() })
+            }
+            composable("notifications_history") {
+                NotificationsHistoryScreen(viewModel, onBack = { navController.popBackStack() })
             }
             composable("edit_profile") {
                 EditProfileScreen(viewModel, onBack = { navController.popBackStack() })
@@ -179,9 +205,8 @@ fun MainScaffold(navController: NavHostController, viewModel: MainViewModel) {
 
 fun getIconForScreen(screen: Screen) = when (screen) {
     Screen.Home -> Icons.Default.Home
-    Screen.Habits -> Icons.Default.List
+    Screen.Habits -> Icons.AutoMirrored.Filled.List
     Screen.Tasks -> Icons.Default.CheckCircle
-    Screen.Insights -> Icons.Default.Info
     Screen.Profile -> Icons.Default.Person
     else -> Icons.Default.Home
 }

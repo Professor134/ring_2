@@ -16,7 +16,9 @@ class MainRepository(
     private val habitDao: HabitDao,
     private val taskDao: TaskDao,
     private val userDao: UserDao,
-    private val categoryDao: CategoryDao
+    private val categoryDao: CategoryDao,
+    private val notificationDao: com.example.ring_2.data.dao.NotificationDao,
+    private val achievementDao: com.example.ring_2.data.dao.AchievementDao
 ) {
     val allHabits: Flow<List<HabitEntity>> = habitDao.getAllHabits()
     val allTasks: Flow<List<TaskEntity>> = taskDao.getAllTasks()
@@ -24,6 +26,48 @@ class MainRepository(
     val userProfile: Flow<ProfileEntity?> = userDao.getProfile()
     val transactions: Flow<List<PointTransactionEntity>> = userDao.getAllTransactions()
     val allCategories: Flow<List<Category>> = categoryDao.getAllCategories()
+    val allNotifications: Flow<List<NotificationEntity>> = notificationDao.getAllNotifications()
+    val allAchievements: Flow<List<Achievement>> = achievementDao.getAllAchievements()
+
+    private suspend fun checkAchievements() {
+        val progress = userProgress.first() ?: return
+        val habits = allHabits.first()
+        val maxStreak = habits.maxOfOrNull { it.currentStreak } ?: 0
+        val points = progress.lifetimeEarnedPoints
+
+        // Bronze: 7 day streak / 1000 pts
+        if (maxStreak >= 7 || points >= 1000) {
+            unlockAchievement("Bronze", "Achieved 7-day streak or 1000 points")
+        }
+        // Silver: 15 day / 3000 pts
+        if (maxStreak >= 15 || points >= 3000) {
+            unlockAchievement("Silver", "Achieved 15-day streak or 3000 points")
+        }
+        // Gold: 30 day / 5000 pts
+        if (maxStreak >= 30 || points >= 5000) {
+            unlockAchievement("Gold", "Achieved 30-day streak or 5000 points")
+        }
+    }
+
+    private suspend fun unlockAchievement(title: String, description: String) {
+        if (achievementDao.getAchievementByTitle(title) == null) {
+            achievementDao.insertAchievement(Achievement(id = title.lowercase(), title = title, description = description, isUnlocked = true, unlockedAt = System.currentTimeMillis()))
+            addNotification("Achievement Unlocked!", "You've earned the $title achievement!")
+        }
+    }
+
+
+    fun getNotificationsForLast3Days(): Flow<List<NotificationEntity>> {
+        val threeDaysAgo = System.currentTimeMillis() - 3 * 24 * 60 * 60 * 1000L
+        return notificationDao.getRecentNotifications(threeDaysAgo)
+    }
+
+    suspend fun addNotification(title: String, message: String) {
+        notificationDao.insertNotification(NotificationEntity(title = title, message = message))
+        // Cleanup old ones
+        notificationDao.deleteOldNotifications(System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000L)
+    }
+
 
     fun getProgressForDate(date: Long): Flow<List<HabitProgressEntity>> = habitDao.getProgressForDateFlow(DateTimeUtils.getMidnightTimestamp(date))
     fun getRecentProgress(startDate: Long): Flow<List<HabitProgressEntity>> = habitDao.getRecentProgress(DateTimeUtils.getMidnightTimestamp(startDate))
@@ -67,6 +111,7 @@ class MainRepository(
         
         userDao.insertTransaction(transaction)
         userDao.updateUserProgress(GamificationEngine.applyTransaction(progress, transaction))
+        checkAchievements()
     }
 
     suspend fun createHabit(habit: HabitEntity) {
@@ -297,5 +342,9 @@ class MainRepository(
 
     suspend fun clearAllData() {
         userDao.clearAllTransactions()
+        notificationDao.clearAllNotifications()
+        habitDao.clearAllProgress()
+        habitDao.clearAllHabits()
+        taskDao.clearAllTasks()
     }
 }

@@ -22,13 +22,15 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.util.Locale
 
 @Composable
 fun LineGraph(
     dataPoints: List<Float>,
     modifier: Modifier = Modifier,
     labels: List<String> = emptyList(),
-    color: Color
+    color: Color,
+    yAxisMax: Float? = null
 ) {
     if (dataPoints.isEmpty()) {
         Box(modifier = modifier, contentAlignment = Alignment.Center) {
@@ -41,7 +43,11 @@ fun LineGraph(
     var selectedIndex by remember { mutableStateOf<Int?>(null) }
     val labelStyle = TextStyle(fontSize = 10.sp, color = Color.Gray)
 
-    Box(modifier = modifier.padding(start = 32.dp, end = 16.dp, top = 16.dp, bottom = 32.dp)) {
+    val rawMax = dataPoints.maxOrNull() ?: 1f
+    val maxVal = yAxisMax ?: (if (rawMax < 1f) 1f else rawMax * 1.2f)
+    val gridLines = 5
+
+    Box(modifier = modifier.padding(start = 40.dp, end = 16.dp, top = 16.dp, bottom = 32.dp)) {
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
@@ -59,22 +65,30 @@ fun LineGraph(
         ) {
             val width = size.width
             val height = size.height
-            val maxVal = 100f
             
-            // Draw Axis
-            drawLine(Color.DarkGray, Offset(0f, 0f), Offset(0f, height), strokeWidth = 1.dp.toPx())
-            drawLine(Color.DarkGray, Offset(0f, height), Offset(width, height), strokeWidth = 1.dp.toPx())
-
-            // Draw Y-Axis labels
-            listOf(0, 50, 100).forEach { valY ->
-                val y = height - (valY.toFloat() / maxVal * height)
+            // Draw Faint horizontal grid lines
+            for (i in 0..gridLines) {
+                val y = height - (i.toFloat() / gridLines * height)
+                drawLine(
+                    color = Color.Gray.copy(alpha = 0.1f),
+                    start = Offset(0f, y),
+                    end = Offset(width, y),
+                    strokeWidth = 1.dp.toPx()
+                )
+                
+                // Draw Y-Axis labels
+                val valY = (i.toFloat() / gridLines * maxVal)
                 drawText(
                     textMeasurer = textMeasurer,
-                    text = "$valY%",
-                    topLeft = Offset(-28.dp.toPx(), y - 6.dp.toPx()),
+                    text = String.format(Locale.getDefault(), "%.1f", valY),
+                    topLeft = Offset(-36.dp.toPx(), y - 6.dp.toPx()),
                     style = labelStyle
                 )
             }
+
+            // Draw Axis
+            drawLine(Color.DarkGray.copy(alpha = 0.5f), Offset(0f, 0f), Offset(0f, height), strokeWidth = 1.dp.toPx())
+            drawLine(Color.DarkGray.copy(alpha = 0.5f), Offset(0f, height), Offset(width, height), strokeWidth = 1.dp.toPx())
 
             if (dataPoints.size > 1) {
                 val path = Path()
@@ -92,14 +106,22 @@ fun LineGraph(
                     style = Stroke(width = 3.dp.toPx())
                 )
                 
-                // Draw points and labels
+                // Draw points and markers
                 dataPoints.forEachIndexed { index, value ->
                     val x = index * stepX
                     val y = height - (value / maxVal * height).coerceIn(0f, height)
                     
+                    // Marker (outer circle)
+                    drawCircle(
+                        color = color.copy(alpha = 0.3f),
+                        radius = 8.dp.toPx(),
+                        center = Offset(x, y)
+                    )
+                    
+                    // Dot
                     drawCircle(
                         color = if (selectedIndex == index) Color.White else color,
-                        radius = (if (selectedIndex == index) 6.dp else 4.dp).toPx(),
+                        radius = 4.dp.toPx(),
                         center = Offset(x, y)
                     )
                     
@@ -122,19 +144,20 @@ fun LineGraph(
             }
         }
         
-        // Tooltip
+        // Tooltip showing (x, y)
         selectedIndex?.let { index ->
             if (index < dataPoints.size) {
                 Surface(
-                    color = Color.Black.copy(alpha = 0.8f),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .padding(top = 8.dp)
+                        .padding(top = 8.dp),
+                    shadowElevation = 4.dp
                 ) {
                     Text(
-                        text = "${labels.getOrNull(index) ?: ""} : ${dataPoints[index].toInt()}%",
-                        color = Color.White,
+                        text = "${labels.getOrNull(index) ?: "Point $index"}: ${dataPoints[index]}",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -153,7 +176,7 @@ fun MultiLineGraph(
 ) {
     if (data.isEmpty()) {
         Box(modifier = modifier, contentAlignment = Alignment.Center) {
-            Text("No category data", color = Color.Gray)
+            Text("No data available", color = Color.Gray, fontSize = 14.sp)
         }
         return
     }
@@ -162,7 +185,12 @@ fun MultiLineGraph(
     var selectedIndex by remember { mutableStateOf<Int?>(null) }
     val labelStyle = TextStyle(fontSize = 10.sp, color = Color.Gray)
 
-    Box(modifier = modifier.padding(start = 32.dp, end = 16.dp, top = 16.dp, bottom = 32.dp)) {
+    val allValues = data.values.flatten()
+    val rawMax = allValues.maxOrNull() ?: 1f
+    val maxVal = if (rawMax < 1f) 1f else rawMax * 1.2f
+    val gridLines = 5
+
+    Box(modifier = modifier.padding(start = 40.dp, end = 16.dp, top = 16.dp, bottom = 32.dp)) {
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
@@ -181,21 +209,30 @@ fun MultiLineGraph(
         ) {
             val width = size.width
             val height = size.height
-            val maxVal = 100f
             
-            drawLine(Color.DarkGray, Offset(0f, 0f), Offset(0f, height), strokeWidth = 1.dp.toPx())
-            drawLine(Color.DarkGray, Offset(0f, height), Offset(width, height), strokeWidth = 1.dp.toPx())
-
-            // Y-Axis labels
-            listOf(0, 50, 100).forEach { valY ->
-                val y = height - (valY.toFloat() / maxVal * height)
+            // Draw Faint horizontal grid lines
+            for (i in 0..gridLines) {
+                val y = height - (i.toFloat() / gridLines * height)
+                drawLine(
+                    color = Color.Gray.copy(alpha = 0.1f),
+                    start = Offset(0f, y),
+                    end = Offset(width, y),
+                    strokeWidth = 1.dp.toPx()
+                )
+                
+                // Draw Y-Axis labels
+                val valY = (i.toFloat() / gridLines * maxVal)
                 drawText(
                     textMeasurer = textMeasurer,
-                    text = "$valY%",
-                    topLeft = Offset(-28.dp.toPx(), y - 6.dp.toPx()),
+                    text = String.format(Locale.getDefault(), "%.1f", valY),
+                    topLeft = Offset(-36.dp.toPx(), y - 6.dp.toPx()),
                     style = labelStyle
                 )
             }
+
+            // Draw Axis
+            drawLine(Color.DarkGray.copy(alpha = 0.5f), Offset(0f, 0f), Offset(0f, height), strokeWidth = 1.dp.toPx())
+            drawLine(Color.DarkGray.copy(alpha = 0.5f), Offset(0f, height), Offset(width, height), strokeWidth = 1.dp.toPx())
 
             data.forEach { (label, points) ->
                 if (points.size < 2) return@forEach
@@ -213,15 +250,17 @@ fun MultiLineGraph(
                 drawPath(
                     path = path,
                     color = color,
-                    style = Stroke(width = 2.dp.toPx())
+                    style = Stroke(width = 3.dp.toPx())
                 )
                 
                 points.forEachIndexed { index, value ->
                     val x = index * stepX
                     val y = height - (value / maxVal * height).coerceIn(0f, height)
+                    
+                    // Dot
                     drawCircle(
                         color = if (selectedIndex == index) Color.White else color,
-                        radius = (if (selectedIndex == index) 4.dp else 3.dp).toPx(),
+                        radius = (if (selectedIndex == index) 5.dp else 4.dp).toPx(),
                         center = Offset(x, y)
                     )
                 }
@@ -247,20 +286,21 @@ fun MultiLineGraph(
         // Multi-point Tooltip
         selectedIndex?.let { index ->
             Surface(
-                color = Color.Black.copy(alpha = 0.9f),
+                color = MaterialTheme.colorScheme.surfaceVariant,
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = 8.dp)
+                    .padding(top = 8.dp),
+                shadowElevation = 4.dp
             ) {
                 Column(modifier = Modifier.padding(8.dp)) {
-                    Text(labels.getOrNull(index) ?: "", color = Color.Gray, fontSize = 10.sp)
+                    Text(labels.getOrNull(index) ?: "Day $index", color = Color.Gray, fontSize = 10.sp)
                     data.forEach { (label, points) ->
                         if (index < points.size) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(modifier = Modifier.size(8.dp).background(colors[label] ?: Color.White, CircleShape))
                                 Spacer(Modifier.width(4.dp))
-                                Text("$label: ${points[index].toInt()}%", color = Color.White, fontSize = 12.sp)
+                                Text("$label: ${points[index]}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                             }
                         }
                     }

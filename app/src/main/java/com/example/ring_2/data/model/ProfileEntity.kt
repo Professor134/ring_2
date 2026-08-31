@@ -11,5 +11,6 @@ data class ProfileEntity(
     val dateOfBirth: Long? = null,
     val gender: String = "",
     val photoUri: String? = null,
-    val avatarColor: Int = 0xFF00E676.toInt()
+    val avatarColor: Int = 0xFF00E676.toInt(),
+    val themePreference: String = "System" // Dark, Light, System
 )

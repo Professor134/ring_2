@@ -55,4 +55,10 @@ interface HabitDao {
 
     @Query("SELECT * FROM streak_milestones WHERE streakCycleId = :cycleId AND milestone = :milestone")
     suspend fun getMilestone(cycleId: Long, milestone: Int): StreakMilestoneEntity?
+
+    @Query("DELETE FROM habit_progress")
+    suspend fun clearAllProgress()
+
+    @Query("DELETE FROM habits")
+    suspend fun clearAllHabits()
 }

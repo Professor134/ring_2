@@ -18,19 +18,23 @@ private val DarkColorScheme = darkColorScheme(
     onTertiary = Color.Black,
     onBackground = Color.White,
     onSurface = Color.White,
+    surfaceVariant = Color(0xFF2A2A2A),
+    onSurfaceVariant = Color.LightGray
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = Color(0xFF00E676),
     secondary = Color(0xFF00E676),
     tertiary = Color(0xFF00E676),
-    background = Color.White,
-    surface = Color(0xFFF5F5F5),
+    background = Color(0xFFF8F9FA),
+    surface = Color.White,
     onPrimary = Color.White,
     onSecondary = Color.White,
     onTertiary = Color.White,
     onBackground = Color.Black,
     onSurface = Color.Black,
+    surfaceVariant = Color(0xFFE9ECEF),
+    onSurfaceVariant = Color.DarkGray
 )
 
 @Composable
@@ -38,10 +42,7 @@ fun RingTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
     MaterialTheme(
         colorScheme = colorScheme,

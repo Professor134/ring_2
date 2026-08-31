@@ -2,7 +2,10 @@ package com.example.ring_2.logic
 
 import android.content.Context
 import android.net.Uri
-import com.example.ring_2.data.AppDatabase
+import com.example.ring_2.data.model.HabitEntity
+import com.example.ring_2.data.model.TaskEntity
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.io.FileInputStream
 import java.io.FileOutputStream
 
@@ -26,6 +29,22 @@ object BackupService {
                 input.copyTo(output)
             }
         }
-        // App should be restarted after import
+    }
+
+    fun exportAsJson(habits: List<HabitEntity>, tasks: List<TaskEntity>): String {
+        val data = mapOf(
+            "habits" to habits,
+            "tasks" to tasks
+        )
+        return Json.encodeToString(data)
+    }
+
+    fun exportAsCsv(habits: List<HabitEntity>): String {
+        val sb = StringBuilder()
+        sb.append("Name,Type,Target,Unit,Streak\n")
+        habits.forEach {
+            sb.append("${it.name},${it.type},${it.target},${it.unit},${it.currentStreak}\n")
+        }
+        return sb.toString()
     }
 }

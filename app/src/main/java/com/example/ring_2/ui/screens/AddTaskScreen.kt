@@ -68,6 +68,13 @@ fun AddTaskScreen(
     fun handleSave() {
         if (!canSave) return
         
+        // Ensure due date is not in the past
+        val today = DateTimeUtils.getMidnightTimestamp(System.currentTimeMillis())
+        if (dueDate < today) {
+            showError = "Due date cannot be in the past."
+            return
+        }
+
         if (taskId == null) {
             val currentPoints = userProg?.currentPoints ?: 0
             if (currentPoints < 1) {
@@ -303,7 +310,14 @@ fun AddTaskScreen(
     }
 
     if (showDatePicker) {
-        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = dueDate)
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = dueDate,
+            selectableDates = object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                    return utcTimeMillis >= DateTimeUtils.getMidnightTimestamp(System.currentTimeMillis())
+                }
+            }
+        )
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {

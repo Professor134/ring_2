@@ -27,12 +27,12 @@ fun NumericInputDialog(
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            color = Color(0xFF1E1E1E),
+            color = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(24.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text(title, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(title, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 Text("Target: $target", fontSize = 14.sp, color = Color.Gray)
                 
                 OutlinedTextField(
@@ -47,8 +47,8 @@ fun NumericInputDialog(
                     isError = error != null,
                     supportingText = { error?.let { Text(it, color = Color.Red) } },
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
                         focusedBorderColor = Color(0xFF00E676)
                     )
                 )
@@ -58,7 +58,12 @@ fun NumericInputDialog(
                     onValueChange = { note = it },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Note (optional)") },
-                    placeholder = { Text("Add a note", color = Color.Gray) }
+                    placeholder = { Text("Add a note", color = Color.Gray) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        focusedBorderColor = Color(0xFF00E676)
+                    )
                 )
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {

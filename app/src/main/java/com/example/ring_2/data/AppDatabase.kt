@@ -16,9 +16,10 @@ import com.example.ring_2.data.model.*
         ProfileEntity::class,
         TaskEntity::class,
         Category::class,
-        Achievement::class
+        Achievement::class,
+        NotificationEntity::class
     ],
-    version = 2, // Incremented version
+    version = 3, // Incremented version
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -27,6 +28,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun taskDao(): TaskDao
     abstract fun userDao(): UserDao
     abstract fun categoryDao(): CategoryDao
+    abstract fun notificationDao(): NotificationDao
+    abstract fun achievementDao(): AchievementDao
 
     companion object {
         @Volatile

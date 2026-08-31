@@ -22,7 +22,7 @@ import com.example.ring_2.logic.ScheduleEngine
 import com.example.ring_2.ui.MainViewModel
 import com.example.ring_2.ui.components.HabitCard
 import com.example.ring_2.ui.components.NumericInputDialog
-
+import com.example.ring_2.logic.DateTimeUtils
 import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,17 +42,17 @@ fun HabitsScreen(
     var selectedCategory by remember { mutableStateOf("All") }
     var showNumericDialogFor by remember { mutableStateOf<HabitEntity?>(null) }
 
-    val today = getMidnightTimestamp(System.currentTimeMillis())
+    val today = DateTimeUtils.getMidnightTimestamp(System.currentTimeMillis())
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Habits", color = Color.White, fontWeight = FontWeight.Bold) },
+                title = { Text("Habits", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
                 actions = {
                     Surface(
-                        color = Color(0xFF1E1E1E),
+                        color = MaterialTheme.colorScheme.surface,
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.padding(end = 16.dp)
                     ) {
@@ -85,7 +85,6 @@ fun HabitsScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            // 2. SEARCH BAR
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
@@ -97,20 +96,18 @@ fun HabitsScreen(
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFF00E676),
-                    unfocusedBorderColor = Color(0xFF1E1E1E),
-                    focusedContainerColor = Color(0xFF1E1E1E),
-                    unfocusedContainerColor = Color(0xFF1E1E1E),
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.surface,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
                     cursorColor = Color(0xFF00E676)
                 ),
                 shape = RoundedCornerShape(12.dp)
             )
             
-            // 3. SPACING
             Spacer(Modifier.height(16.dp))
             
-            // 4. CATEGORY FILTER
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(horizontal = 16.dp),
@@ -122,17 +119,10 @@ fun HabitsScreen(
                 items(categories) { category ->
                     CategoryChip(category.name, selectedCategory == category.name) { selectedCategory = category.name }
                 }
-                // Add some default ones if empty
-                if (categories.isEmpty()) {
-                    listOf("Health", "Gym", "Yoga", "Study", "Work").forEach {
-                        item { CategoryChip(it, selectedCategory == it) { selectedCategory = it } }
-                    }
-                }
             }
 
             Spacer(Modifier.height(16.dp))
 
-            // 5. HABIT LIST
             val filteredHabits = habits.filter { habit ->
                 val categoryName = categories.find { it.id == habit.categoryId }?.name ?: "Others"
                 habit.name.contains(searchQuery, ignoreCase = true) && 
@@ -142,7 +132,7 @@ fun HabitsScreen(
             if (filteredHabits.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("No habits yet", color = Color.Gray, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Text("No habits found", color = Color.Gray, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                         Spacer(Modifier.height(16.dp))
                         Button(
                             onClick = onAddHabit,
@@ -212,25 +202,9 @@ fun CategoryChip(name: String, isSelected: Boolean, onClick: () -> Unit) {
         colors = FilterChipDefaults.filterChipColors(
             selectedContainerColor = Color(0xFF00E676),
             selectedLabelColor = Color.Black,
-            containerColor = Color(0xFF1E1E1E),
+            containerColor = MaterialTheme.colorScheme.surface,
             labelColor = Color.Gray
-        ),
-        border = FilterChipDefaults.filterChipBorder(
-            enabled = true,
-            selected = isSelected,
-            borderColor = if (isSelected) Color.Transparent else Color(0xFF333333)
         ),
         shape = RoundedCornerShape(12.dp)
     )
-}
-
-private fun getMidnightTimestamp(time: Long): Long {
-    val calendar = Calendar.getInstance().apply {
-        timeInMillis = time
-        set(java.util.Calendar.HOUR_OF_DAY, 0)
-        set(Calendar.MINUTE, 0)
-        set(Calendar.SECOND, 0)
-        set(Calendar.MILLISECOND, 0)
-    }
-    return calendar.timeInMillis
 }

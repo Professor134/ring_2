@@ -1,19 +1,15 @@
 package com.example.ring_2.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
@@ -27,9 +23,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ring_2.data.model.HabitEntity
+import com.example.ring_2.data.model.HabitProgressEntity
 import com.example.ring_2.data.model.HabitType
+import com.example.ring_2.logic.DateTimeUtils
 import com.example.ring_2.ui.MainViewModel
 import com.example.ring_2.ui.components.LineGraph
+import com.example.ring_2.ui.components.NumericInputDialog
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -50,16 +49,18 @@ fun HabitDetailScreen(
 
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     var selectedFilter by remember { mutableStateOf("Days") }
+    var selectedDateForEdit by remember { mutableStateOf<Long?>(null) }
+    var showEditDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text(habit.name, color = Color.White, fontWeight = FontWeight.Bold) },
+                title = { Text(habit.name, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.White)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = MaterialTheme.colorScheme.onBackground)
                     }
                 },
                 actions = {
@@ -67,12 +68,12 @@ fun HabitDetailScreen(
                         Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color(0xFF00E676))
                     }
                     Surface(
-                        color = Color(0xFF1E1E1E),
+                        color = MaterialTheme.colorScheme.surface,
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.padding(end = 16.dp)
                     ) {
                         Text(
-                            "${userProg?.currentPoints ?: 0}",
+                            text = (userProg?.currentPoints ?: 0).toString(),
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             color = Color(0xFF00E676),
                             fontWeight = FontWeight.Bold,
@@ -96,27 +97,22 @@ fun HabitDetailScreen(
                 DetailStatCard(Modifier.weight(1f), habit.currentStreak.toString(), "Current Streak")
                 DetailStatCard(Modifier.weight(1f), habit.bestStreak.toString(), "Best Streak")
             }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                DetailStatCard(Modifier.weight(1f), habit.totalCompletions.toString(), "Total Done")
-                val successRate = if (progressList.isEmpty()) 0 else (progressList.count { it.completed } * 100 / progressList.size)
-                DetailStatCard(Modifier.weight(1f), "$successRate%", "Success Rate")
-            }
 
-            // SECTION 2: TARGETS
-            TargetsSection(habit)
+            // SECTION 2: TARGETS (Updated with Progress Bars)
+            HabitTargetsProgressSection(habit, progressList)
 
             // SECTION 3: HABIT NOTE
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("HABIT NOTE", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
                 Surface(
-                    color = Color(0xFF1E1E1E),
+                    color = MaterialTheme.colorScheme.surface,
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
                         text = habit.description.ifEmpty { "No note added." },
                         modifier = Modifier.padding(16.dp),
-                        color = if (habit.description.isEmpty()) Color.DarkGray else Color.White,
+                        color = if (habit.description.isEmpty()) Color.DarkGray else MaterialTheme.colorScheme.onSurface,
                         fontSize = 14.sp
                     )
                 }
@@ -139,28 +135,31 @@ fun HabitDetailScreen(
             }
 
             // SECTION 5: LINE GRAPH
-            DetailChartSection("Progress Trend", if (selectedFilter == "Days") "Calendar dates" else selectedFilter) {
-                val graphData = progressList.take(7).map { it.percentage.toFloat() }.reversed()
+            DetailChartSection("Progress Trend", if (selectedFilter == "Days") "Last 7 entries" else selectedFilter) {
+                val graphData = progressList.take(7).map { it.actualValue.toFloat() }.reversed()
+                val labels = progressList.take(7).map { SimpleDateFormat("d MMM", Locale.getDefault()).format(Date(it.date)) }.reversed()
                 LineGraph(
-                    dataPoints = if (graphData.isEmpty()) listOf(0f) else graphData,
+                    dataPoints = graphData.ifEmpty { listOf(0f) },
+                    labels = labels,
                     color = Color(habit.color),
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    yAxisMax = if (habit.type == HabitType.MEASURABLE) habit.target.toFloat() * 1.5f else 1.2f
                 )
             }
 
-            // SECTION 7: STREAK MILESTONES
-            StreakMilestoneSection(habit.currentStreak)
+            // SECTION 6: CALENDAR (Interactive)
+            InteractiveCalendarSection(habit, progressList) { date ->
+                val fiveDaysAgo = DateTimeUtils.getMidnightTimestamp(System.currentTimeMillis() - (5 * 24 * 60 * 60 * 1000L))
+                if (date >= fiveDaysAgo && date <= System.currentTimeMillis()) {
+                    selectedDateForEdit = date
+                    showEditDialog = true
+                }
+            }
 
-            // SECTION 8: CALENDAR
-            CalendarSection(habit, progressList)
-
-            // SECTION 9: PROGRESS NOTES
-            ProgressNotesSection(progressList)
-
-            // SECTION 10: POINT SUMMARY
+            // SECTION 7: POINT SUMMARY
             PointSummarySection(transactions)
 
-            // SECTION 12: DELETE
+            // SECTION 8: DELETE
             Button(
                 onClick = { showDeleteConfirmation = true },
                 modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
@@ -173,6 +172,39 @@ fun HabitDetailScreen(
             }
             
             Spacer(Modifier.height(48.dp))
+        }
+    }
+
+    if (showEditDialog && selectedDateForEdit != null) {
+        val progress = progressList.find { it.date == selectedDateForEdit }
+        if (habit.type == HabitType.YES_NO) {
+            AlertDialog(
+                onDismissRequest = { showEditDialog = false },
+                title = { Text("Update Progress") },
+                text = { Text("Did you complete this habit on ${SimpleDateFormat("MMM d", Locale.getDefault()).format(Date(selectedDateForEdit!!))}?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.recordProgressForDate(habit, selectedDateForEdit!!, habit.target)
+                        showEditDialog = false
+                    }) { Text("Yes") }
+                },
+                dismissButton = {
+                    TextButton(onClick = {
+                        viewModel.recordProgressForDate(habit, selectedDateForEdit!!, 0.0)
+                        showEditDialog = false
+                    }) { Text("No") }
+                }
+            )
+        } else {
+            NumericInputDialog(
+                title = "Update Progress",
+                initialValue = (progress?.actualValue ?: 0.0).toString(),
+                target = "${habit.target} ${habit.unit}",
+                onDismiss = { showEditDialog = false }
+            ) { value, note ->
+                viewModel.recordProgressForDate(habit, selectedDateForEdit!!, value, note)
+                showEditDialog = false
+            }
         }
     }
 
@@ -199,117 +231,125 @@ fun HabitDetailScreen(
 }
 
 @Composable
-fun DetailStatCard(modifier: Modifier, value: String, label: String) {
-    Surface(
-        color = Color(0xFF1E1E1E),
-        shape = RoundedCornerShape(16.dp),
-        modifier = modifier.height(100.dp)
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(value, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            Text(label, fontSize = 12.sp, color = Color.Gray)
-        }
-    }
-}
-
-@Composable
-fun TargetsSection(habit: HabitEntity) {
+fun HabitTargetsProgressSection(habit: HabitEntity, progressList: List<HabitProgressEntity>) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("TARGETS", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+        Text("TARGETS & PROGRESS", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
         Surface(
-            color = Color(0xFF1E1E1E),
+            color = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(20.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                val unit = habit.unit
-                val target = habit.target.toInt()
-                TargetRow("Daily target", if (habit.type == HabitType.MEASURABLE) "$target $unit" else "Once per scheduled day")
-                TargetRow("Weekly target", if (habit.type == HabitType.MEASURABLE) "${target * 7} $unit" else "Calculated per schedule")
-                TargetRow("Monthly target", "—")
-                TargetRow("Yearly target", "—")
+                val dailyStats = calculateStats(progressList, Calendar.DAY_OF_YEAR, habit)
+                TargetProgressBar("Daily", dailyStats, Color(habit.color))
+                
+                val weeklyStats = calculateStats(progressList, Calendar.WEEK_OF_YEAR, habit)
+                TargetProgressBar("Weekly", weeklyStats, Color(habit.color))
+                
+                val monthlyStats = calculateStats(progressList, Calendar.MONTH, habit)
+                TargetProgressBar("Monthly", monthlyStats, Color(habit.color))
             }
         }
     }
 }
 
-@Composable
-fun TargetRow(label: String, value: String) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, color = Color.Gray, fontSize = 14.sp)
-        Text(value, color = Color.White, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+data class ProgressStats(val done: Double, val total: Double, val unit: String)
+
+fun calculateStats(progressList: List<HabitProgressEntity>, period: Int, habit: HabitEntity): ProgressStats {
+    val cal = Calendar.getInstance()
+    val today = DateTimeUtils.getMidnightTimestamp(cal.timeInMillis)
+    
+    // Set to start of period
+    cal.timeInMillis = today
+    when(period) {
+        Calendar.WEEK_OF_YEAR -> cal.set(Calendar.DAY_OF_WEEK, cal.firstDayOfWeek)
+        Calendar.MONTH -> cal.set(Calendar.DAY_OF_MONTH, 1)
+        Calendar.YEAR -> cal.set(Calendar.DAY_OF_YEAR, 1)
+        else -> {} // Day is just today
     }
+    val startOfPeriod = DateTimeUtils.getMidnightTimestamp(cal.timeInMillis)
+    
+    val filtered = progressList.filter { it.date in startOfPeriod..today }
+    val done = filtered.sumOf { it.actualValue }
+    
+    // Total calculation is simplified. In a real app, calculate based on schedule.
+    val total = when(period) {
+        Calendar.DAY_OF_YEAR -> habit.target
+        Calendar.WEEK_OF_YEAR -> habit.target * 7
+        Calendar.MONTH -> habit.target * 30
+        else -> habit.target
+    }
+    
+    return ProgressStats(done, total, habit.unit)
 }
 
 @Composable
-fun StreakMilestoneSection(currentStreak: Int) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("STREAK MILESTONES", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            MilestoneCard(Modifier.weight(1f), "10 Days", currentStreak >= 10)
-            MilestoneCard(Modifier.weight(1f), "20 Days", currentStreak >= 20)
+fun TargetProgressBar(label: String, stats: ProgressStats, color: Color) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(label, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Text("${stats.done.toInt()} / ${stats.total.toInt()} ${stats.unit}", color = Color.Gray, fontSize = 12.sp)
         }
+        val progress = (stats.done / stats.total).toFloat().coerceIn(0f, 1f)
+        LinearProgressIndicator(
+            progress = { progress },
+            modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
+            color = color,
+            trackColor = Color.Gray.copy(alpha = 0.2f)
+        )
     }
 }
 
 @Composable
-fun MilestoneCard(modifier: Modifier, label: String, isAchieved: Boolean) {
-    Surface(
-        color = Color(0xFF1E1E1E),
-        shape = RoundedCornerShape(16.dp),
-        modifier = modifier.height(80.dp)
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    if (isAchieved) Icons.Default.Check else Icons.Default.Add,
-                    contentDescription = null,
-                    tint = if (isAchieved) Color(0xFF00E676) else Color.DarkGray
-                )
-                Text(label, fontSize = 12.sp, color = if (isAchieved) Color.White else Color.Gray)
-            }
-        }
-    }
-}
-
-@Composable
-fun CalendarSection(habit: HabitEntity, progressList: List<com.example.ring_2.data.model.HabitProgressEntity>) {
+fun InteractiveCalendarSection(habit: HabitEntity, progressList: List<HabitProgressEntity>, onDateClick: (Long) -> Unit) {
+    var calendar by remember { mutableStateOf(Calendar.getInstance()) }
+    
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("CALENDAR", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
         Surface(
-            color = Color(0xFF1E1E1E),
+            color = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(20.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                val calendar = Calendar.getInstance()
-                val currentMonth = calendar.get(Calendar.MONTH)
-                val currentYear = calendar.get(Calendar.YEAR)
-
-                Text(
-                    text = SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(calendar.time),
-                    color = Color.White,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = {
+                        val newCal = calendar.clone() as Calendar
+                        newCal.add(Calendar.MONTH, -1)
+                        calendar = newCal
+                    }) {
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null, tint = Color.Gray)
+                    }
+                    
+                    Text(
+                        text = SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(calendar.time),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    IconButton(onClick = {
+                        val newCal = calendar.clone() as Calendar
+                        newCal.add(Calendar.MONTH, 1)
+                        calendar = newCal
+                    }) {
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
+                    }
+                }
 
                 Spacer(Modifier.height(12.dp))
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                     listOf("S", "M", "T", "W", "T", "F", "S").forEach {
-                        Text(it, color = Color.DarkGray, fontSize = 12.sp, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+                        Text(it, color = Color.Gray, fontSize = 12.sp, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
                     }
                 }
 
                 Spacer(Modifier.height(8.dp))
 
-                val daysInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
-                calendar.set(Calendar.DAY_OF_MONTH, 1)
-                val firstDayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
+                val tempCal = calendar.clone() as Calendar
+                tempCal.set(Calendar.DAY_OF_MONTH, 1)
+                val firstDayOfWeek = tempCal.get(Calendar.DAY_OF_WEEK)
+                val daysInMonth = tempCal.getActualMaximum(Calendar.DAY_OF_MONTH)
 
                 val progressMap = progressList.associateBy { it.date }
 
@@ -321,11 +361,9 @@ fun CalendarSection(habit: HabitEntity, progressList: List<com.example.ring_2.da
 
                             Box(modifier = Modifier.weight(1f).aspectRatio(1f), contentAlignment = Alignment.Center) {
                                 if (isCurrentMonthDay) {
-                                    val cellCal = Calendar.getInstance().apply {
-                                        set(currentYear, currentMonth, day, 0, 0, 0)
-                                        set(Calendar.MILLISECOND, 0)
-                                    }
-                                    val dateMillis = cellCal.timeInMillis
+                                    val cellCal = calendar.clone() as Calendar
+                                    cellCal.set(Calendar.DAY_OF_MONTH, day)
+                                    val dateMillis = DateTimeUtils.getMidnightTimestamp(cellCal.timeInMillis)
                                     val progress = progressMap[dateMillis]
                                     val isActive = com.example.ring_2.logic.ScheduleEngine.isHabitActiveOnDate(habit.schedule, habit.startDate, dateMillis)
                                     val isFuture = dateMillis > System.currentTimeMillis()
@@ -334,20 +372,20 @@ fun CalendarSection(habit: HabitEntity, progressList: List<com.example.ring_2.da
                                         isFuture -> Color.Transparent
                                         progress?.completed == true -> Color(0xFF00E676)
                                         progress != null && progress.actualValue > 0 -> Color(0xFF00E676).copy(alpha = 0.5f)
-                                        isActive -> Color.Red.copy(alpha = 0.3f)
+                                        isActive -> Color.Red.copy(alpha = 0.2f)
                                         else -> Color.Transparent
                                     }
 
                                     Surface(
                                         color = color,
                                         shape = CircleShape,
-                                        modifier = Modifier.size(24.dp)
+                                        modifier = Modifier.size(32.dp).clickable { onDateClick(dateMillis) }
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
                                             Text(
                                                 text = day.toString(),
-                                                fontSize = 11.sp,
-                                                color = if (color != Color.Transparent) Color.Black else Color.White
+                                                fontSize = 12.sp,
+                                                color = if (color != Color.Transparent) Color.Black else MaterialTheme.colorScheme.onSurface
                                             )
                                         }
                                     }
@@ -364,31 +402,18 @@ fun CalendarSection(habit: HabitEntity, progressList: List<com.example.ring_2.da
 }
 
 @Composable
-fun ProgressNotesSection(progressList: List<com.example.ring_2.data.model.HabitProgressEntity>) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("PROGRESS HISTORY & NOTES", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-        if (progressList.isEmpty()) {
-            Text("No progress recorded yet.", color = Color.DarkGray, fontSize = 14.sp)
-        } else {
-            progressList.take(5).forEach { progress ->
-                Surface(
-                    color = Color(0xFF1E1E1E),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            val sdf = SimpleDateFormat("d MMM yyyy", Locale.getDefault())
-                            Text(sdf.format(Date(progress.date)), color = Color.Gray, fontSize = 12.sp)
-                            Text("${progress.actualValue.toInt()} / ${progress.target.toInt()}", color = Color.White, fontWeight = FontWeight.Bold)
-                        }
-                        if (progress.note.isNotEmpty()) {
-                            Spacer(Modifier.height(8.dp))
-                            Text("\"${progress.note}\"", color = Color(0xFF00E676), fontSize = 13.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
-                        }
-                    }
-                }
-            }
+fun DetailStatCard(modifier: Modifier, value: String, label: String) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(16.dp),
+        modifier = modifier.height(100.dp)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(value, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            Text(label, fontSize = 12.sp, color = Color.Gray)
         }
     }
 }
@@ -401,15 +426,15 @@ fun PointSummarySection(transactions: List<com.example.ring_2.data.model.PointTr
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("POINT SUMMARY", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
         Surface(
-            color = Color(0xFF1E1E1E),
+            color = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(20.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 PointSummaryRow("Elite Points Earned", "+$earned", Color(0xFF00E676))
                 PointSummaryRow("Elite Points Lost", "$lost", Color.Red)
-                HorizontalDivider(color = Color.DarkGray)
-                PointSummaryRow("Net", "${earned + lost}", Color.White)
+                HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
+                PointSummaryRow("Net", "${earned + lost}", MaterialTheme.colorScheme.onSurface)
             }
         }
     }
@@ -427,13 +452,13 @@ fun PointSummaryRow(label: String, value: String, color: Color) {
 fun DetailChartSection(title: String, subtitle: String, chart: @Composable () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text(title, style = MaterialTheme.typography.titleMedium, color = Color.White)
+            Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
             Text(subtitle, fontSize = 12.sp, color = Color.Gray)
         }
         Surface(
-            color = Color(0xFF1E1E1E),
+            color = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(20.dp),
-            modifier = Modifier.fillMaxWidth().height(200.dp)
+            modifier = Modifier.fillMaxWidth().height(240.dp)
         ) {
             chart()
         }
