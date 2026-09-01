@@ -39,8 +39,10 @@ fun HomeScreen(
     val tasks by viewModel.allTasks.collectAsState()
     val userProg by viewModel.userProgress.collectAsState()
     val todayProgress by viewModel.todayProgress.collectAsState()
+    val allProgress by viewModel.allProgress.collectAsState()
     val profile by viewModel.userProfile.collectAsState()
 
+    var selectedFilter by remember { mutableStateOf("Days") }
     var showNumericDialogFor by remember { mutableStateOf<HabitEntity?>(null) }
     
     val today = getMidnightTimestamp(System.currentTimeMillis())
@@ -132,16 +134,58 @@ fun HomeScreen(
                 Spacer(Modifier.height(8.dp))
                 Text("Overall Growth", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
                 Spacer(Modifier.height(12.dp))
+                
+                val growthData = remember(allProgress, habits, selectedFilter) {
+                    com.example.ring_2.logic.GrowthCalculator.calculateOverallGrowth(allProgress, habits, selectedFilter)
+                }
+
                 Surface(
                     color = MaterialTheme.colorScheme.surface,
                     shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.fillMaxWidth().height(180.dp)
+                    modifier = Modifier.fillMaxWidth().height(250.dp),
+                    tonalElevation = 2.dp
                 ) {
                     LineGraph(
-                        dataPoints = listOf(20f, 45f, 30f, 70f, 60f, 85f, 78f),
-                        color = Color(0xFF00E676),
-                        modifier = Modifier.fillMaxSize()
+                        dataPoints = growthData.map { it.growthValue },
+                        labels = growthData.map { it.dateLabel },
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.fillMaxSize(),
+                        tooltipData = growthData.map { point ->
+                            """
+                            Date: ${point.fullDate}
+                            Aggregate: ${point.dailyAggregate.toInt()}%
+                            Previous: ${point.prevAggregate.toInt()}%
+                            Difference: ${if (point.difference >= 0) "+" else ""}${point.difference.toInt()}%
+                            Average Streak: ${point.averageStreak.toInt()} days
+                            Growth: ${String.format(Locale.getDefault(), "%.1f", point.growthValue)}
+                            """.trimIndent()
+                        }
                     )
+                }
+                
+                Spacer(Modifier.height(12.dp))
+                
+                // Time Filter
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    listOf("Days", "Weeks", "Months", "Year").forEach { filter ->
+                        FilterChip(
+                            selected = selectedFilter == filter,
+                            onClick = { selectedFilter = filter },
+                            label = { Text(filter, fontSize = 11.sp) },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.padding(horizontal = 4.dp),
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.primary,
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        )
+                    }
                 }
             }
             
@@ -171,7 +215,7 @@ fun QuickActionButton(text: String, onClick: () -> Unit, modifier: Modifier = Mo
     Button(
         onClick = onClick,
         modifier = modifier.height(50.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         shape = RoundedCornerShape(12.dp),
         contentPadding = PaddingValues(0.dp)
     ) {
@@ -185,19 +229,19 @@ fun EmptyHabitState(onAddHabit: () -> Unit) {
         modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("No habits yet", color = Color.Gray, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Text("No habits yet", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 18.sp, fontWeight = FontWeight.Bold)
         Text(
             "Create your first habit and start your RING.",
-            color = Color.DarkGray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             fontSize = 14.sp,
             modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
         )
         Button(
             onClick = onAddHabit,
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E676)),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Text("+ Add Habit", color = Color.Black, fontWeight = FontWeight.Bold)
+            Text("+ Add Habit", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -232,22 +276,23 @@ fun HomeHeader(name: String, points: Int) {
             Text(
                 text = sdf.format(Date()),
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         
         Surface(
             color = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.size(width = 120.dp, height = 54.dp)
+            modifier = Modifier.size(width = 120.dp, height = 54.dp),
+            tonalElevation = 2.dp
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
                 modifier = Modifier.padding(horizontal = 8.dp)
             ) {
-                Text("ELITE POINTS", fontSize = 9.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                Text("$points", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF00E676))
+                Text("ELITE POINTS", fontSize = 9.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                Text(points.toString(), fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
             }
         }
     }

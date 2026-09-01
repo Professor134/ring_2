@@ -159,7 +159,7 @@ fun ProfileScreen(
             }
         }
     }
-    
+
     if (showClearDataConfirmation) {
         AlertDialog(
             onDismissRequest = { showClearDataConfirmation = false },

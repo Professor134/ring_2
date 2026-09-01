@@ -52,26 +52,26 @@ fun AddHabitScreen(
     var selectedDays by remember { 
         mutableStateOf(
             (existingHabit?.schedule as? HabitSchedule.Weekly)?.daysOfWeek ?: emptySet()
-        ) 
+        )
     }
-    
+
     // Monthly Selection
-    var dayOfMonth by remember { 
+    var dayOfMonth by remember {
         mutableStateOf(
             (existingHabit?.schedule as? HabitSchedule.Monthly)?.dayOfMonth?.toString() ?: "15"
-        ) 
+        )
     }
-    
+
     // Yearly Selection
-    var yearlyMonth by remember { 
+    var yearlyMonth by remember {
         mutableIntStateOf(
             (existingHabit?.schedule as? HabitSchedule.Yearly)?.month ?: 8
-        ) 
+        )
     }
-    var yearlyDay by remember { 
+    var yearlyDay by remember {
         mutableStateOf(
             (existingHabit?.schedule as? HabitSchedule.Yearly)?.dayOfMonth?.toString() ?: "15"
-        ) 
+        )
     }
 
     var selectedCategoryId by remember { mutableLongStateOf(existingHabit?.categoryId ?: 0L) }
@@ -84,7 +84,7 @@ fun AddHabitScreen(
     val isWeeklyValid = selectedRepeat != "Weekly" || selectedDays.isNotEmpty()
     val isMonthlyValid = selectedRepeat != "Monthly" || (dayOfMonth.toIntOrNull() in 1..31)
     val isYearlyValid = selectedRepeat != "Yearly" || (yearlyDay.toIntOrNull() in 1..31)
-    
+
     val canSave = isNameValid && isTargetValid && isWeeklyValid && isMonthlyValid && isYearlyValid
 
     val isEditMode = habitId != null
@@ -136,7 +136,7 @@ fun AddHabitScreen(
                                 } else {
                                     viewModel.addHabit(habit)
                                 }
-                                
+
                                 // Schedule reminders for Monthly/Yearly
                                 if (selectedRepeat == "Monthly" || selectedRepeat == "Yearly") {
                                     val cal = Calendar.getInstance()
@@ -148,7 +148,7 @@ fun AddHabitScreen(
                                     }
                                     cal.set(Calendar.HOUR_OF_DAY, 8)
                                     cal.set(Calendar.MINUTE, 0)
-                                    
+
                                     RingNotificationManager.scheduleHabitReminder(
                                         context = context,
                                         habitId = habit.id,

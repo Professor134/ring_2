@@ -40,6 +40,9 @@ interface HabitDao {
     @Query("SELECT * FROM habit_progress WHERE date >= :startDate ORDER BY date DESC")
     fun getRecentProgress(startDate: Long): Flow<List<HabitProgressEntity>>
 
+    @Query("SELECT * FROM habit_progress ORDER BY date ASC")
+    fun getAllProgress(): Flow<List<HabitProgressEntity>>
+
     // Streaks
     @Query("SELECT * FROM streak_cycles WHERE habitId = :habitId AND isActive = 1 LIMIT 1")
     suspend fun getActiveStreakCycle(habitId: Long): StreakCycleEntity?

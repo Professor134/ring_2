@@ -32,7 +32,7 @@ fun InsightsScreen(viewModel: MainViewModel) {
     val tasks by viewModel.allTasks.collectAsState()
     val userProg by viewModel.userProgress.collectAsState()
     val categories by viewModel.allCategories.collectAsState()
-    val recentProgress by viewModel.recentProgress.collectAsState()
+    val allProgress by viewModel.allProgress.collectAsState()
 
     var selectedFilter by remember { mutableStateOf("Days") }
     var selectedCategoryId by remember { mutableLongStateOf(-1L) } // -1 for All
@@ -41,18 +41,19 @@ fun InsightsScreen(viewModel: MainViewModel) {
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Insights", color = Color.White, fontWeight = FontWeight.Bold) },
+                title = { Text("Insights", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
                 actions = {
                     Surface(
-                        color = Color(0xFF1E1E1E),
+                        color = MaterialTheme.colorScheme.surface,
                         shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.padding(end = 16.dp)
+                        modifier = Modifier.padding(end = 16.dp),
+                        tonalElevation = 2.dp
                     ) {
                         Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text("ELITE", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                            Text("ELITE", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                             Spacer(Modifier.width(4.dp))
-                            Text("${userProg?.currentPoints ?: 0}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF00E676))
+                            Text("${userProg?.currentPoints ?: 0}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
@@ -70,8 +71,8 @@ fun InsightsScreen(viewModel: MainViewModel) {
             // SECTION 1: SUMMARY CARDS
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 val today = DateTimeUtils.getMidnightTimestamp(System.currentTimeMillis())
-                val todayRecs = recentProgress.filter { it.date == today }
-                val score = if (todayRecs.isEmpty()) 0 else (todayRecs.sumOf { it.percentage } / todayRecs.size).toInt()
+                val todayRecs = allProgress.filter { it.date == today }
+                val score = if (todayRecs.isEmpty()) 0 else (todayRecs.sumOf { p: com.example.ring_2.data.model.HabitProgressEntity -> p.percentage } / todayRecs.size).toInt()
                 
                 StatCard(Modifier.weight(1f), "$score%", "Today's Score")
                 StatCard(Modifier.weight(1f), "${habits.maxOfOrNull { it.bestStreak } ?: 0}", "Best Streak")
@@ -104,26 +105,38 @@ fun InsightsScreen(viewModel: MainViewModel) {
             }
 
             InsightsChartSection("Overall Growth", if (selectedFilter == "Days") "Recent dates" else selectedFilter) {
-                val graphData = prepareGrowthData(recentProgress, daysCount)
+                val growthData = remember(allProgress, habits, selectedFilter) {
+                    com.example.ring_2.logic.GrowthCalculator.calculateOverallGrowth(allProgress, habits, selectedFilter)
+                }
                 LineGraph(
-                    dataPoints = graphData.map { it.second },
-                    labels = graphData.map { it.first },
-                    color = Color(0xFF00E676),
-                    modifier = Modifier.fillMaxSize()
+                    dataPoints = growthData.map { it.growthValue },
+                    labels = growthData.map { it.dateLabel },
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.fillMaxSize(),
+                    tooltipData = growthData.map { point ->
+                        """
+                        Date: ${point.fullDate}
+                        Aggregate: ${point.dailyAggregate.toInt()}%
+                        Previous: ${point.prevAggregate.toInt()}%
+                        Difference: ${if (point.difference >= 0) "+" else ""}${point.difference.toInt()}%
+                        Average Streak: ${point.averageStreak.toInt()} days
+                        Growth: ${String.format(Locale.getDefault(), "%.1f", point.growthValue)}
+                        """.trimIndent()
+                    }
                 )
             }
 
             // SECTION 4: CATEGORY BREAKDOWN
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("Category Breakdown", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                    Text("Category Breakdown", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
                     
                     var expanded by remember { mutableStateOf(false) }
                     val currentCatName = if (selectedCategoryId == -1L) "All Categories" else categories.find { it.id == selectedCategoryId }?.name ?: "All Categories"
                     
                     Box {
                         TextButton(onClick = { expanded = true }) {
-                            Text(currentCatName, color = Color(0xFF00E676), fontSize = 12.sp)
+                            Text(currentCatName, color = MaterialTheme.colorScheme.primary, fontSize = 12.sp)
                         }
                         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                             DropdownMenuItem(text = { Text("All Categories") }, onClick = { selectedCategoryId = -1L; expanded = false })
@@ -135,11 +148,12 @@ fun InsightsScreen(viewModel: MainViewModel) {
                 }
 
                 Surface(
-                    color = Color(0xFF1E1E1E),
+                    color = MaterialTheme.colorScheme.surface,
                     shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.fillMaxWidth().height(250.dp)
+                    modifier = Modifier.fillMaxWidth().height(250.dp),
+                    tonalElevation = 2.dp
                 ) {
-                    val catData = prepareCategoryData(recentProgress, habits, categories, selectedCategoryId, daysCount)
+                    val catData = prepareCategoryData(allProgress, habits, categories, selectedCategoryId, daysCount)
                     MultiLineGraph(
                         data = catData.data,
                         labels = catData.labels,
@@ -164,16 +178,17 @@ fun InsightsScreen(viewModel: MainViewModel) {
 @Composable
 fun StatCard(modifier: Modifier, value: String, label: String) {
     Surface(
-        color = Color(0xFF1E1E1E),
+        color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(16.dp),
-        modifier = modifier.height(100.dp)
+        modifier = modifier.height(100.dp),
+        tonalElevation = 2.dp
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(value, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            Text(label, fontSize = 12.sp, color = Color.Gray)
+            Text(value, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -182,13 +197,14 @@ fun StatCard(modifier: Modifier, value: String, label: String) {
 fun InsightsChartSection(title: String, subtitle: String, chart: @Composable () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text(title, style = MaterialTheme.typography.titleMedium, color = Color.White)
-            Text(subtitle, fontSize = 12.sp, color = Color.Gray)
+            Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
+            Text(subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Surface(
-            color = Color(0xFF1E1E1E),
+            color = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(20.dp),
-            modifier = Modifier.fillMaxWidth().height(200.dp)
+            modifier = Modifier.fillMaxWidth().height(200.dp),
+            tonalElevation = 2.dp
         ) {
             chart()
         }
@@ -198,11 +214,12 @@ fun InsightsChartSection(title: String, subtitle: String, chart: @Composable () 
 @Composable
 fun TaskSummaryCard(total: Int, done: Int, pending: Int) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Task summary", style = MaterialTheme.typography.titleMedium, color = Color.White)
+        Text("Task summary", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
         Surface(
-            color = Color(0xFF1E1E1E),
+            color = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(20.dp),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            tonalElevation = 2.dp
         ) {
             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 TaskRow("Total tasks", "$total")
@@ -218,8 +235,8 @@ fun TaskSummaryCard(total: Int, done: Int, pending: Int) {
 @Composable
 fun TaskRow(label: String, value: String) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, color = Color.Gray)
-        Text(value, color = Color.White, fontWeight = FontWeight.Bold)
+        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -268,9 +285,9 @@ private fun prepareCategoryData(
         labels.add(sdf.format(cal.time))
 
         targetCats.forEach { cat ->
-            val catHabitIds = habits.filter { it.categoryId == cat.id }.map { it.id }
-            val dayCatRecs = progress.filter { it.date == midnight && it.habitId in catHabitIds }
-            val score = if (dayCatRecs.isEmpty()) 0f else (dayCatRecs.sumOf { it.percentage } / dayCatRecs.size).toFloat()
+            val catHabitIds = habits.filter { h -> h.categoryId == cat.id }.map { h -> h.id }
+            val dayCatRecs = progress.filter { p -> p.date == midnight && p.habitId in catHabitIds }
+            val score = if (dayCatRecs.isEmpty()) 0f else (dayCatRecs.sumOf { p: com.example.ring_2.data.model.HabitProgressEntity -> p.percentage } / dayCatRecs.size).toFloat()
             
             graphData.getOrPut(cat.name) { mutableListOf() }.add(score)
             colors[cat.name] = Color(cat.color)

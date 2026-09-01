@@ -36,7 +36,7 @@ fun HabitsScreen(
     val categories by viewModel.allCategories.collectAsState()
     val userProg by viewModel.userProgress.collectAsState()
     val todayProgress by viewModel.todayProgress.collectAsState()
-    val recentProgress by viewModel.recentProgress.collectAsState()
+    val allProgress by viewModel.allProgress.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("All") }
@@ -150,7 +150,7 @@ fun HabitsScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(filteredHabits) { habit ->
-                        val habitHistory = recentProgress.filter { it.habitId == habit.id }
+                        val habitHistory = allProgress.filter { it.habitId == habit.id }
                         val todayHabitProgress = todayProgress.find { it.habitId == habit.id }
                         val activeToday = ScheduleEngine.isHabitActiveOnDate(habit.schedule, habit.startDate, today)
                         val categoryName = categories.find { it.id == habit.categoryId }?.name ?: "Others"

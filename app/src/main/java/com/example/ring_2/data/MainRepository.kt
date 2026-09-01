@@ -71,6 +71,7 @@ class MainRepository(
 
     fun getProgressForDate(date: Long): Flow<List<HabitProgressEntity>> = habitDao.getProgressForDateFlow(DateTimeUtils.getMidnightTimestamp(date))
     fun getRecentProgress(startDate: Long): Flow<List<HabitProgressEntity>> = habitDao.getRecentProgress(DateTimeUtils.getMidnightTimestamp(startDate))
+    fun getAllProgress(): Flow<List<HabitProgressEntity>> = habitDao.getAllProgress()
     fun getProgressForHabit(habitId: Long): Flow<List<HabitProgressEntity>> = habitDao.getProgressForHabit(habitId)
 
     fun getTransactionsForHabit(habitId: Long): Flow<List<PointTransactionEntity>> = transactions.map { list ->

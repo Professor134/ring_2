@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import com.example.ring_2.R
 import java.util.Calendar
 
 object RingNotificationManager {
@@ -30,7 +31,7 @@ object RingNotificationManager {
 
     fun showNotification(context: Context, title: String, message: String) {
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(R.drawable.ic_launcher_foreground2)
             .setContentTitle("RING - $title")
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_HIGH)

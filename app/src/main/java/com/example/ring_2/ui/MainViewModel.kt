@@ -20,7 +20,7 @@ class MainViewModel(private val repository: MainRepository) : ViewModel() {
     val todayProgress = repository.getProgressForDate(System.currentTimeMillis())
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val recentProgress = repository.getRecentProgress(System.currentTimeMillis() - 365 * 24 * 60 * 60 * 1000L)
+    val allProgress = repository.getAllProgress()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val recentNotifications = repository.getNotificationsForLast3Days()

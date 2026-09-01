@@ -47,7 +47,7 @@ fun AddTaskScreen(
     var dueDate by remember { mutableLongStateOf(existingTask?.dueDate ?: DateTimeUtils.getMidnightTimestamp(System.currentTimeMillis())) }
     var dueTime by remember { mutableStateOf(existingTask?.dueTime ?: "12:00") }
     var reminderEnabled by remember { mutableStateOf(existingTask?.reminderEnabled ?: false) }
-    
+
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     var showDeleteConfirmation by remember { mutableStateOf(false) }

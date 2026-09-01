@@ -30,7 +30,8 @@ fun LineGraph(
     modifier: Modifier = Modifier,
     labels: List<String> = emptyList(),
     color: Color,
-    yAxisMax: Float? = null
+    yAxisMax: Float? = null,
+    tooltipData: List<String>? = null
 ) {
     if (dataPoints.isEmpty()) {
         Box(modifier = modifier, contentAlignment = Alignment.Center) {
@@ -155,11 +156,13 @@ fun LineGraph(
                         .padding(top = 8.dp),
                     shadowElevation = 4.dp
                 ) {
+                    val tooltipText = tooltipData?.getOrNull(index) ?: "${labels.getOrNull(index) ?: "Point $index"}: ${dataPoints[index]}"
                     Text(
-                        text = "${labels.getOrNull(index) ?: "Point $index"}: ${dataPoints[index]}",
+                        text = tooltipText,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.bodySmall
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        lineHeight = 16.sp
                     )
                 }
             }
@@ -180,7 +183,7 @@ fun MultiLineGraph(
         }
         return
     }
-    
+
     val textMeasurer = rememberTextMeasurer()
     var selectedIndex by remember { mutableStateOf<Int?>(null) }
     val labelStyle = TextStyle(fontSize = 10.sp, color = Color.Gray)
@@ -209,7 +212,7 @@ fun MultiLineGraph(
         ) {
             val width = size.width
             val height = size.height
-            
+
             // Draw Faint horizontal grid lines
             for (i in 0..gridLines) {
                 val y = height - (i.toFloat() / gridLines * height)
@@ -219,7 +222,7 @@ fun MultiLineGraph(
                     end = Offset(width, y),
                     strokeWidth = 1.dp.toPx()
                 )
-                
+
                 // Draw Y-Axis labels
                 val valY = (i.toFloat() / gridLines * maxVal)
                 drawText(
@@ -236,27 +239,27 @@ fun MultiLineGraph(
 
             data.forEach { (label, points) ->
                 if (points.size < 2) return@forEach
-                
+
                 val color = colors[label] ?: Color.White
                 val path = Path()
                 val stepX = width / (points.size - 1)
-                
+
                 points.forEachIndexed { index, value ->
                     val x = index * stepX
                     val y = height - (value / maxVal * height).coerceIn(0f, height)
                     if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
                 }
-                
+
                 drawPath(
                     path = path,
                     color = color,
                     style = Stroke(width = 3.dp.toPx())
                 )
-                
+
                 points.forEachIndexed { index, value ->
                     val x = index * stepX
                     val y = height - (value / maxVal * height).coerceIn(0f, height)
-                    
+
                     // Dot
                     drawCircle(
                         color = if (selectedIndex == index) Color.White else color,
@@ -265,7 +268,7 @@ fun MultiLineGraph(
                     )
                 }
             }
-            
+
             // X-Axis labels
             if (labels.isNotEmpty()) {
                 val firstList = data.values.firstOrNull() ?: emptyList()
@@ -282,7 +285,7 @@ fun MultiLineGraph(
                 }
             }
         }
-        
+
         // Multi-point Tooltip
         selectedIndex?.let { index ->
             Surface(
