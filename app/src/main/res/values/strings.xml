@@ -10,7 +10,6 @@
     <string name="quick_action_add_task">+ Add Task</string>
     <string name="section_todays_habits">Today\'s Habits</string>
     <string name="section_todays_tasks">Today\'s Tasks</string>
-    <string name="section_overall_growth">Overall Growth</string>
     <string name="msg_no_habits">No habits yet</string>
     <string name="msg_create_habit_hint">Create your first habit and start your RING.</string>
     <string name="msg_no_tasks_pending">No pending tasks for today</string>
@@ -69,6 +68,13 @@
     <string name="msg_no_tasks_found">No tasks found</string>
     <string name="btn_add_task">+ Add Task</string>
     <string name="msg_task_cost">Creating a task costs 1 Elite Point.</string>
+    <string name="repeat_none">None</string>
+    <string name="repeat_weekly">Weekly</string>
+    <string name="repeat_monthly">Monthly</string>
+    <string name="repeat_yearly">Yearly</string>
+    <string name="label_repeat_day">REPEAT DAY</string>
+    <string name="label_repeat_date">REPEAT DATE</string>
+    <string name="label_repeat_month">REPEAT MONTH</string>
 
     <!-- Profile -->
     <string name="title_profile">Profile</string>

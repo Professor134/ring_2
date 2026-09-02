@@ -7,6 +7,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -25,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ring_2.data.model.TaskEntity
 import com.example.ring_2.data.model.TaskPriority
+import com.example.ring_2.data.model.TaskRepeatType
 import com.example.ring_2.logic.DateTimeUtils
 import com.example.ring_2.logic.RingNotificationManager
 import com.example.ring_2.ui.MainViewModel
@@ -49,6 +51,10 @@ fun AddTaskScreen(
     var dueDate by remember { mutableLongStateOf(existingTask?.dueDate ?: DateTimeUtils.getMidnightTimestamp(System.currentTimeMillis())) }
     var dueTime by remember { mutableStateOf(existingTask?.dueTime ?: "12:00") }
     var reminderEnabled by remember { mutableStateOf(existingTask?.reminderEnabled ?: false) }
+    var repeatType by remember { mutableStateOf(existingTask?.repeatType ?: TaskRepeatType.NONE) }
+    var repeatDayOfWeek by remember { mutableIntStateOf(existingTask?.repeatDayOfWeek ?: 2) } // Default Monday (2)
+    var repeatDayOfMonth by remember { mutableIntStateOf(existingTask?.repeatDayOfMonth ?: 1) }
+    var repeatMonth by remember { mutableIntStateOf(existingTask?.repeatMonth ?: 0) } // Default January (0)
 
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
@@ -70,9 +76,19 @@ fun AddTaskScreen(
     fun handleSave() {
         if (!canSave) return
         
+        var finalDueDate = dueDate
+        if (repeatType != TaskRepeatType.NONE) {
+            finalDueDate = viewModel.calculateInitialDueDate(
+                repeatType,
+                if (repeatType == TaskRepeatType.WEEKLY) repeatDayOfWeek else null,
+                if (repeatType == TaskRepeatType.MONTHLY || repeatType == TaskRepeatType.YEARLY) repeatDayOfMonth else null,
+                if (repeatType == TaskRepeatType.YEARLY) repeatMonth else null
+            )
+        }
+
         // Ensure due date is not in the past
         val today = DateTimeUtils.getMidnightTimestamp(System.currentTimeMillis())
-        if (dueDate < today) {
+        if (finalDueDate < today) {
             showError = "Due date cannot be in the past."
             return
         }
@@ -90,8 +106,12 @@ fun AddTaskScreen(
             title = title,
             description = description,
             priority = priority,
-            dueDate = dueDate,
+            dueDate = finalDueDate,
             dueTime = dueTime,
+            repeatType = repeatType,
+            repeatDayOfWeek = if (repeatType == TaskRepeatType.WEEKLY) repeatDayOfWeek else null,
+            repeatDayOfMonth = if (repeatType == TaskRepeatType.MONTHLY || repeatType == TaskRepeatType.YEARLY) repeatDayOfMonth else null,
+            repeatMonth = if (repeatType == TaskRepeatType.YEARLY) repeatMonth else null,
             reminderEnabled = reminderEnabled,
             completed = existingTask?.completed ?: false,
             completedAt = existingTask?.completedAt
@@ -101,7 +121,7 @@ fun AddTaskScreen(
             viewModel.addTask(task) { newId ->
                 if (reminderEnabled) {
                     val cal = Calendar.getInstance().apply {
-                        timeInMillis = dueDate
+                        timeInMillis = finalDueDate
                         val parts = dueTime.split(":")
                         set(Calendar.HOUR_OF_DAY, parts[0].toInt())
                         set(Calendar.MINUTE, parts[1].toInt())
@@ -114,7 +134,7 @@ fun AddTaskScreen(
             viewModel.updateTask(task)
             if (reminderEnabled) {
                 val cal = Calendar.getInstance().apply {
-                    timeInMillis = dueDate
+                    timeInMillis = finalDueDate
                     val parts = dueTime.split(":")
                     set(Calendar.HOUR_OF_DAY, parts[0].toInt())
                     set(Calendar.MINUTE, parts[1].toInt())
@@ -228,23 +248,42 @@ fun AddTaskScreen(
                 }
             }
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(stringResource(com.example.ring_2.R.string.label_due_date), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
-                    Surface(
-                        color = MaterialTheme.colorScheme.surface,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
-                        tonalElevation = 1.dp
-                    ) {
-                        Text(
-                            text = SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(dueDate)),
-                            modifier = Modifier.padding(16.dp),
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+            if (repeatType == TaskRepeatType.NONE) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(stringResource(com.example.ring_2.R.string.label_due_date), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                        Surface(
+                            color = MaterialTheme.colorScheme.surface,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
+                            tonalElevation = 1.dp
+                        ) {
+                            Text(
+                                text = SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(dueDate)),
+                                modifier = Modifier.padding(16.dp),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(stringResource(com.example.ring_2.R.string.label_due_time), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                        Surface(
+                            color = MaterialTheme.colorScheme.surface,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth().clickable { showTimePicker = true },
+                            tonalElevation = 1.dp
+                        ) {
+                            Text(
+                                text = dueTime,
+                                modifier = Modifier.padding(16.dp),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
                 }
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            } else {
+                // For repeating tasks, still allow time picker for the daily notification
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(com.example.ring_2.R.string.label_due_time), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                     Surface(
                         color = MaterialTheme.colorScheme.surface,
@@ -287,6 +326,93 @@ fun AddTaskScreen(
                         },
                         colors = SwitchDefaults.colors(checkedThumbColor = MaterialTheme.colorScheme.primary)
                     )
+                }
+            }
+
+            // REPEAT SECTION
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(com.example.ring_2.R.string.label_repeat), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(TaskRepeatType.NONE, TaskRepeatType.WEEKLY, TaskRepeatType.MONTHLY, TaskRepeatType.YEARLY).forEach { type ->
+                        val label = when(type) {
+                            TaskRepeatType.NONE -> stringResource(com.example.ring_2.R.string.repeat_none)
+                            TaskRepeatType.WEEKLY -> stringResource(com.example.ring_2.R.string.repeat_weekly)
+                            TaskRepeatType.MONTHLY -> stringResource(com.example.ring_2.R.string.repeat_monthly)
+                            TaskRepeatType.YEARLY -> stringResource(com.example.ring_2.R.string.repeat_yearly)
+                        }
+                        FilterChip(
+                            selected = repeatType == type,
+                            onClick = { repeatType = type },
+                            label = { Text(label, fontSize = 11.sp) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                if (repeatType != TaskRepeatType.NONE) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.surface,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                        tonalElevation = 1.dp
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            if (repeatType == TaskRepeatType.WEEKLY) {
+                                Text(stringResource(com.example.ring_2.R.string.label_repeat_day), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    val days = listOf("S", "M", "T", "W", "T", "F", "S")
+                                    days.forEachIndexed { index, day ->
+                                        val dayNum = index + 1
+                                        FilterChip(
+                                            selected = repeatDayOfWeek == dayNum,
+                                            onClick = { repeatDayOfWeek = dayNum },
+                                            label = { Text(day) },
+                                            modifier = Modifier.size(38.dp),
+                                            shape = CircleShape
+                                        )
+                                    }
+                                }
+                            }
+
+                            if (repeatType == TaskRepeatType.MONTHLY || repeatType == TaskRepeatType.YEARLY) {
+                                if (repeatType == TaskRepeatType.YEARLY) {
+                                    Text(stringResource(com.example.ring_2.R.string.label_repeat_month), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                                    var expanded by remember { mutableStateOf(false) }
+                                    Box {
+                                        OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) {
+                                            val monthName = SimpleDateFormat("MMMM", Locale.getDefault()).format(Calendar.getInstance().apply { set(Calendar.MONTH, repeatMonth) }.time)
+                                            Text(monthName)
+                                        }
+                                        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                                            for (i in 0..11) {
+                                                val mName = SimpleDateFormat("MMMM", Locale.getDefault()).format(Calendar.getInstance().apply { set(Calendar.MONTH, i) }.time)
+                                                DropdownMenuItem(
+                                                    text = { Text(mName) },
+                                                    onClick = { repeatMonth = i; expanded = false }
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Text(stringResource(com.example.ring_2.R.string.label_repeat_date), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                                var expandedDate by remember { mutableStateOf(false) }
+                                Box {
+                                    OutlinedButton(onClick = { expandedDate = true }, modifier = Modifier.fillMaxWidth()) {
+                                        Text(repeatDayOfMonth.toString())
+                                    }
+                                    DropdownMenu(expanded = expandedDate, onDismissRequest = { expandedDate = false }) {
+                                        for (i in 1..31) {
+                                            DropdownMenuItem(
+                                                text = { Text(i.toString()) },
+                                                onClick = { repeatDayOfMonth = i; expandedDate = false }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
 

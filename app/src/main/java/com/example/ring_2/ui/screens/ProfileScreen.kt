@@ -86,7 +86,7 @@ fun ProfileScreen(
 
             // SECTION 1: LEVEL
             item {
-                LevelCard(userProg?.level ?: 1, userProg?.lifetimeEarnedPoints ?: 0)
+                LevelCard(userProg?.lifetimeEarnedPoints ?: 0)
             }
 
             // SECTION 2: STATISTICS
@@ -186,23 +186,26 @@ fun ProfileScreen(
 }
 
 @Composable
-fun LevelCard(level: Int, lifetimeEarned: Int) {
+fun LevelCard(lifetimeEarned: Int) {
+    val (lvl, pointsNeeded, progress) = com.example.ring_2.logic.GamificationEngine.getLevelProgress(lifetimeEarned)
+    
     Surface(
         color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(20.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            Text("Level Progress", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp)
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("Level Progress", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp)
+                Text("$lifetimeEarned Total Points", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            }
             Spacer(Modifier.height(16.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Lv $level", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Text("Lv $lvl", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.weight(1f))
-                Text("Lv ${level + 1}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                Text("Lv ${lvl + 1}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
             }
             Spacer(Modifier.height(8.dp))
-            
-            val progress = (lifetimeEarned % 100).toFloat() / 100f
             
             LinearProgressIndicator(
                 progress = { progress },
@@ -211,6 +214,15 @@ fun LevelCard(level: Int, lifetimeEarned: Int) {
                 trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
             )
             Spacer(Modifier.height(12.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(
+                    "$pointsNeeded points more to level up",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+            Spacer(Modifier.height(8.dp))
             Text(
                 "Level depends on lifetime earned Elite Points. Your level never decreases.",
                 fontSize = 11.sp,

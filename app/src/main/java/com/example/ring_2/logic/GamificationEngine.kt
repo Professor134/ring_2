@@ -42,6 +42,25 @@ object GamificationEngine {
         return level
     }
 
+    fun getLevelProgress(lifetimeEarned: Int): Triple<Int, Int, Float> {
+        var level = 1
+        var currentThreshold = 0
+        var nextThreshold = 1000
+        
+        while (lifetimeEarned >= nextThreshold) {
+            level++
+            currentThreshold = nextThreshold
+            nextThreshold += (1000 * 1.5.pow(level - 1)).roundToInt()
+        }
+        
+        val progressInLevel = lifetimeEarned - currentThreshold
+        val range = nextThreshold - currentThreshold
+        val percentage = if (range > 0) progressInLevel.toFloat() / range else 0f
+        val needed = nextThreshold - lifetimeEarned
+        
+        return Triple(level, needed, percentage)
+    }
+
     /**
      * Achievement Levels
      */

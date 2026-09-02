@@ -1,5 +1,7 @@
 package com.example.ring_2.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -10,18 +12,79 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ring_2.ui.MainViewModel
+import com.example.ring_2.logic.BackupService
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DataManagementScreen(
+    viewModel: MainViewModel,
     onBack: () -> Unit
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val habits by viewModel.allHabits.collectAsState()
+    val tasks by viewModel.allTasks.collectAsState()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    val jsonExportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json"),
+        onResult = { uri ->
+            uri?.let {
+                val json = BackupService.exportAsJson(habits, tasks)
+                context.contentResolver.openOutputStream(it)?.use { output ->
+                    output.write(json.toByteArray())
+                }
+                scope.launch { snackbarHostState.showSnackbar("JSON Exported successfully") }
+            }
+        }
+    )
+
+    val csvExportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/csv"),
+        onResult = { uri ->
+            uri?.let {
+                val csv = BackupService.exportAsCsv(habits)
+                context.contentResolver.openOutputStream(it)?.use { output ->
+                    output.write(csv.toByteArray())
+                }
+                scope.launch { snackbarHostState.showSnackbar("CSV Exported successfully") }
+            }
+        }
+    )
+
+    val dbExportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/octet-stream"),
+        onResult = { uri ->
+            uri?.let {
+                BackupService.exportDatabase(context, it)
+                scope.launch { snackbarHostState.showSnackbar("Database Backup created") }
+            }
+        }
+    )
+
+    val dbImportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+        onResult = { uri ->
+            uri?.let {
+                BackupService.importDatabase(context, it)
+                scope.launch { 
+                    snackbarHostState.showSnackbar("Backup restored. Please restart the app.")
+                }
+            }
+        }
+    )
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(com.example.ring_2.R.string.title_data_management), color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold) },
@@ -43,14 +106,18 @@ fun DataManagementScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(8.dp)) {
-                    DataManagementItem(stringResource(com.example.ring_2.R.string.action_export_json), "Download a full backup file") {
-                        // TODO: Implement JSON export
+                    DataManagementItem(stringResource(com.example.ring_2.R.string.action_export_json), "Download a full backup as JSON") {
+                        jsonExportLauncher.launch("ring_backup_${System.currentTimeMillis()}.json")
                     }
                     DataManagementItem(stringResource(com.example.ring_2.R.string.action_export_csv), "Download habits as spreadsheet") {
-                        // TODO: Implement CSV export
+                        csvExportLauncher.launch("ring_habits_${System.currentTimeMillis()}.csv")
                     }
-                    DataManagementItem(stringResource(com.example.ring_2.R.string.action_import_data), "Restore from backup file") {
-                        // TODO: Implement import
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f))
+                    DataManagementItem("Full DB Backup", "Export the entire database file") {
+                        dbExportLauncher.launch("ring_db_backup_${System.currentTimeMillis()}.db")
+                    }
+                    DataManagementItem(stringResource(com.example.ring_2.R.string.action_import_data), "Restore from DB backup file") {
+                        dbImportLauncher.launch(arrayOf("*/*"))
                     }
                 }
             }
@@ -63,7 +130,7 @@ fun DataManagementScreen(
                 Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.width(16.dp))
-                    Text("Importing data will overwrite your current habits if IDs match.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Importing database will overwrite all your current data. A restart is required after restoration.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }

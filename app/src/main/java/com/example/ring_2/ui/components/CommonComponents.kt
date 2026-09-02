@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -23,6 +24,7 @@ import com.example.ring_2.data.model.HabitProgressEntity
 import com.example.ring_2.data.model.HabitType
 import com.example.ring_2.data.model.TaskEntity
 import com.example.ring_2.data.model.TaskPriority
+import com.example.ring_2.data.model.TaskRepeatType
 import com.example.ring_2.logic.DateTimeUtils
 import java.text.SimpleDateFormat
 import java.util.*
@@ -237,12 +239,23 @@ fun TaskCard(task: TaskEntity, onClick: () -> Unit, onComplete: () -> Unit) {
             )
             Spacer(Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    task.title,
-                    color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-                    textDecoration = if (task.completed) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
-                    fontWeight = FontWeight.Medium
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        task.title,
+                        color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                        textDecoration = if (task.completed) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
+                        fontWeight = FontWeight.Medium
+                    )
+                    if (task.repeatType != TaskRepeatType.NONE) {
+                        Spacer(Modifier.width(4.dp))
+                        Icon(
+                            Icons.Default.Refresh,
+                            contentDescription = "Recurring",
+                            modifier = Modifier.size(12.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         task.priority.name,

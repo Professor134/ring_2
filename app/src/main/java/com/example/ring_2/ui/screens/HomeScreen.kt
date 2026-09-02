@@ -40,10 +40,8 @@ fun HomeScreen(
     val tasks by viewModel.allTasks.collectAsState()
     val userProg by viewModel.userProgress.collectAsState()
     val todayProgress by viewModel.todayProgress.collectAsState()
-    val allProgress by viewModel.allProgress.collectAsState()
     val profile by viewModel.userProfile.collectAsState()
 
-    var selectedFilter by remember { mutableStateOf("Days") }
     var showNumericDialogFor by remember { mutableStateOf<HabitEntity?>(null) }
     
     val today = getMidnightTimestamp(System.currentTimeMillis())
@@ -126,72 +124,6 @@ fun HomeScreen(
             } else if (habits.isNotEmpty()) {
                 item {
                     Text("No pending tasks for today", color = Color.Gray, fontSize = 14.sp, modifier = Modifier.padding(vertical = 8.dp))
-                }
-            }
-
-            // 9. TODAY'S GRAPH
-            item {
-                Spacer(Modifier.height(8.dp))
-                Text(stringResource(com.example.ring_2.R.string.section_overall_growth), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
-                Spacer(Modifier.height(12.dp))
-                
-                val growthData = remember(allProgress, habits, selectedFilter) {
-                    com.example.ring_2.logic.GrowthCalculator.calculateOverallGrowth(allProgress, habits, selectedFilter)
-                }
-
-                Surface(
-                    color = MaterialTheme.colorScheme.surface,
-                    shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.fillMaxWidth().height(250.dp),
-                    tonalElevation = 2.dp
-                ) {
-                    LineGraph(
-                        dataPoints = growthData.map { it.growthValue },
-                        labels = growthData.map { it.dateLabel },
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.fillMaxSize(),
-                        tooltipData = growthData.map { point ->
-                            """
-                            Date: ${point.fullDate}
-                            Aggregate: ${point.dailyAggregate.toInt()}%
-                            Previous: ${point.prevAggregate.toInt()}%
-                            Difference: ${if (point.difference >= 0) "+" else ""}${point.difference.toInt()}%
-                            Average Streak: ${point.averageStreak.toInt()} days
-                            Growth: ${String.format(Locale.getDefault(), "%.1f", point.growthValue)}
-                            """.trimIndent()
-                        }
-                    )
-                }
-                
-                Spacer(Modifier.height(12.dp))
-                
-                // Time Filter
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val filters = listOf(
-                        stringResource(com.example.ring_2.R.string.filter_days) to "Days",
-                        stringResource(com.example.ring_2.R.string.filter_weeks) to "Weeks",
-                        stringResource(com.example.ring_2.R.string.filter_months) to "Months",
-                        stringResource(com.example.ring_2.R.string.filter_year) to "Year"
-                    )
-                    filters.forEach { (label, value) ->
-                        FilterChip(
-                            selected = selectedFilter == value,
-                            onClick = { selectedFilter = value },
-                            label = { Text(label, fontSize = 11.sp) },
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.padding(horizontal = 4.dp),
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                selectedLabelColor = MaterialTheme.colorScheme.primary,
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                labelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        )
-                    }
                 }
             }
             

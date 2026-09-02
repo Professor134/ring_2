@@ -44,7 +44,7 @@ object RingNotificationManager {
     fun scheduleTaskReminder(context: Context, taskId: Long, title: String, dueTimeMillis: Long) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         
-        // Reminder 1: 8 AM day before
+        // Reminder 1: Day before at 8 AM
         val dayBefore = Calendar.getInstance().apply {
             timeInMillis = dueTimeMillis
             add(Calendar.DAY_OF_YEAR, -1)
@@ -65,11 +65,6 @@ object RingNotificationManager {
         }
         if (morningOf.timeInMillis > System.currentTimeMillis()) {
             scheduleAlarm(context, alarmManager, taskId.toInt() * 10 + 2, title, "Task due today.", morningOf.timeInMillis)
-        }
-        
-        // Final Reminder: At due time
-        if (dueTimeMillis > System.currentTimeMillis()) {
-            scheduleAlarm(context, alarmManager, taskId.toInt() * 10 + 3, title, "Task due now.", dueTimeMillis)
         }
     }
 
@@ -104,7 +99,7 @@ object RingNotificationManager {
 
     fun cancelTaskReminder(context: Context, taskId: Long) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        listOf(1, 2, 3).forEach { suffix ->
+        listOf(1, 2).forEach { suffix ->
             val intent = Intent(context, TaskReminderReceiver::class.java)
             val pendingIntent = PendingIntent.getBroadcast(
                 context,

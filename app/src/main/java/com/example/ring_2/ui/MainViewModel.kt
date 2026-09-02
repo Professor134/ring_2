@@ -69,6 +69,10 @@ class MainViewModel(private val repository: MainRepository) : ViewModel() {
     fun getProgressForHabit(habitId: Long): Flow<List<HabitProgressEntity>> = repository.getProgressForHabit(habitId)
     fun getTransactionsForHabit(habitId: Long): Flow<List<PointTransactionEntity>> = repository.getTransactionsForHabit(habitId)
 
+    fun calculateInitialDueDate(repeatType: TaskRepeatType, dayOfWeek: Int?, dayOfMonth: Int?, month: Int?): Long {
+        return repository.calculateInitialDueDate(repeatType, dayOfWeek, dayOfMonth, month)
+    }
+
     init {
         viewModelScope.launch {
             repository.initializeUserData()

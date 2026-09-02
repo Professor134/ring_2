@@ -19,7 +19,7 @@ import com.example.ring_2.data.model.*
         Achievement::class,
         NotificationEntity::class
     ],
-    version = 3, // Incremented version
+    version = 4, // Incremented version
     exportSchema = false
 )
 @TypeConverters(Converters::class)

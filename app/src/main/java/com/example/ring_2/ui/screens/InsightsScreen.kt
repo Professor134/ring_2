@@ -95,35 +95,12 @@ fun InsightsScreen(viewModel: MainViewModel) {
                 }
             }
 
-            // SECTION 3: OVERALL GROWTH
             val daysCount = when(selectedFilter) {
                 "Days" -> 7
                 "Weeks" -> 28
                 "Months" -> 90
                 "Year" -> 365
                 else -> 7
-            }
-
-            InsightsChartSection("Overall Growth", if (selectedFilter == "Days") "Recent dates" else selectedFilter) {
-                val growthData = remember(allProgress, habits, selectedFilter) {
-                    com.example.ring_2.logic.GrowthCalculator.calculateOverallGrowth(allProgress, habits, selectedFilter)
-                }
-                LineGraph(
-                    dataPoints = growthData.map { it.growthValue },
-                    labels = growthData.map { it.dateLabel },
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.fillMaxSize(),
-                    tooltipData = growthData.map { point ->
-                        """
-                        Date: ${point.fullDate}
-                        Aggregate: ${point.dailyAggregate.toInt()}%
-                        Previous: ${point.prevAggregate.toInt()}%
-                        Difference: ${if (point.difference >= 0) "+" else ""}${point.difference.toInt()}%
-                        Average Streak: ${point.averageStreak.toInt()} days
-                        Growth: ${String.format(Locale.getDefault(), "%.1f", point.growthValue)}
-                        """.trimIndent()
-                    }
-                )
             }
 
             // SECTION 4: CATEGORY BREAKDOWN
@@ -189,24 +166,6 @@ fun StatCard(modifier: Modifier, value: String, label: String) {
         ) {
             Text(value, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
-}
-
-@Composable
-fun InsightsChartSection(title: String, subtitle: String, chart: @Composable () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
-            Text(subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        Surface(
-            color = MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(20.dp),
-            modifier = Modifier.fillMaxWidth().height(200.dp),
-            tonalElevation = 2.dp
-        ) {
-            chart()
         }
     }
 }

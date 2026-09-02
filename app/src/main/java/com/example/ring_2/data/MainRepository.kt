@@ -8,11 +8,14 @@ import com.example.ring_2.data.model.*
 import com.example.ring_2.logic.GamificationEngine
 import com.example.ring_2.logic.StreakEngine
 import com.example.ring_2.logic.DateTimeUtils
+import com.example.ring_2.logic.RingNotificationManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.util.*
 
 class MainRepository(
+    private val context: android.content.Context,
     private val habitDao: HabitDao,
     private val taskDao: TaskDao,
     private val userDao: UserDao,
@@ -281,6 +284,11 @@ class MainRepository(
                 uniqueReference = completionRef
             )
             taskDao.updateTask(task.copy(completed = true, completedAt = System.currentTimeMillis(), updatedAt = System.currentTimeMillis()))
+            
+            // Handle Recurring Task
+            if (task.repeatType != TaskRepeatType.NONE) {
+                scheduleNextOccurrence(task)
+            }
         } else {
             // Mark as incomplete
             taskDao.updateTask(task.copy(completed = false, completedAt = null, updatedAt = System.currentTimeMillis()))
@@ -347,5 +355,100 @@ class MainRepository(
         habitDao.clearAllProgress()
         habitDao.clearAllHabits()
         taskDao.clearAllTasks()
+    }
+
+    private suspend fun scheduleNextOccurrence(task: TaskEntity) {
+        val nextDueDate = calculateNextDueDate(task) ?: return
+        val newTask = task.copy(
+            id = 0,
+            dueDate = nextDueDate,
+            completed = false,
+            completedAt = null,
+            createdAt = System.currentTimeMillis(),
+            updatedAt = System.currentTimeMillis()
+        )
+        val newId = taskDao.insertTask(newTask)
+        
+        // Schedule notification for the new repetition
+        if (newTask.reminderEnabled) {
+            val cal = Calendar.getInstance().apply {
+                timeInMillis = nextDueDate
+                val parts = (newTask.dueTime ?: "08:00").split(":")
+                set(Calendar.HOUR_OF_DAY, parts[0].toInt())
+                set(Calendar.MINUTE, parts[1].toInt())
+                set(Calendar.SECOND, 0)
+            }
+            RingNotificationManager.scheduleTaskReminder(context, newId, newTask.title, cal.timeInMillis)
+        }
+    }
+
+    fun calculateInitialDueDate(repeatType: TaskRepeatType, dayOfWeek: Int?, dayOfMonth: Int?, month: Int?): Long {
+        val calendar = Calendar.getInstance()
+        val today = DateTimeUtils.getMidnightTimestamp(System.currentTimeMillis())
+        calendar.timeInMillis = today
+
+        when (repeatType) {
+            TaskRepeatType.NONE -> return today
+            TaskRepeatType.WEEKLY -> {
+                val target = dayOfWeek ?: calendar.get(Calendar.DAY_OF_WEEK)
+                val current = calendar.get(Calendar.DAY_OF_WEEK)
+                var diff = target - current
+                if (diff < 0) diff += 7
+                calendar.add(Calendar.DAY_OF_YEAR, diff)
+            }
+            TaskRepeatType.MONTHLY -> {
+                val target = dayOfMonth ?: 1
+                val maxDay = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
+                calendar.set(Calendar.DAY_OF_MONTH, minOf(target, maxDay))
+                if (calendar.timeInMillis < today) {
+                    calendar.add(Calendar.MONTH, 1)
+                    val newMax = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
+                    calendar.set(Calendar.DAY_OF_MONTH, minOf(target, newMax))
+                }
+            }
+            TaskRepeatType.YEARLY -> {
+                val targetMonth = month ?: 0
+                val targetDate = dayOfMonth ?: 1
+                calendar.set(Calendar.MONTH, targetMonth)
+                val maxDay = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
+                calendar.set(Calendar.DAY_OF_MONTH, minOf(targetDate, maxDay))
+                if (calendar.timeInMillis < today) {
+                    calendar.add(Calendar.YEAR, 1)
+                    calendar.set(Calendar.MONTH, targetMonth)
+                    val newMax = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
+                    calendar.set(Calendar.DAY_OF_MONTH, minOf(targetDate, newMax))
+                }
+            }
+        }
+        return calendar.timeInMillis
+    }
+
+    private fun calculateNextDueDate(task: TaskEntity): Long? {
+        val currentDueDate = task.dueDate ?: return null
+        val calendar = Calendar.getInstance().apply { timeInMillis = currentDueDate }
+        
+        when (task.repeatType) {
+            TaskRepeatType.NONE -> return null
+            TaskRepeatType.WEEKLY -> {
+                val targetDay = task.repeatDayOfWeek ?: return null
+                calendar.add(Calendar.WEEK_OF_YEAR, 1)
+                calendar.set(Calendar.DAY_OF_WEEK, targetDay)
+            }
+            TaskRepeatType.MONTHLY -> {
+                val targetDate = task.repeatDayOfMonth ?: return null
+                calendar.add(Calendar.MONTH, 1)
+                val maxDay = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
+                calendar.set(Calendar.DAY_OF_MONTH, minOf(targetDate, maxDay))
+            }
+            TaskRepeatType.YEARLY -> {
+                val targetMonth = task.repeatMonth ?: return null
+                val targetDate = task.repeatDayOfMonth ?: return null
+                calendar.add(Calendar.YEAR, 1)
+                calendar.set(Calendar.MONTH, targetMonth)
+                val maxDay = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
+                calendar.set(Calendar.DAY_OF_MONTH, minOf(targetDate, maxDay))
+            }
+        }
+        return calendar.timeInMillis
     }
 }

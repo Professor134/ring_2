@@ -44,6 +44,7 @@ class MainActivity : ComponentActivity() {
             
             val database = AppDatabase.getDatabase(this)
             val repository = MainRepository(
+                applicationContext,
                 database.habitDao(), 
                 database.taskDao(), 
                 database.userDao(), 
@@ -165,7 +166,7 @@ fun MainScaffold(navController: NavHostController, viewModel: MainViewModel) {
                 AppearanceScreen(viewModel, onBack = { navController.popBackStack() })
             }
             composable("data_management") {
-                DataManagementScreen(onBack = { navController.popBackStack() })
+                DataManagementScreen(viewModel, onBack = { navController.popBackStack() })
             }
             composable("notifications_history") {
                 NotificationsHistoryScreen(viewModel, onBack = { navController.popBackStack() })
