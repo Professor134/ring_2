@@ -23,6 +23,12 @@ class MainViewModel(private val repository: MainRepository) : ViewModel() {
     val allProgress = repository.getAllProgress()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val allNotifications = repository.allNotifications
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val allAchievements = repository.allAchievements
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     val recentNotifications = repository.getNotificationsForLast3Days()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 

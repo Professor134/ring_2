@@ -2,15 +2,18 @@ package com.example.ring_2.data.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
 enum class TaskPriority {
     LOW, MEDIUM, HIGH, URGENT
 }
 
+@Serializable
 enum class TaskRepeatType {
     NONE, WEEKLY, MONTHLY, YEARLY
 }
 
+@Serializable
 @Entity(tableName = "tasks")
 data class TaskEntity(
     @PrimaryKey(autoGenerate = true)

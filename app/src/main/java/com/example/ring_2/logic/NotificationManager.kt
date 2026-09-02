@@ -9,6 +9,11 @@ import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.example.ring_2.R
+import com.example.ring_2.data.AppDatabase
+import com.example.ring_2.data.model.NotificationEntity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.util.Calendar
 
 object RingNotificationManager {
@@ -39,6 +44,24 @@ object RingNotificationManager {
 
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.notify(System.currentTimeMillis().toInt(), builder.build())
+
+        // Save to DB for History
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val db = AppDatabase.getDatabase(context)
+                db.notificationDao().insertNotification(
+                    NotificationEntity(
+                        title = title,
+                        message = message,
+                        timestamp = System.currentTimeMillis()
+                    )
+                )
+                // Cleanup older than 7 days
+                db.notificationDao().deleteOldNotifications(System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000L)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     fun scheduleTaskReminder(context: Context, taskId: Long, title: String, dueTimeMillis: Long) {

@@ -2,7 +2,9 @@ package com.example.ring_2.data.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
+@Serializable
 enum class TransactionType {
     STARTING_POINTS,
     CREATE_HABIT,
@@ -17,6 +19,7 @@ enum class TransactionType {
     DELETE_HABIT
 }
 
+@Serializable
 @Entity(tableName = "point_transactions")
 data class PointTransactionEntity(
     @PrimaryKey(autoGenerate = true)

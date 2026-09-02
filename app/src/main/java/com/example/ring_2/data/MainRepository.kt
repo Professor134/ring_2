@@ -33,30 +33,11 @@ class MainRepository(
     val allAchievements: Flow<List<Achievement>> = achievementDao.getAllAchievements()
 
     private suspend fun checkAchievements() {
-        val progress = userProgress.first() ?: return
-        val habits = allHabits.first()
-        val maxStreak = habits.maxOfOrNull { it.currentStreak } ?: 0
-        val points = progress.lifetimeEarnedPoints
-
-        // Bronze: 7 day streak / 1000 pts
-        if (maxStreak >= 7 || points >= 1000) {
-            unlockAchievement("Bronze", "Achieved 7-day streak or 1000 points")
-        }
-        // Silver: 15 day / 3000 pts
-        if (maxStreak >= 15 || points >= 3000) {
-            unlockAchievement("Silver", "Achieved 15-day streak or 3000 points")
-        }
-        // Gold: 30 day / 5000 pts
-        if (maxStreak >= 30 || points >= 5000) {
-            unlockAchievement("Gold", "Achieved 30-day streak or 5000 points")
-        }
+        // Achievement logic is now handled dynamically in the UI based on stats
     }
 
     private suspend fun unlockAchievement(title: String, description: String) {
-        if (achievementDao.getAchievementByTitle(title) == null) {
-            achievementDao.insertAchievement(Achievement(id = title.lowercase(), title = title, description = description, isUnlocked = true, unlockedAt = System.currentTimeMillis()))
-            addNotification("Achievement Unlocked!", "You've earned the $title achievement!")
-        }
+        // Preserving for potential manual achievements in future
     }
 
 
@@ -311,15 +292,8 @@ class MainRepository(
         }
 
         if (userProgress.first() == null) {
-            userDao.insertUserProgress(UserProgressEntity())
+            userDao.insertUserProgress(UserProgressEntity(currentPoints = 500, lifetimeEarnedPoints = 0))
             userDao.insertProfile(ProfileEntity())
-
-            processPointEvent(
-                TransactionType.STARTING_POINTS,
-                GamificationEngine.STARTING_POINTS,
-                "Starting balance",
-                uniqueReference = "starting_points"
-            )
         }
     }
 

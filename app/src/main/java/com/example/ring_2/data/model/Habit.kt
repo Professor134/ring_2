@@ -19,6 +19,7 @@ sealed class HabitSchedule {
     @Serializable data class Custom(val intervalDays: Int) : HabitSchedule()
 }
 
+@Serializable
 @Entity(tableName = "habits")
 data class HabitEntity(
     @PrimaryKey(autoGenerate = true)

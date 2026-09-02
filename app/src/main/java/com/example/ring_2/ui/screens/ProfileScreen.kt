@@ -131,7 +131,6 @@ fun ProfileScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     SettingsItem("Appearance", Icons.Default.Settings, onAppearance)
                     SettingsItem("Notifications", Icons.Default.Notifications, onNotifications)
-                    SettingsItem("Data Management", Icons.Default.Info, onBackupRestore)
                 }
             }
 
@@ -187,7 +186,7 @@ fun ProfileScreen(
 
 @Composable
 fun LevelCard(lifetimeEarned: Int) {
-    val (lvl, pointsNeeded, progress) = com.example.ring_2.logic.GamificationEngine.getLevelProgress(lifetimeEarned)
+    val (lvl, currentInLevel, totalInLevel, progress) = com.example.ring_2.logic.GamificationEngine.getLevelProgress(lifetimeEarned)
     
     Surface(
         color = MaterialTheme.colorScheme.surface,
@@ -195,10 +194,7 @@ fun LevelCard(lifetimeEarned: Int) {
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Level Progress", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp)
-                Text("$lifetimeEarned Total Points", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-            }
+            Text("Level Progress", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp)
             Spacer(Modifier.height(16.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Lv $lvl", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
@@ -216,10 +212,10 @@ fun LevelCard(lifetimeEarned: Int) {
             Spacer(Modifier.height(12.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(
-                    "$pointsNeeded points more to level up",
-                    fontSize = 12.sp,
+                    "$currentInLevel / $totalInLevel",
+                    fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Bold
                 )
             }
             Spacer(Modifier.height(8.dp))
@@ -252,32 +248,65 @@ fun ProfileStatCard(modifier: Modifier, value: String, label: String) {
 
 @Composable
 fun AchievementRow(stats: Map<String, Int>, lifetimePoints: Int) {
-    val streak = stats["bestStreak"] ?: 0
+    val streak = stats["currentStreak"] ?: 0
+    val bestStreak = stats["bestStreak"] ?: 0
     val totalHabits = stats["totalHabits"] ?: 0
+    val completedTasks = stats["completedTasks"] ?: 0
+    val (lvl, _, _, _) = com.example.ring_2.logic.GamificationEngine.getLevelProgress(lifetimePoints)
+    
+    // Derived stats for achievements
+    val categories = listOf("Streak", "CreateHabit", "CompleteHabit", "CreateTask", "CompleteTask", "Points", "Level")
     
     LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        com.example.ring_2.logic.GamificationEngine.ACHIEVEMENTS.forEach { tier ->
-            val isUnlocked = when(tier.category) {
-                "Streak" -> streak >= tier.requirement
-                "Points" -> lifetimePoints >= tier.requirement
-                "Habits" -> totalHabits >= tier.requirement
-                else -> false
+        categories.forEach { category ->
+            val currentValue = when(category) {
+                "Streak" -> bestStreak
+                "CreateHabit" -> totalHabits
+                "CompleteHabit" -> stats["totalHabits"] ?: 0 // Simplified: using total completions from stats if available
+                "CreateTask" -> stats["completedTasks"] ?: 0 // Simplified
+                "CompleteTask" -> completedTasks
+                "Points" -> lifetimePoints
+                "Level" -> lvl
+                else -> 0
             }
+            
+            val tiers = com.example.ring_2.logic.GamificationEngine.ACHIEVEMENTS_MAP[category] ?: emptyList()
+            
+            // Find highest unlocked tier
+            var currentTier = tiers.first()
+            var unlockedLevel: com.example.ring_2.logic.GamificationEngine.AchievementLevel? = null
+            
+            for (tier in tiers) {
+                if (currentValue >= tier.requirement) {
+                    currentTier = tier
+                    unlockedLevel = tier.level
+                } else {
+                    // This is the next target
+                    if (unlockedLevel == null) {
+                        currentTier = tier
+                    } else {
+                        // We found the next one after the last unlocked
+                        currentTier = tier
+                    }
+                    break
+                }
+            }
+
+            val isFullyCompleted = currentValue >= tiers.last().requirement
+            if (isFullyCompleted) currentTier = tiers.last()
+
             item {
                 AchievementCard(
-                    title = tier.title,
-                    desc = "${tier.requirement} ${tier.category}",
-                    icon = when(tier.level) {
-                        com.example.ring_2.logic.GamificationEngine.AchievementLevel.BRONZE -> Icons.Default.Star
-                        com.example.ring_2.logic.GamificationEngine.AchievementLevel.SILVER -> Icons.Default.ThumbUp
-                        com.example.ring_2.logic.GamificationEngine.AchievementLevel.GOLD -> Icons.Default.Favorite
+                    title = currentTier.title,
+                    desc = currentTier.description,
+                    icon = when(currentTier.category) {
+                        "Streak" -> Icons.Default.Star
+                        "Points" -> Icons.Default.CheckCircle
+                        "Level" -> Icons.Default.Person
+                        else -> Icons.Default.ThumbUp
                     },
-                    levelColor = when(tier.level) {
-                        com.example.ring_2.logic.GamificationEngine.AchievementLevel.BRONZE -> colorResource(R.color.achievement_bronze)
-                        com.example.ring_2.logic.GamificationEngine.AchievementLevel.SILVER -> colorResource(R.color.achievement_silver)
-                        com.example.ring_2.logic.GamificationEngine.AchievementLevel.GOLD -> colorResource(R.color.achievement_gold)
-                    },
-                    isUnlocked = isUnlocked
+                    level = unlockedLevel,
+                    isUnlocked = unlockedLevel != null
                 )
             }
         }
@@ -285,12 +314,19 @@ fun AchievementRow(stats: Map<String, Int>, lifetimePoints: Int) {
 }
 
 @Composable
-fun AchievementCard(title: String, desc: String, icon: ImageVector, levelColor: Color, isUnlocked: Boolean) {
+fun AchievementCard(title: String, desc: String, icon: ImageVector, level: com.example.ring_2.logic.GamificationEngine.AchievementLevel?, isUnlocked: Boolean) {
+    val levelColor = when(level) {
+        com.example.ring_2.logic.GamificationEngine.AchievementLevel.BRONZE -> colorResource(R.color.achievement_bronze)
+        com.example.ring_2.logic.GamificationEngine.AchievementLevel.SILVER -> colorResource(R.color.achievement_silver)
+        com.example.ring_2.logic.GamificationEngine.AchievementLevel.GOLD -> colorResource(R.color.achievement_gold)
+        null -> Color.Gray
+    }
+
     Surface(
         color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.size(width = 140.dp, height = 140.dp).then(if (!isUnlocked) Modifier.alpha(0.4f) else Modifier),
-        border = if (isUnlocked) androidx.compose.foundation.BorderStroke(1.dp, levelColor) else null
+        modifier = Modifier.size(width = 140.dp, height = 140.dp),
+        border = androidx.compose.foundation.BorderStroke(2.dp, levelColor.copy(alpha = if (isUnlocked) 1f else 0.3f))
     ) {
         Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             Icon(icon, contentDescription = null, tint = if (isUnlocked) levelColor else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(32.dp))

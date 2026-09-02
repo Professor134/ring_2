@@ -29,16 +29,27 @@ fun DataManagementScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    
     val habits by viewModel.allHabits.collectAsState()
+    val allProgress by viewModel.allProgress.collectAsState()
     val tasks by viewModel.allTasks.collectAsState()
+    val transactions by viewModel.transactions.collectAsState()
+    val userProgress by viewModel.userProgress.collectAsState()
+    val profile by viewModel.userProfile.collectAsState()
+    val categories by viewModel.allCategories.collectAsState()
+    val achievements by viewModel.allAchievements.collectAsState()
+    val notifications by viewModel.allNotifications.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
+    var showExportConfirm by remember { mutableStateOf<String?>(null) }
 
     val jsonExportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json"),
         onResult = { uri ->
             uri?.let {
-                val json = BackupService.exportAsJson(habits, tasks)
+                val json = BackupService.exportAsJson(
+                    habits, allProgress, tasks, transactions, userProgress, profile, categories, achievements, notifications
+                )
                 context.contentResolver.openOutputStream(it)?.use { output ->
                     output.write(json.toByteArray())
                 }
@@ -70,18 +81,6 @@ fun DataManagementScreen(
         }
     )
 
-    val dbImportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument(),
-        onResult = { uri ->
-            uri?.let {
-                BackupService.importDatabase(context, it)
-                scope.launch { 
-                    snackbarHostState.showSnackbar("Backup restored. Please restart the app.")
-                }
-            }
-        }
-    )
-
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -106,18 +105,15 @@ fun DataManagementScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(8.dp)) {
-                    DataManagementItem(stringResource(com.example.ring_2.R.string.action_export_json), "Download a full backup as JSON") {
-                        jsonExportLauncher.launch("ring_backup_${System.currentTimeMillis()}.json")
+                    DataManagementItem(stringResource(com.example.ring_2.R.string.action_export_json), "Export all data (habits, tasks, points, etc.) to JSON") {
+                        showExportConfirm = "JSON"
                     }
-                    DataManagementItem(stringResource(com.example.ring_2.R.string.action_export_csv), "Download habits as spreadsheet") {
-                        csvExportLauncher.launch("ring_habits_${System.currentTimeMillis()}.csv")
+                    DataManagementItem(stringResource(com.example.ring_2.R.string.action_export_csv), "Export habits list to CSV") {
+                        showExportConfirm = "CSV"
                     }
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f))
-                    DataManagementItem("Full DB Backup", "Export the entire database file") {
-                        dbExportLauncher.launch("ring_db_backup_${System.currentTimeMillis()}.db")
-                    }
-                    DataManagementItem(stringResource(com.example.ring_2.R.string.action_import_data), "Restore from DB backup file") {
-                        dbImportLauncher.launch(arrayOf("*/*"))
+                    DataManagementItem("Database Export", "Export the complete internal database file") {
+                        showExportConfirm = "DB"
                     }
                 }
             }
@@ -130,10 +126,35 @@ fun DataManagementScreen(
                 Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.width(16.dp))
-                    Text("Importing database will overwrite all your current data. A restart is required after restoration.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Exports allow you to keep your data safe and reusable. Import options are currently disabled for stability.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
+    }
+
+    if (showExportConfirm != null) {
+        AlertDialog(
+            onDismissRequest = { showExportConfirm = null },
+            title = { Text("Confirm Export") },
+            text = { Text("Are you sure you want to export your data as $showExportConfirm?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    when(showExportConfirm) {
+                        "JSON" -> jsonExportLauncher.launch("ring_backup_${System.currentTimeMillis()}.json")
+                        "CSV" -> csvExportLauncher.launch("ring_habits_${System.currentTimeMillis()}.csv")
+                        "DB" -> dbExportLauncher.launch("ring_db_backup_${System.currentTimeMillis()}.db")
+                    }
+                    showExportConfirm = null
+                }) {
+                    Text("Export")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showExportConfirm = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
