@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -32,7 +33,7 @@ fun NotificationsHistoryScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Notifications History", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(com.example.ring_2.R.string.title_notifications), color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = MaterialTheme.colorScheme.onBackground)
@@ -43,12 +44,12 @@ fun NotificationsHistoryScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).padding(16.dp)) {
-            Text("Showing last 3 days of history", color = Color.Gray, fontSize = 12.sp)
+            Text("Showing last 3 days of history", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
             Spacer(Modifier.height(16.dp))
             
             if (notifications.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No recent notifications.", color = Color.Gray)
+                    Text("No recent notifications.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -62,13 +63,13 @@ fun NotificationsHistoryScreen(
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     Text(notification.title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                                     val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
-                                    Text(sdf.format(Date(notification.timestamp)), color = Color.Gray, fontSize = 11.sp)
+                                    Text(sdf.format(Date(notification.timestamp)), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
                                 }
                                 Spacer(Modifier.height(4.dp))
                                 Text(notification.message, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
                                 Spacer(Modifier.height(8.dp))
                                 val dateSdf = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
-                                Text(dateSdf.format(Date(notification.timestamp)), color = Color.DarkGray, fontSize = 10.sp)
+                                Text(dateSdf.format(Date(notification.timestamp)), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
                             }
                         }
                     }

@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -60,7 +61,6 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(vertical = 16.dp)
         ) {
-            // 1. HEADER
             item {
                 HomeHeader(profile?.name?.ifEmpty { "User" } ?: "User", userProg?.currentPoints ?: 500)
             }
@@ -72,12 +72,12 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     QuickActionButton(
-                        text = "+ Add Habit",
+                        text = stringResource(com.example.ring_2.R.string.quick_action_add_habit),
                         onClick = onAddHabit,
                         modifier = Modifier.weight(1f)
                     )
                     QuickActionButton(
-                        text = "+ Add Task",
+                        text = stringResource(com.example.ring_2.R.string.quick_action_add_task),
                         onClick = onAddTask,
                         modifier = Modifier.weight(1f)
                     )
@@ -87,7 +87,7 @@ fun HomeScreen(
             // 3. TODAY'S HABITS
             if (todayHabits.isNotEmpty()) {
                 item {
-                    SectionHeader("Today's Habits", onSeeAll = onSeeAllHabits)
+                    SectionHeader(stringResource(com.example.ring_2.R.string.section_todays_habits), onSeeAll = onSeeAllHabits)
                 }
 
                 items(todayHabits) { habit ->
@@ -117,7 +117,7 @@ fun HomeScreen(
             // 8. TODAY'S TASKS
             if (pendingTasks.isNotEmpty()) {
                 item {
-                    SectionHeader("Today's Tasks", onSeeAll = onSeeAllTasks)
+                    SectionHeader(stringResource(com.example.ring_2.R.string.section_todays_tasks), onSeeAll = onSeeAllTasks)
                 }
 
                 items(pendingTasks) { task ->
@@ -132,7 +132,7 @@ fun HomeScreen(
             // 9. TODAY'S GRAPH
             item {
                 Spacer(Modifier.height(8.dp))
-                Text("Overall Growth", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
+                Text(stringResource(com.example.ring_2.R.string.section_overall_growth), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
                 Spacer(Modifier.height(12.dp))
                 
                 val growthData = remember(allProgress, habits, selectedFilter) {
@@ -171,11 +171,17 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    listOf("Days", "Weeks", "Months", "Year").forEach { filter ->
+                    val filters = listOf(
+                        stringResource(com.example.ring_2.R.string.filter_days) to "Days",
+                        stringResource(com.example.ring_2.R.string.filter_weeks) to "Weeks",
+                        stringResource(com.example.ring_2.R.string.filter_months) to "Months",
+                        stringResource(com.example.ring_2.R.string.filter_year) to "Year"
+                    )
+                    filters.forEach { (label, value) ->
                         FilterChip(
-                            selected = selectedFilter == filter,
-                            onClick = { selectedFilter = filter },
-                            label = { Text(filter, fontSize = 11.sp) },
+                            selected = selectedFilter == value,
+                            onClick = { selectedFilter = value },
+                            label = { Text(label, fontSize = 11.sp) },
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.padding(horizontal = 4.dp),
                             colors = FilterChipDefaults.filterChipColors(
@@ -229,9 +235,9 @@ fun EmptyHabitState(onAddHabit: () -> Unit) {
         modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("No habits yet", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Text(stringResource(com.example.ring_2.R.string.msg_no_habits), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 18.sp, fontWeight = FontWeight.Bold)
         Text(
-            "Create your first habit and start your RING.",
+            stringResource(com.example.ring_2.R.string.msg_create_habit_hint),
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             fontSize = 14.sp,
             modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
@@ -241,7 +247,7 @@ fun EmptyHabitState(onAddHabit: () -> Unit) {
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Text("+ Add Habit", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+            Text(stringResource(com.example.ring_2.R.string.quick_action_add_habit), color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -256,9 +262,9 @@ fun HomeHeader(name: String, points: Int) {
         Column {
             val calendar = Calendar.getInstance()
             val greeting = when (calendar.get(Calendar.HOUR_OF_DAY)) {
-                in 0..11 -> "Good Morning,"
-                in 12..16 -> "Good Afternoon,"
-                else -> "Good Evening,"
+                in 0..11 -> stringResource(com.example.ring_2.R.string.home_greeting_morning)
+                in 12..16 -> stringResource(com.example.ring_2.R.string.home_greeting_afternoon)
+                else -> stringResource(com.example.ring_2.R.string.home_greeting_evening)
             }
             Text(
                 text = greeting,
@@ -291,7 +297,7 @@ fun HomeHeader(name: String, points: Int) {
                 verticalArrangement = Arrangement.Center,
                 modifier = Modifier.padding(horizontal = 8.dp)
             ) {
-                Text("ELITE POINTS", fontSize = 9.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                Text(stringResource(com.example.ring_2.R.string.label_elite_points), fontSize = 9.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                 Text(points.toString(), fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
             }
         }

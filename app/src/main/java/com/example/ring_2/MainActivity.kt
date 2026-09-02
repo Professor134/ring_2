@@ -94,7 +94,7 @@ fun MainScaffold(navController: NavHostController, viewModel: MainViewModel) {
         bottomBar = {
             if (currentDestination?.route in listOf(Screen.Home.route, Screen.Habits.route, Screen.Tasks.route, Screen.Profile.route)) {
                 NavigationBar(
-                    containerColor = Color(0xFF1E1E1E),
+                    containerColor = MaterialTheme.colorScheme.surface,
                     tonalElevation = 0.dp
                 ) {
                     val items = listOf(
@@ -116,10 +116,10 @@ fun MainScaffold(navController: NavHostController, viewModel: MainViewModel) {
                                 }
                             },
                             colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = Color(0xFF00E676),
-                                selectedTextColor = Color(0xFF00E676),
-                                unselectedIconColor = Color.Gray,
-                                unselectedTextColor = Color.Gray,
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                 indicatorColor = Color.Transparent
                             )
                         )

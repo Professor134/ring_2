@@ -18,6 +18,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -131,15 +133,15 @@ fun AddTaskScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text(if (taskId == null) "Add Task" else "Edit Task", color = Color.White) },
+                title = { Text(if (taskId == null) stringResource(com.example.ring_2.R.string.title_add_task) else stringResource(com.example.ring_2.R.string.title_edit_task), color = MaterialTheme.colorScheme.onBackground) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.White)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = MaterialTheme.colorScheme.onBackground)
                     }
                 },
                 actions = {
                     TextButton(onClick = { handleSave() }, enabled = canSave) {
-                        Text(if (taskId == null) "Create" else "Save", color = if (canSave) Color(0xFF00E676) else Color.Gray)
+                        Text(if (taskId == null) stringResource(com.example.ring_2.R.string.btn_create) else stringResource(com.example.ring_2.R.string.btn_save), color = if (canSave) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -156,13 +158,13 @@ fun AddTaskScreen(
         ) {
             if (showError != null) {
                 Surface(
-                    color = Color.Red.copy(alpha = 0.1f),
+                    color = MaterialTheme.colorScheme.errorContainer,
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
                         text = showError!!,
-                        color = Color.Red,
+                        color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(12.dp),
                         fontSize = 14.sp
                     )
@@ -170,40 +172,40 @@ fun AddTaskScreen(
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("TASK", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                Text(stringResource(com.example.ring_2.R.string.label_task_name), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it; showError = null },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("e.g. Work on project", color = Color.Gray) },
+                    placeholder = { Text(stringResource(com.example.ring_2.R.string.hint_habit_name), color = MaterialTheme.colorScheme.onSurfaceVariant) },
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color(0xFF00E676)
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary
                     ),
                     shape = RoundedCornerShape(12.dp)
                 )
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("DESCRIPTION", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                Text(stringResource(com.example.ring_2.R.string.label_description_note), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Optional details...", color = Color.Gray) },
+                    placeholder = { Text(stringResource(com.example.ring_2.R.string.hint_description), color = MaterialTheme.colorScheme.onSurfaceVariant) },
                     minLines = 3,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color(0xFF00E676)
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary
                     ),
                     shape = RoundedCornerShape(12.dp)
                 )
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("PRIORITY", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                Text(stringResource(com.example.ring_2.R.string.label_priority), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(TaskPriority.LOW, TaskPriority.MEDIUM, TaskPriority.HIGH).forEach { p ->
                         val isSelected = priority == p
@@ -214,12 +216,12 @@ fun AddTaskScreen(
                             modifier = Modifier.weight(1f),
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = when(p) {
-                                    TaskPriority.HIGH -> Color.Red
-                                    TaskPriority.MEDIUM -> Color.Yellow
-                                    TaskPriority.LOW -> Color.Cyan
-                                    else -> Color.Gray
+                                    TaskPriority.HIGH -> colorResource(com.example.ring_2.R.color.priority_high)
+                                    TaskPriority.MEDIUM -> colorResource(com.example.ring_2.R.color.priority_medium)
+                                    TaskPriority.LOW -> colorResource(com.example.ring_2.R.color.priority_low)
+                                    else -> MaterialTheme.colorScheme.surfaceVariant
                                 },
-                                selectedLabelColor = Color.Black
+                                selectedLabelColor = if (isSelected) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         )
                     }
@@ -228,30 +230,32 @@ fun AddTaskScreen(
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("DUE DATE", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                    Text(stringResource(com.example.ring_2.R.string.label_due_date), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                     Surface(
-                        color = Color(0xFF1E1E1E),
+                        color = MaterialTheme.colorScheme.surface,
                         shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true }
+                        modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
+                        tonalElevation = 1.dp
                     ) {
                         Text(
                             text = SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(dueDate)),
                             modifier = Modifier.padding(16.dp),
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("DUE TIME", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                    Text(stringResource(com.example.ring_2.R.string.label_due_time), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                     Surface(
-                        color = Color(0xFF1E1E1E),
+                        color = MaterialTheme.colorScheme.surface,
                         shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth().clickable { showTimePicker = true }
+                        modifier = Modifier.fillMaxWidth().clickable { showTimePicker = true },
+                        tonalElevation = 1.dp
                     ) {
                         Text(
                             text = dueTime,
                             modifier = Modifier.padding(16.dp),
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
@@ -259,9 +263,10 @@ fun AddTaskScreen(
 
             // REMINDER
             Surface(
-                color = Color(0xFF1E1E1E),
+                color = MaterialTheme.colorScheme.surface,
                 shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                tonalElevation = 1.dp
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -269,8 +274,8 @@ fun AddTaskScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column {
-                        Text("Reminder", color = Color.White, fontWeight = FontWeight.Medium)
-                        Text("Get notified when task is due", color = Color.Gray, fontSize = 12.sp)
+                        Text(stringResource(com.example.ring_2.R.string.label_reminder), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Medium)
+                        Text("Get notified when task is due", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                     }
                     Switch(
                         checked = reminderEnabled,
@@ -280,7 +285,7 @@ fun AddTaskScreen(
                             }
                             reminderEnabled = it
                         },
-                        colors = SwitchDefaults.colors(checkedThumbColor = Color(0xFF00E676))
+                        colors = SwitchDefaults.colors(checkedThumbColor = MaterialTheme.colorScheme.primary)
                     )
                 }
             }
@@ -289,17 +294,17 @@ fun AddTaskScreen(
                 Button(
                     onClick = { showDeleteConfirmation = true },
                     modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red.copy(alpha = 0.1f)),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red)
+                    Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                     Spacer(Modifier.width(8.dp))
-                    Text("Delete Task", color = Color.Red)
+                    Text(stringResource(com.example.ring_2.R.string.action_delete) + " Task", color = MaterialTheme.colorScheme.error)
                 }
             } else {
                 Text(
-                    "Creating a task costs 1 Elite Point.",
-                    color = Color.Gray,
+                    stringResource(com.example.ring_2.R.string.msg_task_cost),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp,
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
@@ -360,7 +365,7 @@ fun AddTaskScreen(
     if (showDeleteConfirmation && existingTask != null) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirmation = false },
-            title = { Text("Delete Task?") },
+            title = { Text(stringResource(com.example.ring_2.R.string.dialog_delete_habit_title)) },
             text = { Text("This action cannot be undone.") },
             confirmButton = {
                 TextButton(onClick = {
@@ -368,12 +373,12 @@ fun AddTaskScreen(
                     viewModel.deleteTask(existingTask)
                     onBack()
                 }) {
-                    Text("Delete", color = Color.Red)
+                    Text(stringResource(com.example.ring_2.R.string.action_delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirmation = false }) {
-                    Text("Cancel", color = Color.Gray)
+                    Text(stringResource(com.example.ring_2.R.string.action_cancel), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         )

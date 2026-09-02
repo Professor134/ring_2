@@ -1,46 +1,109 @@
 <resources>
-    <string name="app_name">ring_2</string>
+    <string name="app_name">RING</string>
     <string name="action_settings">Settings</string>
-    <!-- Strings used for fragments for navigation -->
-    <string name="first_fragment_label">First Fragment</string>
-    <string name="second_fragment_label">Second Fragment</string>
-    <string name="next">Next</string>
-    <string name="previous">Previous</string>
 
-    <string name="lorem_ipsum">
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam in scelerisque sem. Mauris
-        volutpat, dolor id interdum ullamcorper, risus dolor egestas lectus, sit amet mattis purus
-        dui nec risus. Maecenas non sodales nisi, vel dictum dolor. Class aptent taciti sociosqu ad
-        litora torquent per conubia nostra, per inceptos himenaeos. Suspendisse blandit eleifend
-        diam, vel rutrum tellus vulputate quis. Aliquam eget libero aliquet, imperdiet nisl a,
-        ornare ex. Sed rhoncus est ut libero porta lobortis. Fusce in dictum tellus.\n\n
-        Suspendisse interdum ornare ante. Aliquam nec cursus lorem. Morbi id magna felis. Vivamus
-        egestas, est a condimentum egestas, turpis nisl iaculis ipsum, in dictum tellus dolor sed
-        neque. Morbi tellus erat, dapibus ut sem a, iaculis tincidunt dui. Interdum et malesuada
-        fames ac ante ipsum primis in faucibus. Curabitur et eros porttitor, ultricies urna vitae,
-        molestie nibh. Phasellus at commodo eros, non aliquet metus. Sed maximus nisl nec dolor
-        bibendum, vel congue leo egestas.\n\n
-        Sed interdum tortor nibh, in sagittis risus mollis quis. Curabitur mi odio, condimentum sit
-        amet auctor at, mollis non turpis. Nullam pretium libero vestibulum, finibus orci vel,
-        molestie quam. Fusce blandit tincidunt nulla, quis sollicitudin libero facilisis et. Integer
-        interdum nunc ligula, et fermentum metus hendrerit id. Vestibulum lectus felis, dictum at
-        lacinia sit amet, tristique id quam. Cras eu consequat dui. Suspendisse sodales nunc ligula,
-        in lobortis sem porta sed. Integer id ultrices magna, in luctus elit. Sed a pellentesque
-        est.\n\n
-        Aenean nunc velit, lacinia sed dolor sed, ultrices viverra nulla. Etiam a venenatis nibh.
-        Morbi laoreet, tortor sed facilisis varius, nibh orci rhoncus nulla, id elementum leo dui
-        non lorem. Nam mollis ipsum quis auctor varius. Quisque elementum eu libero sed commodo. In
-        eros nisl, imperdiet vel imperdiet et, scelerisque a mauris. Pellentesque varius ex nunc,
-        quis imperdiet eros placerat ac. Duis finibus orci et est auctor tincidunt. Sed non viverra
-        ipsum. Nunc quis augue egestas, cursus lorem at, molestie sem. Morbi a consectetur ipsum, a
-        placerat diam. Etiam vulputate dignissim convallis. Integer faucibus mauris sit amet finibus
-        convallis.\n\n
-        Phasellus in aliquet mi. Pellentesque habitant morbi tristique senectus et netus et
-        malesuada fames ac turpis egestas. In volutpat arcu ut felis sagittis, in finibus massa
-        gravida. Pellentesque id tellus orci. Integer dictum, lorem sed efficitur ullamcorper,
-        libero justo consectetur ipsum, in mollis nisl ex sed nisl. Donec maximus ullamcorper
-        sodales. Praesent bibendum rhoncus tellus nec feugiat. In a ornare nulla. Donec rhoncus
-        libero vel nunc consequat, quis tincidunt nisl eleifend. Cras bibendum enim a justo luctus
-        vestibulum. Fusce dictum libero quis erat maximus, vitae volutpat diam dignissim.
-    </string>
+    <!-- Home Screen -->
+    <string name="home_greeting_morning">Good Morning,</string>
+    <string name="home_greeting_afternoon">Good Afternoon,</string>
+    <string name="home_greeting_evening">Good Evening,</string>
+    <string name="quick_action_add_habit">+ Add Habit</string>
+    <string name="quick_action_add_task">+ Add Task</string>
+    <string name="section_todays_habits">Today\'s Habits</string>
+    <string name="section_todays_tasks">Today\'s Tasks</string>
+    <string name="section_overall_growth">Overall Growth</string>
+    <string name="msg_no_habits">No habits yet</string>
+    <string name="msg_create_habit_hint">Create your first habit and start your RING.</string>
+    <string name="msg_no_tasks_pending">No pending tasks for today</string>
+    <string name="label_elite_points">ELITE POINTS</string>
+    <string name="filter_days">Days</string>
+    <string name="filter_weeks">Weeks</string>
+    <string name="filter_months">Months</string>
+    <string name="filter_year">Year</string>
+    <string name="see_all">See all</string>
+
+    <!-- Add/Edit Habit -->
+    <string name="title_create_habit">Create Habit</string>
+    <string name="title_edit_habit">Edit Habit</string>
+    <string name="label_habit_name">HABIT NAME</string>
+    <string name="label_description_note">DESCRIPTION / NOTE</string>
+    <string name="label_category">CATEGORY</string>
+    <string name="label_type">TYPE</string>
+    <string name="habit_type_yes_no">Yes / No</string>
+    <string name="habit_type_measurable">Measurable</string>
+    <string name="label_target">TARGET</string>
+    <string name="label_unit">UNIT</string>
+    <string name="label_repeat">REPEAT</string>
+    <string name="label_start_date">START DATE</string>
+    <string name="btn_create">Create</string>
+    <string name="btn_save">Save</string>
+    <string name="hint_habit_name">e.g. Morning walk</string>
+    <string name="hint_description">Add a note (optional)</string>
+    <string name="msg_habit_cost">Creating this habit will cost 25 Elite Points.</string>
+    <string name="msg_not_enough_points">Not enough Elite Points (%1$d required)</string>
+    <string name="msg_target_change_cost">Changing target will cost 10 Elite Points.</string>
+
+    <!-- Habit Details -->
+    <string name="label_current_streak">Current Streak</string>
+    <string name="label_best_streak">Best Streak</string>
+    <string name="label_habit_note">HABIT NOTE</string>
+    <string name="label_calendar">CALENDAR</string>
+    <string name="label_point_summary">POINT SUMMARY</string>
+    <string name="btn_delete_habit">Delete Habit</string>
+    <string name="dialog_delete_habit_title">Delete Habit?</string>
+    <string name="dialog_delete_habit_msg">Historical records will be preserved where possible. This costs 50 Elite Points.</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_cancel">Cancel</string>
+
+    <!-- Tasks -->
+    <string name="title_tasks">Tasks</string>
+    <string name="label_pending">Pending</string>
+    <string name="label_completed">Completed</string>
+    <string name="label_total">Total</string>
+    <string name="title_add_task">Add Task</string>
+    <string name="title_edit_task">Edit Task</string>
+    <string name="label_task_name">TASK</string>
+    <string name="label_priority">PRIORITY</string>
+    <string name="label_due_date">DUE DATE</string>
+    <string name="label_due_time">DUE TIME</string>
+    <string name="label_reminder">Reminder</string>
+    <string name="msg_no_tasks_found">No tasks found</string>
+    <string name="btn_add_task">+ Add Task</string>
+    <string name="msg_task_cost">Creating a task costs 1 Elite Point.</string>
+
+    <!-- Profile -->
+    <string name="title_profile">Profile</string>
+    <string name="label_level">Level %1$d</string>
+    <string name="label_lifetime_points">%1$d Total Lifetime Points</string>
+    <string name="label_level_progress">Level Progress</string>
+    <string name="label_total_habits">Total Habits</string>
+    <string name="label_completed_tasks">Completed Tasks</string>
+    <string name="btn_point_history">Elite Point History</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_data_management">Data Management</string>
+    <string name="label_offline_tracker">Offline Habit &amp; Productivity Tracker</string>
+
+    <!-- Appearance -->
+    <string name="title_appearance">Appearance</string>
+    <string name="label_choose_theme">CHOOSE THEME</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_system">System</string>
+
+    <!-- Data Management -->
+    <string name="title_data_management">Data Management</string>
+    <string name="label_import_export">IMPORT / EXPORT</string>
+    <string name="action_export_json">Export to JSON</string>
+    <string name="action_export_csv">Export to CSV</string>
+    <string name="action_import_data">Import Data</string>
+
+    <!-- Notifications Screen -->
+    <string name="title_notifications">Notifications History</string>
+
+    <!-- Point History -->
+    <string name="title_point_history">Elite Point History</string>
+
+    <!-- Clear Data -->
+    <string name="action_clear_all">Clear All Data</string>
+    <string name="msg_clear_data_warning">This will permanently delete everything. This action cannot be undone.</string>
 </resources>

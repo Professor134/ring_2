@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -26,6 +27,7 @@ import com.example.ring_2.data.model.HabitEntity
 import com.example.ring_2.data.model.HabitProgressEntity
 import com.example.ring_2.data.model.HabitType
 import com.example.ring_2.logic.DateTimeUtils
+import com.example.ring_2.logic.ScheduleEngine
 import com.example.ring_2.ui.MainViewModel
 import com.example.ring_2.ui.components.LineGraph
 import com.example.ring_2.ui.components.NumericInputDialog
@@ -65,7 +67,7 @@ fun HabitDetailScreen(
                 },
                 actions = {
                     IconButton(onClick = onEditHabit) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color(0xFF00E676))
+                        Icon(Icons.Default.Edit, contentDescription = "Edit", tint = MaterialTheme.colorScheme.primary)
                     }
                     Surface(
                         color = MaterialTheme.colorScheme.surface,
@@ -75,7 +77,7 @@ fun HabitDetailScreen(
                         Text(
                             text = (userProg?.currentPoints ?: 0).toString(),
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            color = Color(0xFF00E676),
+                            color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp
                         )
@@ -94,8 +96,8 @@ fun HabitDetailScreen(
         ) {
             // SECTION 1: HABIT SUMMARY
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                DetailStatCard(Modifier.weight(1f), habit.currentStreak.toString(), "Current Streak")
-                DetailStatCard(Modifier.weight(1f), habit.bestStreak.toString(), "Best Streak")
+                DetailStatCard(Modifier.weight(1f), habit.currentStreak.toString(), stringResource(com.example.ring_2.R.string.label_current_streak))
+                DetailStatCard(Modifier.weight(1f), habit.bestStreak.toString(), stringResource(com.example.ring_2.R.string.label_best_streak))
             }
 
             // SECTION 2: TARGETS (Updated with Progress Bars)
@@ -103,7 +105,7 @@ fun HabitDetailScreen(
 
             // SECTION 3: HABIT NOTE
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("HABIT NOTE", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                Text(stringResource(com.example.ring_2.R.string.label_habit_note), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                 Surface(
                     color = MaterialTheme.colorScheme.surface,
                     shape = RoundedCornerShape(16.dp),
@@ -112,7 +114,7 @@ fun HabitDetailScreen(
                     Text(
                         text = habit.description.ifEmpty { "No note added." },
                         modifier = Modifier.padding(16.dp),
-                        color = if (habit.description.isEmpty()) Color.DarkGray else MaterialTheme.colorScheme.onSurface,
+                        color = if (habit.description.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                         fontSize = 14.sp
                     )
                 }
@@ -120,15 +122,20 @@ fun HabitDetailScreen(
 
             // SECTION 4: TIME FILTER
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                val filters = listOf("Days", "Weeks", "Months", "Year")
+                val filters = listOf(
+                    stringResource(com.example.ring_2.R.string.filter_days) to "Days",
+                    stringResource(com.example.ring_2.R.string.filter_weeks) to "Weeks",
+                    stringResource(com.example.ring_2.R.string.filter_months) to "Months",
+                    stringResource(com.example.ring_2.R.string.filter_year) to "Year"
+                )
                 SingleChoiceSegmentedButtonRow {
-                    filters.forEachIndexed { index, filter ->
+                    filters.forEachIndexed { index, (label, value) ->
                         SegmentedButton(
-                            selected = selectedFilter == filter,
-                            onClick = { selectedFilter = filter },
+                            selected = selectedFilter == value,
+                            onClick = { selectedFilter = value },
                             shape = SegmentedButtonDefaults.itemShape(index = index, count = filters.size)
                         ) {
-                            Text(filter)
+                            Text(label)
                         }
                     }
                 }
@@ -163,12 +170,12 @@ fun HabitDetailScreen(
             Button(
                 onClick = { showDeleteConfirmation = true },
                 modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Red.copy(alpha = 0.1f)),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red)
+                Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                 Spacer(Modifier.width(8.dp))
-                Text("Delete Habit", color = Color.Red)
+                Text(stringResource(com.example.ring_2.R.string.btn_delete_habit), color = MaterialTheme.colorScheme.error)
             }
             
             Spacer(Modifier.height(48.dp))
@@ -211,19 +218,19 @@ fun HabitDetailScreen(
     if (showDeleteConfirmation) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirmation = false },
-            title = { Text("Delete Habit?") },
-            text = { Text("Historical records will be preserved where possible. This costs 50 Elite Points.") },
+            title = { Text(stringResource(com.example.ring_2.R.string.dialog_delete_habit_title)) },
+            text = { Text(stringResource(com.example.ring_2.R.string.dialog_delete_habit_msg)) },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.deleteHabit(habitId)
                     onBack()
                 }) {
-                    Text("Delete", color = Color.Red)
+                    Text(stringResource(com.example.ring_2.R.string.action_delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirmation = false }) {
-                    Text("Cancel", color = Color.Gray)
+                    Text(stringResource(com.example.ring_2.R.string.action_cancel), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         )
@@ -233,7 +240,7 @@ fun HabitDetailScreen(
 @Composable
 fun HabitTargetsProgressSection(habit: HabitEntity, progressList: List<HabitProgressEntity>) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("TARGETS & PROGRESS", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+        Text("TARGETS & PROGRESS", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
         Surface(
             color = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(20.dp),
@@ -269,16 +276,35 @@ fun calculateStats(progressList: List<HabitProgressEntity>, period: Int, habit: 
     }
     val startOfPeriod = DateTimeUtils.getMidnightTimestamp(cal.timeInMillis)
     
+    // Calculate total target for the FULL period based on active days in schedule
+    val endOfPeriodCal = cal.clone() as Calendar
+    when(period) {
+        Calendar.WEEK_OF_YEAR -> endOfPeriodCal.add(Calendar.DAY_OF_YEAR, 6)
+        Calendar.MONTH -> {
+            endOfPeriodCal.add(Calendar.MONTH, 1)
+            endOfPeriodCal.add(Calendar.DAY_OF_YEAR, -1)
+        }
+        Calendar.YEAR -> {
+            endOfPeriodCal.add(Calendar.YEAR, 1)
+            endOfPeriodCal.add(Calendar.DAY_OF_YEAR, -1)
+        }
+        else -> {} // Day is just today
+    }
+    val endOfPeriod = DateTimeUtils.getMidnightTimestamp(endOfPeriodCal.timeInMillis)
+
+    var total = 0.0
+    val tempCal = Calendar.getInstance()
+    tempCal.timeInMillis = startOfPeriod
+    while (tempCal.timeInMillis <= endOfPeriod) {
+        if (ScheduleEngine.isHabitActiveOnDate(habit.schedule, habit.startDate, tempCal.timeInMillis)) {
+            total += habit.target
+        }
+        tempCal.add(Calendar.DAY_OF_YEAR, 1)
+    }
+
+    // Done is measured up to today
     val filtered = progressList.filter { it.date in startOfPeriod..today }
     val done = filtered.sumOf { it.actualValue }
-    
-    // Total calculation is simplified. In a real app, calculate based on schedule.
-    val total = when(period) {
-        Calendar.DAY_OF_YEAR -> habit.target
-        Calendar.WEEK_OF_YEAR -> habit.target * 7
-        Calendar.MONTH -> habit.target * 30
-        else -> habit.target
-    }
     
     return ProgressStats(done, total, habit.unit)
 }
@@ -288,14 +314,14 @@ fun TargetProgressBar(label: String, stats: ProgressStats, color: Color) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(label, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            Text("${stats.done.toInt()} / ${stats.total.toInt()} ${stats.unit}", color = Color.Gray, fontSize = 12.sp)
+            Text("${stats.done.toInt()} / ${stats.total.toInt()} ${stats.unit}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
         }
-        val progress = (stats.done / stats.total).toFloat().coerceIn(0f, 1f)
+        val progress = if (stats.total > 0) (stats.done / stats.total).toFloat().coerceIn(0f, 1f) else 0f
         LinearProgressIndicator(
             progress = { progress },
             modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
             color = color,
-            trackColor = Color.Gray.copy(alpha = 0.2f)
+            trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
         )
     }
 }
@@ -305,7 +331,7 @@ fun InteractiveCalendarSection(habit: HabitEntity, progressList: List<HabitProgr
     var calendar by remember { mutableStateOf(Calendar.getInstance()) }
     
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("CALENDAR", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+        Text(stringResource(com.example.ring_2.R.string.label_calendar), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
         Surface(
             color = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(20.dp),
@@ -318,7 +344,7 @@ fun InteractiveCalendarSection(habit: HabitEntity, progressList: List<HabitProgr
                         newCal.add(Calendar.MONTH, -1)
                         calendar = newCal
                     }) {
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null, tint = Color.Gray)
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     
                     Text(
@@ -332,7 +358,7 @@ fun InteractiveCalendarSection(habit: HabitEntity, progressList: List<HabitProgr
                         newCal.add(Calendar.MONTH, 1)
                         calendar = newCal
                     }) {
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
 
@@ -340,7 +366,7 @@ fun InteractiveCalendarSection(habit: HabitEntity, progressList: List<HabitProgr
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                     listOf("S", "M", "T", "W", "T", "F", "S").forEach {
-                        Text(it, color = Color.Gray, fontSize = 12.sp, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+                        Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
                     }
                 }
 
@@ -365,19 +391,19 @@ fun InteractiveCalendarSection(habit: HabitEntity, progressList: List<HabitProgr
                                     cellCal.set(Calendar.DAY_OF_MONTH, day)
                                     val dateMillis = DateTimeUtils.getMidnightTimestamp(cellCal.timeInMillis)
                                     val progress = progressMap[dateMillis]
-                                    val isActive = com.example.ring_2.logic.ScheduleEngine.isHabitActiveOnDate(habit.schedule, habit.startDate, dateMillis)
+                                    val isActive = ScheduleEngine.isHabitActiveOnDate(habit.schedule, habit.startDate, dateMillis)
                                     val isFuture = dateMillis > System.currentTimeMillis()
 
-                                    val color = when {
+                                    val bgColor = when {
                                         isFuture -> Color.Transparent
-                                        progress?.completed == true -> Color(0xFF00E676)
-                                        progress != null && progress.actualValue > 0 -> Color(0xFF00E676).copy(alpha = 0.5f)
-                                        isActive -> Color.Red.copy(alpha = 0.2f)
+                                        progress?.completed == true -> MaterialTheme.colorScheme.primary
+                                        progress != null && progress.actualValue > 0 -> MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                                        isActive -> MaterialTheme.colorScheme.error.copy(alpha = 0.2f)
                                         else -> Color.Transparent
                                     }
 
                                     Surface(
-                                        color = color,
+                                        color = bgColor,
                                         shape = CircleShape,
                                         modifier = Modifier.size(32.dp).clickable { onDateClick(dateMillis) }
                                     ) {
@@ -385,7 +411,7 @@ fun InteractiveCalendarSection(habit: HabitEntity, progressList: List<HabitProgr
                                             Text(
                                                 text = day.toString(),
                                                 fontSize = 12.sp,
-                                                color = if (color != Color.Transparent) Color.Black else MaterialTheme.colorScheme.onSurface
+                                                color = if (bgColor != Color.Transparent) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
                                             )
                                         }
                                     }
@@ -413,7 +439,7 @@ fun DetailStatCard(modifier: Modifier, value: String, label: String) {
             verticalArrangement = Arrangement.Center
         ) {
             Text(value, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-            Text(label, fontSize = 12.sp, color = Color.Gray)
+            Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -424,16 +450,16 @@ fun PointSummarySection(transactions: List<com.example.ring_2.data.model.PointTr
     val lost = transactions.filter { it.amount < 0 }.sumOf { it.amount }
     
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("POINT SUMMARY", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+        Text(stringResource(com.example.ring_2.R.string.label_point_summary), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
         Surface(
             color = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(20.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                PointSummaryRow("Elite Points Earned", "+$earned", Color(0xFF00E676))
-                PointSummaryRow("Elite Points Lost", "$lost", Color.Red)
-                HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
+                PointSummaryRow("Elite Points Earned", "+$earned", MaterialTheme.colorScheme.primary)
+                PointSummaryRow("Elite Points Lost", "$lost", MaterialTheme.colorScheme.error)
+                HorizontalDivider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
                 PointSummaryRow("Net", "${earned + lost}", MaterialTheme.colorScheme.onSurface)
             }
         }
@@ -443,7 +469,7 @@ fun PointSummarySection(transactions: List<com.example.ring_2.data.model.PointTr
 @Composable
 fun PointSummaryRow(label: String, value: String, color: Color) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, color = Color.Gray, fontSize = 14.sp)
+        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
         Text(value, color = color, fontWeight = FontWeight.Bold, fontSize = 14.sp)
     }
 }
@@ -453,7 +479,7 @@ fun DetailChartSection(title: String, subtitle: String, chart: @Composable () ->
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
-            Text(subtitle, fontSize = 12.sp, color = Color.Gray)
+            Text(subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Surface(
             color = MaterialTheme.colorScheme.surface,

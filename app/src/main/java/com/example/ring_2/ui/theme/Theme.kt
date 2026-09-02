@@ -5,44 +5,47 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
-
-private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF00E676),
-    secondary = Color(0xFF00E676),
-    tertiary = Color(0xFF00E676),
-    background = Color(0xFF121212),
-    surface = Color(0xFF1E1E1E),
-    onPrimary = Color.Black,
-    onSecondary = Color.Black,
-    onTertiary = Color.Black,
-    onBackground = Color.White,
-    onSurface = Color.White,
-    surfaceVariant = Color(0xFF2A2A2A),
-    onSurfaceVariant = Color.LightGray
-)
-
-private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF00E676),
-    secondary = Color(0xFF00E676),
-    tertiary = Color(0xFF00E676),
-    background = Color(0xFFF8F9FA),
-    surface = Color.White,
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color.Black,
-    onSurface = Color.Black,
-    surfaceVariant = Color(0xFFE9ECEF),
-    onSurfaceVariant = Color.DarkGray
-)
+import androidx.compose.ui.res.colorResource
+import com.example.ring_2.R
 
 @Composable
 fun RingTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val colorScheme = if (darkTheme) {
+        darkColorScheme(
+            primary = colorResource(R.color.primary),
+            secondary = colorResource(R.color.secondary),
+            tertiary = colorResource(R.color.tertiary),
+            background = colorResource(R.color.background_dark),
+            surface = colorResource(R.color.surface_dark),
+            onPrimary = colorResource(R.color.on_primary_dark),
+            onSecondary = colorResource(R.color.on_primary_dark),
+            onTertiary = colorResource(R.color.on_primary_dark),
+            onBackground = colorResource(R.color.on_background_dark),
+            onSurface = colorResource(R.color.on_surface_dark),
+            surfaceVariant = colorResource(R.color.surface_variant_dark),
+            onSurfaceVariant = colorResource(R.color.light_gray),
+            error = colorResource(R.color.error)
+        )
+    } else {
+        lightColorScheme(
+            primary = colorResource(R.color.primary),
+            secondary = colorResource(R.color.secondary),
+            tertiary = colorResource(R.color.tertiary),
+            background = colorResource(R.color.background_light),
+            surface = colorResource(R.color.surface_light),
+            onPrimary = colorResource(R.color.on_primary_light),
+            onSecondary = colorResource(R.color.on_primary_light),
+            onTertiary = colorResource(R.color.on_primary_light),
+            onBackground = colorResource(R.color.on_background_light),
+            onSurface = colorResource(R.color.on_surface_light),
+            surfaceVariant = colorResource(R.color.surface_variant_light),
+            onSurfaceVariant = colorResource(R.color.dark_gray),
+            error = colorResource(R.color.error)
+        )
+    }
 
     MaterialTheme(
         colorScheme = colorScheme,

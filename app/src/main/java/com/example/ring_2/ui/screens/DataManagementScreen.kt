@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -23,7 +24,7 @@ fun DataManagementScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Data Management", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(com.example.ring_2.R.string.title_data_management), color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = MaterialTheme.colorScheme.onBackground)
@@ -34,7 +35,7 @@ fun DataManagementScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-            Text("IMPORT / EXPORT", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+            Text(stringResource(com.example.ring_2.R.string.label_import_export), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             
             Surface(
                 color = MaterialTheme.colorScheme.surface,
@@ -42,13 +43,13 @@ fun DataManagementScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(8.dp)) {
-                    DataManagementItem("Export to JSON", "Download a full backup file") {
+                    DataManagementItem(stringResource(com.example.ring_2.R.string.action_export_json), "Download a full backup file") {
                         // TODO: Implement JSON export
                     }
-                    DataManagementItem("Export to CSV", "Download habits as spreadsheet") {
+                    DataManagementItem(stringResource(com.example.ring_2.R.string.action_export_csv), "Download habits as spreadsheet") {
                         // TODO: Implement CSV export
                     }
-                    DataManagementItem("Import Data", "Restore from backup file") {
+                    DataManagementItem(stringResource(com.example.ring_2.R.string.action_import_data), "Restore from backup file") {
                         // TODO: Implement import
                     }
                 }
@@ -60,9 +61,9 @@ fun DataManagementScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Info, contentDescription = null, tint = Color.Gray)
+                    Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.width(16.dp))
-                    Text("Importing data will overwrite your current habits if IDs match.", fontSize = 12.sp, color = Color.Gray)
+                    Text("Importing data will overwrite your current habits if IDs match.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -81,8 +82,8 @@ fun DataManagementItem(title: String, subtitle: String, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(title, fontWeight = FontWeight.Bold)
-                Text(subtitle, fontSize = 12.sp, color = Color.Gray)
+                Text(title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text(subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

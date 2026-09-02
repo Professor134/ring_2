@@ -13,6 +13,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -59,10 +61,10 @@ fun HabitCard(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(categoryName, color = Color(habit.color), fontSize = 12.sp)
                         Spacer(Modifier.width(8.dp))
-                        Text("🔥 ${habit.currentStreak} days", color = Color.Gray, fontSize = 12.sp)
+                        Text("🔥 ${habit.currentStreak} days", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                         if (!isActiveToday) {
                             Spacer(Modifier.width(8.dp))
-                            Text("• Inactive today", color = Color.Red.copy(alpha = 0.7f), fontSize = 12.sp)
+                            Text("• Inactive today", color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f), fontSize = 12.sp)
                         }
                     }
                 }
@@ -75,24 +77,24 @@ fun HabitCard(
                             modifier = Modifier
                                 .size(32.dp)
                                 .clip(CircleShape)
-                                .background(if (isDone) Color(0xFF00E676) else Color.Gray.copy(alpha = 0.2f))
+                                .background(if (isDone) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
                         ) {
                             Icon(
                                 if (isDone) Icons.Default.Check else Icons.Default.Add,
                                 contentDescription = null,
-                                tint = if (isDone) Color.Black else Color.Gray,
+                                tint = if (isDone) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
                     } else {
                         Surface(
                             onClick = onComplete,
-                            color = Color.Gray.copy(alpha = 0.2f),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
                             shape = CircleShape,
                             modifier = Modifier.size(32.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.Add, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                             }
                         }
                     }
@@ -111,14 +113,14 @@ fun HabitCard(
                         .height(6.dp)
                         .clip(CircleShape),
                     color = Color(habit.color),
-                    trackColor = Color.Gray.copy(alpha = 0.2f)
+                    trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
                 )
                 if (isActiveToday) {
                     Spacer(Modifier.height(4.dp))
                     Text(
                         text = "${current.toInt()} / ${habit.target.toInt()} ${habit.unit}",
                         fontSize = 12.sp,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -158,7 +160,7 @@ fun SectionHeader(title: String, onSeeAll: (() -> Unit)? = null) {
         Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
         if (onSeeAll != null) {
             TextButton(onClick = onSeeAll, contentPadding = PaddingValues(0.dp)) {
-                Text("See all", color = Color(0xFF00E676), fontSize = 14.sp)
+                Text(stringResource(com.example.ring_2.R.string.see_all), color = MaterialTheme.colorScheme.primary, fontSize = 14.sp)
             }
         }
     }
@@ -185,21 +187,21 @@ private fun getPreviousOccurrenceTimestamps(habit: HabitEntity, count: Int): Lis
 @Composable
 fun HistoryDot(day: String, isDone: Boolean, value: String = "") {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(day, fontSize = 10.sp, color = Color.Gray)
+        Text(day, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(4.dp))
         Surface(
-            color = if (isDone) Color(0xFF00E676) else Color.Gray.copy(alpha = 0.2f),
+            color = if (isDone) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
             shape = RoundedCornerShape(8.dp),
             modifier = Modifier.size(40.dp, 30.dp)
         ) {
             Box(contentAlignment = Alignment.Center) {
                 if (value.isNotEmpty() && value != "—") {
-                    Text(value, fontSize = 10.sp, color = if (isDone) Color.Black else Color.Gray)
+                    Text(value, fontSize = 10.sp, color = if (isDone) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant)
                 } else {
                     Icon(
                         if (isDone) Icons.Default.Check else Icons.Default.Add,
                         contentDescription = null,
-                        tint = if (isDone) Color.Black else Color.Gray.copy(alpha = 0.5f),
+                        tint = if (isDone) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                         modifier = Modifier.size(12.dp)
                     )
                 }
@@ -225,10 +227,10 @@ fun TaskCard(task: TaskEntity, onClick: () -> Unit, onComplete: () -> Unit) {
                     .size(12.dp)
                     .background(
                         color = when(task.priority) {
-                            TaskPriority.HIGH -> Color.Red
-                            TaskPriority.MEDIUM -> Color.Yellow
-                            TaskPriority.LOW -> Color.Cyan
-                            TaskPriority.URGENT -> Color(0xFFFF5722)
+                            TaskPriority.URGENT -> colorResource(com.example.ring_2.R.color.error)
+                            TaskPriority.HIGH -> colorResource(com.example.ring_2.R.color.priority_high)
+                            TaskPriority.MEDIUM -> colorResource(com.example.ring_2.R.color.priority_medium)
+                            TaskPriority.LOW -> colorResource(com.example.ring_2.R.color.priority_low)
                         },
                         shape = CircleShape
                     )
@@ -237,7 +239,7 @@ fun TaskCard(task: TaskEntity, onClick: () -> Unit, onComplete: () -> Unit) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     task.title,
-                    color = if (task.completed) Color.Gray else MaterialTheme.colorScheme.onSurface,
+                    color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                     textDecoration = if (task.completed) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
                     fontWeight = FontWeight.Medium
                 )
@@ -245,19 +247,19 @@ fun TaskCard(task: TaskEntity, onClick: () -> Unit, onComplete: () -> Unit) {
                     Text(
                         task.priority.name,
                         color = when(task.priority) {
-                            TaskPriority.URGENT -> Color(0xFFFF5722)
-                            TaskPriority.HIGH -> Color.Red
-                            TaskPriority.MEDIUM -> Color.Yellow
-                            TaskPriority.LOW -> Color.Cyan
+                            TaskPriority.URGENT -> colorResource(com.example.ring_2.R.color.error)
+                            TaskPriority.HIGH -> colorResource(com.example.ring_2.R.color.priority_high)
+                            TaskPriority.MEDIUM -> colorResource(com.example.ring_2.R.color.priority_medium)
+                            TaskPriority.LOW -> colorResource(com.example.ring_2.R.color.priority_low)
                         },
                         fontSize = 11.sp
                     )
                     if (task.dueDate != null) {
-                        Text(" • ", color = Color.DarkGray)
+                        Text(" • ", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         val sdf = SimpleDateFormat("d MMM", Locale.getDefault())
                         Text(
                             sdf.format(Date(task.dueDate)),
-                            color = Color.Gray,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 11.sp
                         )
                     }
@@ -268,12 +270,12 @@ fun TaskCard(task: TaskEntity, onClick: () -> Unit, onComplete: () -> Unit) {
                 modifier = Modifier
                     .size(32.dp)
                     .clip(CircleShape)
-                    .background(if (task.completed) Color(0xFF00E676) else Color.Gray.copy(alpha = 0.2f))
+                    .background(if (task.completed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
             ) {
                 Icon(
                     if (task.completed) Icons.Default.Check else Icons.Default.Add,
                     contentDescription = null,
-                    tint = if (task.completed) Color.Black else Color.Gray,
+                    tint = if (task.completed) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(16.dp)
                 )
             }

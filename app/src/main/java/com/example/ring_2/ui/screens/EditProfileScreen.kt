@@ -13,6 +13,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,16 +29,17 @@ fun EditProfileScreen(
     val profile by viewModel.userProfile.collectAsState()
     
     var name by remember { mutableStateOf(profile?.name ?: "") }
-    var selectedColor by remember { mutableIntStateOf(profile?.avatarColor ?: 0xFF00E676.toInt()) }
+    val defaultAvatarColor = MaterialTheme.colorScheme.primary.toArgb()
+    var selectedColor by remember { mutableIntStateOf(profile?.avatarColor ?: defaultAvatarColor) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Edit Profile", color = Color.White) },
+                title = { Text("Edit Profile", color = MaterialTheme.colorScheme.onBackground) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.White)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = MaterialTheme.colorScheme.onBackground)
                     }
                 },
                 actions = {
@@ -48,7 +51,7 @@ fun EditProfileScreen(
                             onBack()
                         }
                     ) {
-                        Text("Save", color = Color(0xFF00E676))
+                        Text(stringResource(com.example.ring_2.R.string.btn_save), color = MaterialTheme.colorScheme.primary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -63,7 +66,6 @@ fun EditProfileScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // Profile Photo / Avatar
             Box(
                 modifier = Modifier
                     .size(120.dp)
@@ -71,21 +73,21 @@ fun EditProfileScreen(
                     .clickable { /* Choose photo */ },
                 contentAlignment = Alignment.Center
             ) {
-                Text(name.take(1).uppercase(), fontSize = 48.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                Text(name.take(1).uppercase(), fontSize = 48.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
             }
-            Text("Tap to change photo", color = Color.Gray, fontSize = 12.sp)
+            Text("Tap to change photo", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
 
             // Name Field
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("NAME", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth())
+                Text(stringResource(com.example.ring_2.R.string.label_habit_name).split(" ")[0], fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color(0xFF00E676)
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary
                     ),
                     shape = RoundedCornerShape(12.dp)
                 )
@@ -93,7 +95,7 @@ fun EditProfileScreen(
 
             // Avatar Color Selection
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("AVATAR COLOR", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth())
+                Text("AVATAR COLOR", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth())
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     val colors = listOf(0xFF00E676, 0xFFFF5252, 0xFF448AFF, 0xFFFFAB40, 0xFFE040FB)
                     colors.forEach { color ->

@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -60,13 +61,13 @@ fun HabitsScreen(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("ELITE", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                            Text(stringResource(com.example.ring_2.R.string.label_elite_points).split(" ")[0], fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                             Spacer(Modifier.width(6.dp))
                             Text(
                                 "${userProg?.currentPoints ?: 0}",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = Color(0xFF00E676)
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
                     }
@@ -76,8 +77,8 @@ fun HabitsScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onAddHabit,
-                containerColor = Color(0xFF00E676),
-                contentColor = Color.Black,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add Habit")
@@ -91,17 +92,17 @@ fun HabitsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
-                placeholder = { Text("Search habits...", color = Color.Gray) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
+                placeholder = { Text("Search habits...", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF00E676),
-                    unfocusedBorderColor = MaterialTheme.colorScheme.surface,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
                     focusedContainerColor = MaterialTheme.colorScheme.surface,
                     unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                     focusedTextColor = MaterialTheme.colorScheme.onSurface,
                     unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    cursorColor = Color(0xFF00E676)
+                    cursorColor = MaterialTheme.colorScheme.primary
                 ),
                 shape = RoundedCornerShape(12.dp)
             )
@@ -132,14 +133,14 @@ fun HabitsScreen(
             if (filteredHabits.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("No habits found", color = Color.Gray, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Text(stringResource(com.example.ring_2.R.string.msg_no_habits), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                         Spacer(Modifier.height(16.dp))
                         Button(
                             onClick = onAddHabit,
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E676)),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("+ Add Habit", color = Color.Black, fontWeight = FontWeight.Bold)
+                            Text(stringResource(com.example.ring_2.R.string.quick_action_add_habit), color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -200,10 +201,10 @@ fun CategoryChip(name: String, isSelected: Boolean, onClick: () -> Unit) {
         onClick = onClick,
         label = { Text(name) },
         colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = Color(0xFF00E676),
-            selectedLabelColor = Color.Black,
+            selectedContainerColor = MaterialTheme.colorScheme.primary,
+            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
             containerColor = MaterialTheme.colorScheme.surface,
-            labelColor = Color.Gray
+            labelColor = MaterialTheme.colorScheme.onSurfaceVariant
         ),
         shape = RoundedCornerShape(12.dp)
     )

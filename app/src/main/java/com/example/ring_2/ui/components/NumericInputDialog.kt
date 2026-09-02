@@ -6,7 +6,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -33,7 +32,7 @@ fun NumericInputDialog(
         ) {
             Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(title, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                Text("Target: $target", fontSize = 14.sp, color = Color.Gray)
+                Text("Target: $target", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 
                 OutlinedTextField(
                     value = value,
@@ -45,11 +44,11 @@ fun NumericInputDialog(
                     label = { Text("Enter amount") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     isError = error != null,
-                    supportingText = { error?.let { Text(it, color = Color.Red) } },
+                    supportingText = { error?.let { Text(it, color = MaterialTheme.colorScheme.error) } },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = MaterialTheme.colorScheme.onSurface,
                         unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        focusedBorderColor = Color(0xFF00E676)
+                        focusedBorderColor = MaterialTheme.colorScheme.primary
                     )
                 )
 
@@ -58,17 +57,17 @@ fun NumericInputDialog(
                     onValueChange = { note = it },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Note (optional)") },
-                    placeholder = { Text("Add a note", color = Color.Gray) },
+                    placeholder = { Text("Add a note", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = MaterialTheme.colorScheme.onSurface,
                         unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        focusedBorderColor = Color(0xFF00E676)
+                        focusedBorderColor = MaterialTheme.colorScheme.primary
                     )
                 )
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     TextButton(onClick = onDismiss) {
-                        Text("Cancel", color = Color.Gray)
+                        Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Spacer(Modifier.width(8.dp))
                     Button(
@@ -82,10 +81,10 @@ fun NumericInputDialog(
                                 onSave(doubleValue, note)
                             }
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E676)),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Save", color = Color.Black)
+                        Text("Save", color = MaterialTheme.colorScheme.onPrimary)
                     }
                 }
             }

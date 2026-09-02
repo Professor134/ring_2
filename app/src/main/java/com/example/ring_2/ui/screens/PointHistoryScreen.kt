@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,10 +32,10 @@ fun PointHistoryScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Elite Point History", color = Color.White, fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(com.example.ring_2.R.string.title_point_history), color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.White)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = MaterialTheme.colorScheme.onBackground)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -43,7 +44,7 @@ fun PointHistoryScreen(
     ) { padding ->
         if (transactions.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text("No transactions yet.", color = Color.Gray)
+                Text("No transactions yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
             LazyColumn(
@@ -62,7 +63,7 @@ fun PointHistoryScreen(
 @Composable
 fun TransactionCard(tx: PointTransactionEntity) {
     Surface(
-        color = Color(0xFF1E1E1E),
+        color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -71,13 +72,13 @@ fun TransactionCard(tx: PointTransactionEntity) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(tx.description, color = Color.White, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                Text(tx.description, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Medium, fontSize = 14.sp)
                 val sdf = SimpleDateFormat("MMM d, yyyy • HH:mm", Locale.getDefault())
-                Text(sdf.format(Date(tx.createdAt)), color = Color.Gray, fontSize = 11.sp)
+                Text(sdf.format(Date(tx.createdAt)), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
             }
             Text(
                 text = if (tx.amount > 0) "+${tx.amount}" else tx.amount.toString(),
-                color = if (tx.amount > 0) Color(0xFF00E676) else Color.Red,
+                color = if (tx.amount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 18.sp
             )
