@@ -33,7 +33,12 @@ fun LineGraph(
     yAxisMax: Float? = null,
     tooltipData: List<String>? = null
 ) {
-    if (dataPoints.isEmpty()) {
+    // Sanitize data points to remove NaN or Infinite values which cause crashes in Canvas
+    val sanitizedPoints = remember(dataPoints) {
+        dataPoints.map { if (it.isNaN() || it.isInfinite()) 0f else it }
+    }
+
+    if (sanitizedPoints.isEmpty()) {
         Box(modifier = modifier, contentAlignment = Alignment.Center) {
             Text("No data available", color = Color.Gray, fontSize = 14.sp)
         }
@@ -44,19 +49,24 @@ fun LineGraph(
     var selectedIndex by remember { mutableStateOf<Int?>(null) }
     val labelStyle = TextStyle(fontSize = 10.sp, color = Color.Gray)
 
-    val rawMax = dataPoints.maxOrNull() ?: 1f
-    val maxVal = yAxisMax ?: (if (rawMax < 1f) 1f else rawMax * 1.2f)
+    val rawMax = sanitizedPoints.maxOrNull() ?: 1f
+    // Ensure maxVal is never 0 to avoid division by zero crashes
+    val maxVal = remember(yAxisMax, rawMax) {
+        val base = yAxisMax ?: (if (rawMax < 1f) 1f else rawMax * 1.2f)
+        if (base <= 0f || base.isNaN() || base.isInfinite()) 1f else base
+    }
+
     val gridLines = 5
 
     Box(modifier = modifier.padding(start = 40.dp, end = 16.dp, top = 16.dp, bottom = 32.dp)) {
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(dataPoints) {
+                .pointerInput(sanitizedPoints) {
                     detectTapGestures { offset ->
-                        if (dataPoints.size > 1) {
-                            val stepX = size.width / (dataPoints.size - 1)
-                            val index = (offset.x / stepX + 0.5f).toInt().coerceIn(0, dataPoints.size - 1)
+                        if (sanitizedPoints.size > 1) {
+                            val stepX = size.width / (sanitizedPoints.size - 1)
+                            val index = (offset.x / stepX + 0.5f).toInt().coerceIn(0, sanitizedPoints.size - 1)
                             selectedIndex = index
                         } else {
                             selectedIndex = 0
@@ -91,11 +101,11 @@ fun LineGraph(
             drawLine(Color.DarkGray.copy(alpha = 0.5f), Offset(0f, 0f), Offset(0f, height), strokeWidth = 1.dp.toPx())
             drawLine(Color.DarkGray.copy(alpha = 0.5f), Offset(0f, height), Offset(width, height), strokeWidth = 1.dp.toPx())
 
-            if (dataPoints.size > 1) {
+            if (sanitizedPoints.size > 1) {
                 val path = Path()
-                val stepX = width / (dataPoints.size - 1)
+                val stepX = width / (sanitizedPoints.size - 1)
                 
-                dataPoints.forEachIndexed { index, value ->
+                sanitizedPoints.forEachIndexed { index, value ->
                     val x = index * stepX
                     val y = height - (value / maxVal * height).coerceIn(0f, height)
                     if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
@@ -108,7 +118,7 @@ fun LineGraph(
                 )
                 
                 // Draw points and markers
-                dataPoints.forEachIndexed { index, value ->
+                sanitizedPoints.forEachIndexed { index, value ->
                     val x = index * stepX
                     val y = height - (value / maxVal * height).coerceIn(0f, height)
                     
@@ -138,16 +148,16 @@ fun LineGraph(
                         }
                     }
                 }
-            } else {
+            } else if (sanitizedPoints.isNotEmpty()) {
                 val x = width / 2
-                val y = height - (dataPoints[0] / maxVal * height).coerceIn(0f, height)
+                val y = height - (sanitizedPoints[0] / maxVal * height).coerceIn(0f, height)
                 drawCircle(color = color, radius = 4.dp.toPx(), center = Offset(x, y))
             }
         }
         
         // Tooltip showing (x, y)
         selectedIndex?.let { index ->
-            if (index < dataPoints.size) {
+            if (index < sanitizedPoints.size) {
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     shape = RoundedCornerShape(8.dp),
@@ -156,7 +166,7 @@ fun LineGraph(
                         .padding(top = 8.dp),
                     shadowElevation = 4.dp
                 ) {
-                    val tooltipText = tooltipData?.getOrNull(index) ?: "${labels.getOrNull(index) ?: "Point $index"}: ${dataPoints[index]}"
+                    val tooltipText = tooltipData?.getOrNull(index) ?: "${labels.getOrNull(index) ?: "Point $index"}: ${sanitizedPoints[index]}%"
                     Text(
                         text = tooltipText,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -188,9 +198,9 @@ fun MultiLineGraph(
     var selectedIndex by remember { mutableStateOf<Int?>(null) }
     val labelStyle = TextStyle(fontSize = 10.sp, color = Color.Gray)
 
-    val allValues = data.values.flatten()
+    val allValues = data.values.flatten().map { if (it.isNaN() || it.isInfinite()) 0f else it }
     val rawMax = allValues.maxOrNull() ?: 1f
-    val maxVal = if (rawMax < 1f) 1f else rawMax * 1.2f
+    val maxVal = if (rawMax <= 0f || rawMax.isNaN() || rawMax.isInfinite()) 1f else rawMax * 1.2f
     val gridLines = 5
 
     Box(modifier = modifier.padding(start = 40.dp, end = 16.dp, top = 16.dp, bottom = 32.dp)) {
@@ -244,7 +254,8 @@ fun MultiLineGraph(
                 val path = Path()
                 val stepX = width / (points.size - 1)
 
-                points.forEachIndexed { index, value ->
+                points.forEachIndexed { index, rawValue ->
+                    val value = if (rawValue.isNaN() || rawValue.isInfinite()) 0f else rawValue
                     val x = index * stepX
                     val y = height - (value / maxVal * height).coerceIn(0f, height)
                     if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
@@ -256,7 +267,8 @@ fun MultiLineGraph(
                     style = Stroke(width = 3.dp.toPx())
                 )
 
-                points.forEachIndexed { index, value ->
+                points.forEachIndexed { index, rawValue ->
+                    val value = if (rawValue.isNaN() || rawValue.isInfinite()) 0f else rawValue
                     val x = index * stepX
                     val y = height - (value / maxVal * height).coerceIn(0f, height)
 
@@ -300,10 +312,11 @@ fun MultiLineGraph(
                     Text(labels.getOrNull(index) ?: "Day $index", color = Color.Gray, fontSize = 10.sp)
                     data.forEach { (label, points) ->
                         if (index < points.size) {
+                            val value = if (points[index].isNaN() || points[index].isInfinite()) 0f else points[index]
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(modifier = Modifier.size(8.dp).background(colors[label] ?: Color.White, CircleShape))
                                 Spacer(Modifier.width(4.dp))
-                                Text("$label: ${points[index]}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                                Text("$label: $value", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                             }
                         }
                     }

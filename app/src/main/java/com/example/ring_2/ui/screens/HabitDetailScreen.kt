@@ -142,22 +142,22 @@ fun HabitDetailScreen(
             }
 
             // SECTION 5: LINE GRAPH
-            DetailChartSection("Progress Trend", if (selectedFilter == "Days") "Last 7 entries" else selectedFilter) {
-                val graphData = progressList.take(7).map { it.actualValue.toFloat() }.reversed()
+            DetailChartSection("Progress Trend", if (selectedFilter == "Days") "Last 7 entries (%)" else selectedFilter) {
+                val graphData = progressList.take(7).map { it.percentage.toFloat() }.reversed()
                 val labels = progressList.take(7).map { SimpleDateFormat("d MMM", Locale.getDefault()).format(Date(it.date)) }.reversed()
                 LineGraph(
                     dataPoints = graphData.ifEmpty { listOf(0f) },
                     labels = labels,
                     color = Color(habit.color),
                     modifier = Modifier.fillMaxSize(),
-                    yAxisMax = if (habit.type == HabitType.MEASURABLE) habit.target.toFloat() * 1.5f else 1.2f
+                    yAxisMax = 100f
                 )
             }
 
-            // SECTION 6: CALENDAR (Interactive)
+            // SECTION 6: CALENDAR (Interactive - Restricted to Today)
             InteractiveCalendarSection(habit, progressList) { date ->
-                val fiveDaysAgo = DateTimeUtils.getMidnightTimestamp(System.currentTimeMillis() - (5 * 24 * 60 * 60 * 1000L))
-                if (date >= fiveDaysAgo && date <= System.currentTimeMillis()) {
+                val today = DateTimeUtils.getMidnightTimestamp(System.currentTimeMillis())
+                if (date == today) {
                     selectedDateForEdit = date
                     showEditDialog = true
                 }
