@@ -1,5 +1,9 @@
 <resources>
     <string name="app_name">RING</string>
+    <string name="shortcut_add_habit">Add habit</string>
+    <string name="shortcut_add_habit_long">Create a new habit</string>
+    <string name="shortcut_add_task">Add task</string>
+    <string name="shortcut_add_task_long">Create a new task</string>
     <string name="action_settings">Settings</string>
 
     <!-- Home Screen -->

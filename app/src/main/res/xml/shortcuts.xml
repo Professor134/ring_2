@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="add_habit"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_add_habit"
+        android:shortcutLongLabel="@string/shortcut_add_habit_long">
+        <intent android:action="android.intent.action.VIEW" android:data="ring://addHabit" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="add_task"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_add_task"
+        android:shortcutLongLabel="@string/shortcut_add_task_long">
+        <intent android:action="android.intent.action.VIEW" android:data="ring://addTask" />
+    </shortcut>
+</shortcuts>

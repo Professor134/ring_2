@@ -24,3 +24,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "ring_2"
 include(":app")
+include(":core")
+include(":data")
+include(":domain")
