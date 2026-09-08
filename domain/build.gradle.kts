@@ -25,4 +25,5 @@ dependencies {
     implementation(project(":core"))
     implementation(project(":data"))
     implementation(libs.hilt.android)
+    testImplementation(libs.junit)
 }

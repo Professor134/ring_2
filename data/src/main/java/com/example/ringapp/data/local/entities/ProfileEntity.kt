@@ -9,6 +9,8 @@ data class ProfileEntity(
     val name: String,
     val avatarColor: Int,
     val photoUri: String? = null,
+    val dateOfBirth: Long? = null,
+    val gender: String? = null,
     val themePreference: ThemeMode,
     val language: String = "en",
     val onboardingComplete: Boolean = false,

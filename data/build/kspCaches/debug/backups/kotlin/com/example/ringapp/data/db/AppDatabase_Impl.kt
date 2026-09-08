@@ -11,10 +11,30 @@ import androidx.room.util.TableInfo.Companion.read
 import androidx.room.util.dropFtsSyncTriggers
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteOpenHelper
+import com.example.ringapp.`data`.local.dao.AchievementDao
+import com.example.ringapp.`data`.local.dao.AchievementDao_Impl
+import com.example.ringapp.`data`.local.dao.AnalyticsDailyDao
+import com.example.ringapp.`data`.local.dao.AnalyticsDailyDao_Impl
+import com.example.ringapp.`data`.local.dao.AppSettingsDao
+import com.example.ringapp.`data`.local.dao.AppSettingsDao_Impl
+import com.example.ringapp.`data`.local.dao.CategoryDao
+import com.example.ringapp.`data`.local.dao.CategoryDao_Impl
 import com.example.ringapp.`data`.local.dao.HabitDao
 import com.example.ringapp.`data`.local.dao.HabitDao_Impl
+import com.example.ringapp.`data`.local.dao.HabitScheduleDao
+import com.example.ringapp.`data`.local.dao.HabitScheduleDao_Impl
+import com.example.ringapp.`data`.local.dao.PointTransactionDao
+import com.example.ringapp.`data`.local.dao.PointTransactionDao_Impl
+import com.example.ringapp.`data`.local.dao.ProfileDao
+import com.example.ringapp.`data`.local.dao.ProfileDao_Impl
 import com.example.ringapp.`data`.local.dao.TaskDao
 import com.example.ringapp.`data`.local.dao.TaskDao_Impl
+import com.example.ringapp.`data`.local.dao.TaskReminderDao
+import com.example.ringapp.`data`.local.dao.TaskReminderDao_Impl
+import com.example.ringapp.`data`.local.dao.UserAchievementDao
+import com.example.ringapp.`data`.local.dao.UserAchievementDao_Impl
+import com.example.ringapp.`data`.local.dao.UserProgressDao
+import com.example.ringapp.`data`.local.dao.UserProgressDao_Impl
 import java.lang.Class
 import java.util.ArrayList
 import java.util.HashMap
@@ -43,9 +63,59 @@ public class AppDatabase_Impl : AppDatabase() {
   }
 
 
+  private val _categoryDao: Lazy<CategoryDao> = lazy {
+    CategoryDao_Impl(this)
+  }
+
+
+  private val _pointTransactionDao: Lazy<PointTransactionDao> = lazy {
+    PointTransactionDao_Impl(this)
+  }
+
+
+  private val _profileDao: Lazy<ProfileDao> = lazy {
+    ProfileDao_Impl(this)
+  }
+
+
+  private val _userProgressDao: Lazy<UserProgressDao> = lazy {
+    UserProgressDao_Impl(this)
+  }
+
+
+  private val _achievementDao: Lazy<AchievementDao> = lazy {
+    AchievementDao_Impl(this)
+  }
+
+
+  private val _appSettingsDao: Lazy<AppSettingsDao> = lazy {
+    AppSettingsDao_Impl(this)
+  }
+
+
+  private val _habitScheduleDao: Lazy<HabitScheduleDao> = lazy {
+    HabitScheduleDao_Impl(this)
+  }
+
+
+  private val _taskReminderDao: Lazy<TaskReminderDao> = lazy {
+    TaskReminderDao_Impl(this)
+  }
+
+
+  private val _userAchievementDao: Lazy<UserAchievementDao> = lazy {
+    UserAchievementDao_Impl(this)
+  }
+
+
+  private val _analyticsDailyDao: Lazy<AnalyticsDailyDao> = lazy {
+    AnalyticsDailyDao_Impl(this)
+  }
+
+
   protected override fun createOpenHelper(config: DatabaseConfiguration): SupportSQLiteOpenHelper {
     val _openCallback: SupportSQLiteOpenHelper.Callback = RoomOpenHelper(config, object :
-        RoomOpenHelper.Delegate(5) {
+        RoomOpenHelper.Delegate(7) {
       public override fun createAllTables(db: SupportSQLiteDatabase) {
         db.execSQL("CREATE TABLE IF NOT EXISTS `habit` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `description` TEXT, `categoryId` INTEGER NOT NULL, `type` TEXT NOT NULL, `target` INTEGER NOT NULL, `unit` TEXT, `scheduleType` TEXT NOT NULL, `scheduleDays` TEXT, `startDate` INTEGER NOT NULL, `currentStreak` INTEGER NOT NULL, `bestStreak` INTEGER NOT NULL, `totalCompletions` INTEGER NOT NULL, `color` INTEGER NOT NULL, `deletedAt` INTEGER, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, FOREIGN KEY(`categoryId`) REFERENCES `category`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )")
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_habit_categoryId` ON `habit` (`categoryId`)")
@@ -65,14 +135,24 @@ public class AppDatabase_Impl : AppDatabase() {
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_point_transaction_cycleId` ON `point_transaction` (`cycleId`)")
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_point_transaction_uniqueReference` ON `point_transaction` (`uniqueReference`)")
         db.execSQL("CREATE TABLE IF NOT EXISTS `user_progress` (`userId` INTEGER NOT NULL, `currentPoints` INTEGER NOT NULL, `lifetimePoints` INTEGER NOT NULL, `level` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`userId`))")
-        db.execSQL("CREATE TABLE IF NOT EXISTS `profile` (`userId` INTEGER NOT NULL, `name` TEXT NOT NULL, `avatarColor` INTEGER NOT NULL, `photoUri` TEXT, `themePreference` TEXT NOT NULL, `language` TEXT NOT NULL, `onboardingComplete` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`userId`))")
+        db.execSQL("CREATE TABLE IF NOT EXISTS `profile` (`userId` INTEGER NOT NULL, `name` TEXT NOT NULL, `avatarColor` INTEGER NOT NULL, `photoUri` TEXT, `dateOfBirth` INTEGER, `gender` TEXT, `themePreference` TEXT NOT NULL, `language` TEXT NOT NULL, `onboardingComplete` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`userId`))")
         db.execSQL("CREATE TABLE IF NOT EXISTS `category` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `color` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `deletedAt` INTEGER)")
         db.execSQL("CREATE TABLE IF NOT EXISTS `achievement` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `category` TEXT NOT NULL, `threshold` INTEGER NOT NULL, `description` TEXT NOT NULL, `icon` TEXT, `pointsAwarded` INTEGER NOT NULL, `unlocked` INTEGER NOT NULL, `unlockedAt` INTEGER, `currentProgress` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL)")
         db.execSQL("CREATE TABLE IF NOT EXISTS `notification` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `message` TEXT NOT NULL, `type` TEXT NOT NULL, `relatedEntityId` INTEGER, `timestamp` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL)")
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_notification_timestamp` ON `notification` (`timestamp`)")
         db.execSQL("CREATE TABLE IF NOT EXISTS `backup_metadata` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `timestamp` INTEGER NOT NULL, `type` TEXT NOT NULL, `status` TEXT NOT NULL, `filePath` TEXT, `sizeBytes` INTEGER, `errorMessage` TEXT, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL)")
+        db.execSQL("CREATE TABLE IF NOT EXISTS `app_settings` (`id` INTEGER NOT NULL, `onboardingCompleted` INTEGER NOT NULL, `notificationsEnabled` INTEGER NOT NULL, `taskRemindersEnabled` INTEGER NOT NULL, `habitRemindersEnabled` INTEGER NOT NULL, `motivationEnabled` INTEGER NOT NULL, `achievementNotificationsEnabled` INTEGER NOT NULL, `streakNotificationsEnabled` INTEGER NOT NULL, `morningMotivationTime` INTEGER, `eveningMotivationTime` INTEGER, `weekStartsOn` INTEGER NOT NULL, `firstDayOfMonth` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+        db.execSQL("CREATE TABLE IF NOT EXISTS `habit_schedules` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `habitId` INTEGER NOT NULL, `scheduleType` TEXT NOT NULL, `interval` INTEGER NOT NULL, `daysOfWeek` TEXT, `dayOfMonth` INTEGER, `month` INTEGER, `dayOfYear` INTEGER, `isActive` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, FOREIGN KEY(`habitId`) REFERENCES `habit`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_habit_schedules_habitId` ON `habit_schedules` (`habitId`)")
+        db.execSQL("CREATE TABLE IF NOT EXISTS `task_reminders` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `taskId` INTEGER NOT NULL, `triggerAt` INTEGER NOT NULL, `reminderType` TEXT NOT NULL, `isEnabled` INTEGER NOT NULL, `alarmId` INTEGER, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, FOREIGN KEY(`taskId`) REFERENCES `task`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_task_reminders_taskId` ON `task_reminders` (`taskId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_task_reminders_triggerAt` ON `task_reminders` (`triggerAt`)")
+        db.execSQL("CREATE TABLE IF NOT EXISTS `user_achievements` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `achievementId` INTEGER NOT NULL, `unlockedAt` INTEGER, `progress` INTEGER NOT NULL, `rewardTransactionId` INTEGER, FOREIGN KEY(`achievementId`) REFERENCES `achievement`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )")
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_user_achievements_achievementId` ON `user_achievements` (`achievementId`)")
+        db.execSQL("CREATE TABLE IF NOT EXISTS `analytics_daily` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `date` INTEGER NOT NULL, `habitScore` INTEGER NOT NULL, `taskScore` INTEGER NOT NULL, `consistencyScore` INTEGER NOT NULL, `streakScore` INTEGER NOT NULL, `productivityScore` INTEGER NOT NULL, `completionRate` INTEGER NOT NULL, `habitCompletions` INTEGER NOT NULL, `taskCompletions` INTEGER NOT NULL, `activeHabits` INTEGER NOT NULL, `activeTasks` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL)")
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_analytics_daily_date` ON `analytics_daily` (`date`)")
         db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)")
-        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '679da11cbf8a7a618405aa8dee2a9522')")
+        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '44a954048476b2e753926387185b2312')")
       }
 
       public override fun dropAllTables(db: SupportSQLiteDatabase) {
@@ -88,6 +168,11 @@ public class AppDatabase_Impl : AppDatabase() {
         db.execSQL("DROP TABLE IF EXISTS `achievement`")
         db.execSQL("DROP TABLE IF EXISTS `notification`")
         db.execSQL("DROP TABLE IF EXISTS `backup_metadata`")
+        db.execSQL("DROP TABLE IF EXISTS `app_settings`")
+        db.execSQL("DROP TABLE IF EXISTS `habit_schedules`")
+        db.execSQL("DROP TABLE IF EXISTS `task_reminders`")
+        db.execSQL("DROP TABLE IF EXISTS `user_achievements`")
+        db.execSQL("DROP TABLE IF EXISTS `analytics_daily`")
         val _callbacks: List<RoomDatabase.Callback>? = mCallbacks
         if (_callbacks != null) {
           for (_callback: RoomDatabase.Callback in _callbacks) {
@@ -439,7 +524,7 @@ public class AppDatabase_Impl : AppDatabase() {
               |""".trimMargin() + _existingUserProgress)
         }
         val _columnsProfile: HashMap<String, TableInfo.Column> =
-            HashMap<String, TableInfo.Column>(9)
+            HashMap<String, TableInfo.Column>(11)
         _columnsProfile.put("userId", TableInfo.Column("userId", "INTEGER", true, 1, null,
             TableInfo.CREATED_FROM_ENTITY))
         _columnsProfile.put("name", TableInfo.Column("name", "TEXT", true, 0, null,
@@ -447,6 +532,10 @@ public class AppDatabase_Impl : AppDatabase() {
         _columnsProfile.put("avatarColor", TableInfo.Column("avatarColor", "INTEGER", true, 0, null,
             TableInfo.CREATED_FROM_ENTITY))
         _columnsProfile.put("photoUri", TableInfo.Column("photoUri", "TEXT", false, 0, null,
+            TableInfo.CREATED_FROM_ENTITY))
+        _columnsProfile.put("dateOfBirth", TableInfo.Column("dateOfBirth", "INTEGER", false, 0,
+            null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsProfile.put("gender", TableInfo.Column("gender", "TEXT", false, 0, null,
             TableInfo.CREATED_FROM_ENTITY))
         _columnsProfile.put("themePreference", TableInfo.Column("themePreference", "TEXT", true, 0,
             null, TableInfo.CREATED_FROM_ENTITY))
@@ -607,9 +696,214 @@ public class AppDatabase_Impl : AppDatabase() {
               | Found:
               |""".trimMargin() + _existingBackupMetadata)
         }
+        val _columnsAppSettings: HashMap<String, TableInfo.Column> =
+            HashMap<String, TableInfo.Column>(13)
+        _columnsAppSettings.put("id", TableInfo.Column("id", "INTEGER", true, 1, null,
+            TableInfo.CREATED_FROM_ENTITY))
+        _columnsAppSettings.put("onboardingCompleted", TableInfo.Column("onboardingCompleted",
+            "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsAppSettings.put("notificationsEnabled", TableInfo.Column("notificationsEnabled",
+            "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsAppSettings.put("taskRemindersEnabled", TableInfo.Column("taskRemindersEnabled",
+            "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsAppSettings.put("habitRemindersEnabled", TableInfo.Column("habitRemindersEnabled",
+            "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsAppSettings.put("motivationEnabled", TableInfo.Column("motivationEnabled",
+            "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsAppSettings.put("achievementNotificationsEnabled",
+            TableInfo.Column("achievementNotificationsEnabled", "INTEGER", true, 0, null,
+            TableInfo.CREATED_FROM_ENTITY))
+        _columnsAppSettings.put("streakNotificationsEnabled",
+            TableInfo.Column("streakNotificationsEnabled", "INTEGER", true, 0, null,
+            TableInfo.CREATED_FROM_ENTITY))
+        _columnsAppSettings.put("morningMotivationTime", TableInfo.Column("morningMotivationTime",
+            "INTEGER", false, 0, null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsAppSettings.put("eveningMotivationTime", TableInfo.Column("eveningMotivationTime",
+            "INTEGER", false, 0, null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsAppSettings.put("weekStartsOn", TableInfo.Column("weekStartsOn", "INTEGER", true, 0,
+            null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsAppSettings.put("firstDayOfMonth", TableInfo.Column("firstDayOfMonth", "INTEGER",
+            true, 0, null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsAppSettings.put("updatedAt", TableInfo.Column("updatedAt", "INTEGER", true, 0, null,
+            TableInfo.CREATED_FROM_ENTITY))
+        val _foreignKeysAppSettings: HashSet<TableInfo.ForeignKey> =
+            HashSet<TableInfo.ForeignKey>(0)
+        val _indicesAppSettings: HashSet<TableInfo.Index> = HashSet<TableInfo.Index>(0)
+        val _infoAppSettings: TableInfo = TableInfo("app_settings", _columnsAppSettings,
+            _foreignKeysAppSettings, _indicesAppSettings)
+        val _existingAppSettings: TableInfo = read(db, "app_settings")
+        if (!_infoAppSettings.equals(_existingAppSettings)) {
+          return RoomOpenHelper.ValidationResult(false, """
+              |app_settings(com.example.ringapp.data.local.entities.AppSettingsEntity).
+              | Expected:
+              |""".trimMargin() + _infoAppSettings + """
+              |
+              | Found:
+              |""".trimMargin() + _existingAppSettings)
+        }
+        val _columnsHabitSchedules: HashMap<String, TableInfo.Column> =
+            HashMap<String, TableInfo.Column>(11)
+        _columnsHabitSchedules.put("id", TableInfo.Column("id", "INTEGER", true, 1, null,
+            TableInfo.CREATED_FROM_ENTITY))
+        _columnsHabitSchedules.put("habitId", TableInfo.Column("habitId", "INTEGER", true, 0, null,
+            TableInfo.CREATED_FROM_ENTITY))
+        _columnsHabitSchedules.put("scheduleType", TableInfo.Column("scheduleType", "TEXT", true, 0,
+            null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsHabitSchedules.put("interval", TableInfo.Column("interval", "INTEGER", true, 0,
+            null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsHabitSchedules.put("daysOfWeek", TableInfo.Column("daysOfWeek", "TEXT", false, 0,
+            null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsHabitSchedules.put("dayOfMonth", TableInfo.Column("dayOfMonth", "INTEGER", false, 0,
+            null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsHabitSchedules.put("month", TableInfo.Column("month", "INTEGER", false, 0, null,
+            TableInfo.CREATED_FROM_ENTITY))
+        _columnsHabitSchedules.put("dayOfYear", TableInfo.Column("dayOfYear", "INTEGER", false, 0,
+            null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsHabitSchedules.put("isActive", TableInfo.Column("isActive", "INTEGER", true, 0,
+            null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsHabitSchedules.put("createdAt", TableInfo.Column("createdAt", "INTEGER", true, 0,
+            null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsHabitSchedules.put("updatedAt", TableInfo.Column("updatedAt", "INTEGER", true, 0,
+            null, TableInfo.CREATED_FROM_ENTITY))
+        val _foreignKeysHabitSchedules: HashSet<TableInfo.ForeignKey> =
+            HashSet<TableInfo.ForeignKey>(1)
+        _foreignKeysHabitSchedules.add(TableInfo.ForeignKey("habit", "CASCADE", "NO ACTION",
+            listOf("habitId"), listOf("id")))
+        val _indicesHabitSchedules: HashSet<TableInfo.Index> = HashSet<TableInfo.Index>(1)
+        _indicesHabitSchedules.add(TableInfo.Index("index_habit_schedules_habitId", false,
+            listOf("habitId"), listOf("ASC")))
+        val _infoHabitSchedules: TableInfo = TableInfo("habit_schedules", _columnsHabitSchedules,
+            _foreignKeysHabitSchedules, _indicesHabitSchedules)
+        val _existingHabitSchedules: TableInfo = read(db, "habit_schedules")
+        if (!_infoHabitSchedules.equals(_existingHabitSchedules)) {
+          return RoomOpenHelper.ValidationResult(false, """
+              |habit_schedules(com.example.ringapp.data.local.entities.HabitScheduleEntity).
+              | Expected:
+              |""".trimMargin() + _infoHabitSchedules + """
+              |
+              | Found:
+              |""".trimMargin() + _existingHabitSchedules)
+        }
+        val _columnsTaskReminders: HashMap<String, TableInfo.Column> =
+            HashMap<String, TableInfo.Column>(8)
+        _columnsTaskReminders.put("id", TableInfo.Column("id", "INTEGER", true, 1, null,
+            TableInfo.CREATED_FROM_ENTITY))
+        _columnsTaskReminders.put("taskId", TableInfo.Column("taskId", "INTEGER", true, 0, null,
+            TableInfo.CREATED_FROM_ENTITY))
+        _columnsTaskReminders.put("triggerAt", TableInfo.Column("triggerAt", "INTEGER", true, 0,
+            null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsTaskReminders.put("reminderType", TableInfo.Column("reminderType", "TEXT", true, 0,
+            null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsTaskReminders.put("isEnabled", TableInfo.Column("isEnabled", "INTEGER", true, 0,
+            null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsTaskReminders.put("alarmId", TableInfo.Column("alarmId", "INTEGER", false, 0, null,
+            TableInfo.CREATED_FROM_ENTITY))
+        _columnsTaskReminders.put("createdAt", TableInfo.Column("createdAt", "INTEGER", true, 0,
+            null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsTaskReminders.put("updatedAt", TableInfo.Column("updatedAt", "INTEGER", true, 0,
+            null, TableInfo.CREATED_FROM_ENTITY))
+        val _foreignKeysTaskReminders: HashSet<TableInfo.ForeignKey> =
+            HashSet<TableInfo.ForeignKey>(1)
+        _foreignKeysTaskReminders.add(TableInfo.ForeignKey("task", "CASCADE", "NO ACTION",
+            listOf("taskId"), listOf("id")))
+        val _indicesTaskReminders: HashSet<TableInfo.Index> = HashSet<TableInfo.Index>(2)
+        _indicesTaskReminders.add(TableInfo.Index("index_task_reminders_taskId", false,
+            listOf("taskId"), listOf("ASC")))
+        _indicesTaskReminders.add(TableInfo.Index("index_task_reminders_triggerAt", false,
+            listOf("triggerAt"), listOf("ASC")))
+        val _infoTaskReminders: TableInfo = TableInfo("task_reminders", _columnsTaskReminders,
+            _foreignKeysTaskReminders, _indicesTaskReminders)
+        val _existingTaskReminders: TableInfo = read(db, "task_reminders")
+        if (!_infoTaskReminders.equals(_existingTaskReminders)) {
+          return RoomOpenHelper.ValidationResult(false, """
+              |task_reminders(com.example.ringapp.data.local.entities.TaskReminderEntity).
+              | Expected:
+              |""".trimMargin() + _infoTaskReminders + """
+              |
+              | Found:
+              |""".trimMargin() + _existingTaskReminders)
+        }
+        val _columnsUserAchievements: HashMap<String, TableInfo.Column> =
+            HashMap<String, TableInfo.Column>(5)
+        _columnsUserAchievements.put("id", TableInfo.Column("id", "INTEGER", true, 1, null,
+            TableInfo.CREATED_FROM_ENTITY))
+        _columnsUserAchievements.put("achievementId", TableInfo.Column("achievementId", "INTEGER",
+            true, 0, null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsUserAchievements.put("unlockedAt", TableInfo.Column("unlockedAt", "INTEGER", false,
+            0, null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsUserAchievements.put("progress", TableInfo.Column("progress", "INTEGER", true, 0,
+            null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsUserAchievements.put("rewardTransactionId", TableInfo.Column("rewardTransactionId",
+            "INTEGER", false, 0, null, TableInfo.CREATED_FROM_ENTITY))
+        val _foreignKeysUserAchievements: HashSet<TableInfo.ForeignKey> =
+            HashSet<TableInfo.ForeignKey>(1)
+        _foreignKeysUserAchievements.add(TableInfo.ForeignKey("achievement", "CASCADE", "NO ACTION",
+            listOf("achievementId"), listOf("id")))
+        val _indicesUserAchievements: HashSet<TableInfo.Index> = HashSet<TableInfo.Index>(1)
+        _indicesUserAchievements.add(TableInfo.Index("index_user_achievements_achievementId", true,
+            listOf("achievementId"), listOf("ASC")))
+        val _infoUserAchievements: TableInfo = TableInfo("user_achievements",
+            _columnsUserAchievements, _foreignKeysUserAchievements, _indicesUserAchievements)
+        val _existingUserAchievements: TableInfo = read(db, "user_achievements")
+        if (!_infoUserAchievements.equals(_existingUserAchievements)) {
+          return RoomOpenHelper.ValidationResult(false, """
+              |user_achievements(com.example.ringapp.data.local.entities.UserAchievementEntity).
+              | Expected:
+              |""".trimMargin() + _infoUserAchievements + """
+              |
+              | Found:
+              |""".trimMargin() + _existingUserAchievements)
+        }
+        val _columnsAnalyticsDaily: HashMap<String, TableInfo.Column> =
+            HashMap<String, TableInfo.Column>(14)
+        _columnsAnalyticsDaily.put("id", TableInfo.Column("id", "INTEGER", true, 1, null,
+            TableInfo.CREATED_FROM_ENTITY))
+        _columnsAnalyticsDaily.put("date", TableInfo.Column("date", "INTEGER", true, 0, null,
+            TableInfo.CREATED_FROM_ENTITY))
+        _columnsAnalyticsDaily.put("habitScore", TableInfo.Column("habitScore", "INTEGER", true, 0,
+            null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsAnalyticsDaily.put("taskScore", TableInfo.Column("taskScore", "INTEGER", true, 0,
+            null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsAnalyticsDaily.put("consistencyScore", TableInfo.Column("consistencyScore",
+            "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsAnalyticsDaily.put("streakScore", TableInfo.Column("streakScore", "INTEGER", true,
+            0, null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsAnalyticsDaily.put("productivityScore", TableInfo.Column("productivityScore",
+            "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsAnalyticsDaily.put("completionRate", TableInfo.Column("completionRate", "INTEGER",
+            true, 0, null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsAnalyticsDaily.put("habitCompletions", TableInfo.Column("habitCompletions",
+            "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsAnalyticsDaily.put("taskCompletions", TableInfo.Column("taskCompletions", "INTEGER",
+            true, 0, null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsAnalyticsDaily.put("activeHabits", TableInfo.Column("activeHabits", "INTEGER", true,
+            0, null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsAnalyticsDaily.put("activeTasks", TableInfo.Column("activeTasks", "INTEGER", true,
+            0, null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsAnalyticsDaily.put("createdAt", TableInfo.Column("createdAt", "INTEGER", true, 0,
+            null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsAnalyticsDaily.put("updatedAt", TableInfo.Column("updatedAt", "INTEGER", true, 0,
+            null, TableInfo.CREATED_FROM_ENTITY))
+        val _foreignKeysAnalyticsDaily: HashSet<TableInfo.ForeignKey> =
+            HashSet<TableInfo.ForeignKey>(0)
+        val _indicesAnalyticsDaily: HashSet<TableInfo.Index> = HashSet<TableInfo.Index>(1)
+        _indicesAnalyticsDaily.add(TableInfo.Index("index_analytics_daily_date", true,
+            listOf("date"), listOf("ASC")))
+        val _infoAnalyticsDaily: TableInfo = TableInfo("analytics_daily", _columnsAnalyticsDaily,
+            _foreignKeysAnalyticsDaily, _indicesAnalyticsDaily)
+        val _existingAnalyticsDaily: TableInfo = read(db, "analytics_daily")
+        if (!_infoAnalyticsDaily.equals(_existingAnalyticsDaily)) {
+          return RoomOpenHelper.ValidationResult(false, """
+              |analytics_daily(com.example.ringapp.data.local.entities.AnalyticsDailyEntity).
+              | Expected:
+              |""".trimMargin() + _infoAnalyticsDaily + """
+              |
+              | Found:
+              |""".trimMargin() + _existingAnalyticsDaily)
+        }
         return RoomOpenHelper.ValidationResult(true, null)
       }
-    }, "679da11cbf8a7a618405aa8dee2a9522", "de4f38e64f43170e99945589c032bb97")
+    }, "44a954048476b2e753926387185b2312", "f2bad45a236dfd7e01490febed092ec5")
     val _sqliteConfig: SupportSQLiteOpenHelper.Configuration =
         SupportSQLiteOpenHelper.Configuration.builder(config.context).name(config.name).callback(_openCallback).build()
     val _helper: SupportSQLiteOpenHelper = config.sqliteOpenHelperFactory.create(_sqliteConfig)
@@ -620,7 +914,7 @@ public class AppDatabase_Impl : AppDatabase() {
     val _shadowTablesMap: HashMap<String, String> = HashMap<String, String>(0)
     val _viewTables: HashMap<String, Set<String>> = HashMap<String, Set<String>>(0)
     return InvalidationTracker(this, _shadowTablesMap, _viewTables,
-        "habit","habit_progress","streak_cycle","streak_milestone","task","point_transaction","user_progress","profile","category","achievement","notification","backup_metadata")
+        "habit","habit_progress","streak_cycle","streak_milestone","task","point_transaction","user_progress","profile","category","achievement","notification","backup_metadata","app_settings","habit_schedules","task_reminders","user_achievements","analytics_daily")
   }
 
   public override fun clearAllTables() {
@@ -648,6 +942,11 @@ public class AppDatabase_Impl : AppDatabase() {
       _db.execSQL("DELETE FROM `achievement`")
       _db.execSQL("DELETE FROM `notification`")
       _db.execSQL("DELETE FROM `backup_metadata`")
+      _db.execSQL("DELETE FROM `app_settings`")
+      _db.execSQL("DELETE FROM `habit_schedules`")
+      _db.execSQL("DELETE FROM `task_reminders`")
+      _db.execSQL("DELETE FROM `user_achievements`")
+      _db.execSQL("DELETE FROM `analytics_daily`")
       super.setTransactionSuccessful()
     } finally {
       super.endTransaction()
@@ -666,6 +965,22 @@ public class AppDatabase_Impl : AppDatabase() {
         HashMap<Class<out Any>, List<Class<out Any>>>()
     _typeConvertersMap.put(HabitDao::class.java, HabitDao_Impl.getRequiredConverters())
     _typeConvertersMap.put(TaskDao::class.java, TaskDao_Impl.getRequiredConverters())
+    _typeConvertersMap.put(CategoryDao::class.java, CategoryDao_Impl.getRequiredConverters())
+    _typeConvertersMap.put(PointTransactionDao::class.java,
+        PointTransactionDao_Impl.getRequiredConverters())
+    _typeConvertersMap.put(ProfileDao::class.java, ProfileDao_Impl.getRequiredConverters())
+    _typeConvertersMap.put(UserProgressDao::class.java,
+        UserProgressDao_Impl.getRequiredConverters())
+    _typeConvertersMap.put(AchievementDao::class.java, AchievementDao_Impl.getRequiredConverters())
+    _typeConvertersMap.put(AppSettingsDao::class.java, AppSettingsDao_Impl.getRequiredConverters())
+    _typeConvertersMap.put(HabitScheduleDao::class.java,
+        HabitScheduleDao_Impl.getRequiredConverters())
+    _typeConvertersMap.put(TaskReminderDao::class.java,
+        TaskReminderDao_Impl.getRequiredConverters())
+    _typeConvertersMap.put(UserAchievementDao::class.java,
+        UserAchievementDao_Impl.getRequiredConverters())
+    _typeConvertersMap.put(AnalyticsDailyDao::class.java,
+        AnalyticsDailyDao_Impl.getRequiredConverters())
     return _typeConvertersMap
   }
 
@@ -685,4 +1000,24 @@ public class AppDatabase_Impl : AppDatabase() {
   public override fun habitDao(): HabitDao = _habitDao.value
 
   public override fun taskDao(): TaskDao = _taskDao.value
+
+  public override fun categoryDao(): CategoryDao = _categoryDao.value
+
+  public override fun pointTransactionDao(): PointTransactionDao = _pointTransactionDao.value
+
+  public override fun profileDao(): ProfileDao = _profileDao.value
+
+  public override fun userProgressDao(): UserProgressDao = _userProgressDao.value
+
+  public override fun achievementDao(): AchievementDao = _achievementDao.value
+
+  public override fun appSettingsDao(): AppSettingsDao = _appSettingsDao.value
+
+  public override fun habitScheduleDao(): HabitScheduleDao = _habitScheduleDao.value
+
+  public override fun taskReminderDao(): TaskReminderDao = _taskReminderDao.value
+
+  public override fun userAchievementDao(): UserAchievementDao = _userAchievementDao.value
+
+  public override fun analyticsDailyDao(): AnalyticsDailyDao = _analyticsDailyDao.value
 }

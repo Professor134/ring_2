@@ -55,6 +55,13 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/ring_widget_info" />
         </receiver>
+        <receiver android:name="com.example.ringapp.work.BootReceiver" android:enabled="true" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+        <receiver android:name="com.example.ringapp.work.ReminderAlarmReceiver" android:exported="false" />
 
     </application>
 

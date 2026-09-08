@@ -15,6 +15,28 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
     }
 }
 
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE profile ADD COLUMN dateOfBirth INTEGER")
+        db.execSQL("ALTER TABLE profile ADD COLUMN gender TEXT")
+    }
+}
+
+val MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS app_settings (id INTEGER NOT NULL PRIMARY KEY, onboardingCompleted INTEGER NOT NULL, notificationsEnabled INTEGER NOT NULL, taskRemindersEnabled INTEGER NOT NULL, habitRemindersEnabled INTEGER NOT NULL, motivationEnabled INTEGER NOT NULL, achievementNotificationsEnabled INTEGER NOT NULL, streakNotificationsEnabled INTEGER NOT NULL, morningMotivationTime INTEGER, eveningMotivationTime INTEGER, weekStartsOn INTEGER NOT NULL, firstDayOfMonth INTEGER NOT NULL, updatedAt INTEGER NOT NULL)")
+        db.execSQL("CREATE TABLE IF NOT EXISTS habit_schedules (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, habitId INTEGER NOT NULL, scheduleType TEXT NOT NULL, interval INTEGER NOT NULL, daysOfWeek TEXT, dayOfMonth INTEGER, month INTEGER, dayOfYear INTEGER, isActive INTEGER NOT NULL, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL, FOREIGN KEY(habitId) REFERENCES habit(id) ON UPDATE NO ACTION ON DELETE CASCADE)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_habit_schedules_habitId ON habit_schedules(habitId)")
+        db.execSQL("CREATE TABLE IF NOT EXISTS task_reminders (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, taskId INTEGER NOT NULL, triggerAt INTEGER NOT NULL, reminderType TEXT NOT NULL, isEnabled INTEGER NOT NULL, alarmId INTEGER, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL, FOREIGN KEY(taskId) REFERENCES task(id) ON UPDATE NO ACTION ON DELETE CASCADE)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_task_reminders_taskId ON task_reminders(taskId)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_task_reminders_triggerAt ON task_reminders(triggerAt)")
+        db.execSQL("CREATE TABLE IF NOT EXISTS user_achievements (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, achievementId INTEGER NOT NULL, unlockedAt INTEGER, progress INTEGER NOT NULL, rewardTransactionId INTEGER, FOREIGN KEY(achievementId) REFERENCES achievement(id) ON UPDATE NO ACTION ON DELETE CASCADE)")
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_user_achievements_achievementId ON user_achievements(achievementId)")
+        db.execSQL("CREATE TABLE IF NOT EXISTS analytics_daily (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, date INTEGER NOT NULL, habitScore INTEGER NOT NULL, taskScore INTEGER NOT NULL, consistencyScore INTEGER NOT NULL, streakScore INTEGER NOT NULL, productivityScore INTEGER NOT NULL, completionRate INTEGER NOT NULL, habitCompletions INTEGER NOT NULL, taskCompletions INTEGER NOT NULL, activeHabits INTEGER NOT NULL, activeTasks INTEGER NOT NULL, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL)")
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_analytics_daily_date ON analytics_daily(date)")
+    }
+}
+
 private fun createV5Tables(db: SupportSQLiteDatabase) {
     db.execSQL("CREATE TABLE IF NOT EXISTS category (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name TEXT NOT NULL, color INTEGER NOT NULL, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL, deletedAt INTEGER)")
     db.execSQL("CREATE TABLE IF NOT EXISTS habit (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name TEXT NOT NULL, description TEXT, categoryId INTEGER NOT NULL, type TEXT NOT NULL, target INTEGER NOT NULL, unit TEXT, scheduleType TEXT NOT NULL, scheduleDays TEXT, startDate INTEGER NOT NULL, currentStreak INTEGER NOT NULL, bestStreak INTEGER NOT NULL, totalCompletions INTEGER NOT NULL, color INTEGER NOT NULL, deletedAt INTEGER, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL, FOREIGN KEY(categoryId) REFERENCES category(id) ON UPDATE NO ACTION ON DELETE RESTRICT)")

@@ -1,13 +1,16 @@
 package com.example.ringapp.`data`.local.dao
 
 import android.database.Cursor
+import android.os.CancellationSignal
 import androidx.room.CoroutinesRoom
+import androidx.room.CoroutinesRoom.Companion.execute
 import androidx.room.EntityDeletionOrUpdateAdapter
 import androidx.room.EntityInsertionAdapter
 import androidx.room.RoomDatabase
 import androidx.room.RoomSQLiteQuery
 import androidx.room.RoomSQLiteQuery.Companion.acquire
 import androidx.room.SharedSQLiteStatement
+import androidx.room.util.createCancellationSignal
 import androidx.room.util.getColumnIndexOrThrow
 import androidx.room.util.query
 import androidx.sqlite.db.SupportSQLiteStatement
@@ -357,6 +360,364 @@ public class TaskDao_Impl(
 
       protected fun finalize() {
         _statement.release()
+      }
+    })
+  }
+
+  public override fun observeById(taskId: Long): Flow<TaskEntity?> {
+    val _sql: String = "SELECT * FROM task WHERE id = ? LIMIT 1"
+    val _statement: RoomSQLiteQuery = acquire(_sql, 1)
+    var _argIndex: Int = 1
+    _statement.bindLong(_argIndex, taskId)
+    return CoroutinesRoom.createFlow(__db, false, arrayOf("task"), object : Callable<TaskEntity?> {
+      public override fun call(): TaskEntity? {
+        val _cursor: Cursor = query(__db, _statement, false, null)
+        try {
+          val _cursorIndexOfId: Int = getColumnIndexOrThrow(_cursor, "id")
+          val _cursorIndexOfTitle: Int = getColumnIndexOrThrow(_cursor, "title")
+          val _cursorIndexOfDescription: Int = getColumnIndexOrThrow(_cursor, "description")
+          val _cursorIndexOfPriority: Int = getColumnIndexOrThrow(_cursor, "priority")
+          val _cursorIndexOfDueDate: Int = getColumnIndexOrThrow(_cursor, "dueDate")
+          val _cursorIndexOfDueTime: Int = getColumnIndexOrThrow(_cursor, "dueTime")
+          val _cursorIndexOfRepeatType: Int = getColumnIndexOrThrow(_cursor, "repeatType")
+          val _cursorIndexOfRepeatInterval: Int = getColumnIndexOrThrow(_cursor, "repeatInterval")
+          val _cursorIndexOfRepeatEndDate: Int = getColumnIndexOrThrow(_cursor, "repeatEndDate")
+          val _cursorIndexOfCompleted: Int = getColumnIndexOrThrow(_cursor, "completed")
+          val _cursorIndexOfCompletedAt: Int = getColumnIndexOrThrow(_cursor, "completedAt")
+          val _cursorIndexOfReminderEnabled: Int = getColumnIndexOrThrow(_cursor, "reminderEnabled")
+          val _cursorIndexOfReminderTime: Int = getColumnIndexOrThrow(_cursor, "reminderTime")
+          val _cursorIndexOfParentTaskId: Int = getColumnIndexOrThrow(_cursor, "parentTaskId")
+          val _cursorIndexOfCreatedAt: Int = getColumnIndexOrThrow(_cursor, "createdAt")
+          val _cursorIndexOfUpdatedAt: Int = getColumnIndexOrThrow(_cursor, "updatedAt")
+          val _cursorIndexOfDeletedAt: Int = getColumnIndexOrThrow(_cursor, "deletedAt")
+          val _result: TaskEntity?
+          if (_cursor.moveToFirst()) {
+            val _tmpId: Long
+            _tmpId = _cursor.getLong(_cursorIndexOfId)
+            val _tmpTitle: String
+            _tmpTitle = _cursor.getString(_cursorIndexOfTitle)
+            val _tmpDescription: String?
+            if (_cursor.isNull(_cursorIndexOfDescription)) {
+              _tmpDescription = null
+            } else {
+              _tmpDescription = _cursor.getString(_cursorIndexOfDescription)
+            }
+            val _tmpPriority: TaskPriority
+            val _tmp: String
+            _tmp = _cursor.getString(_cursorIndexOfPriority)
+            _tmpPriority = __converters.stringToPriority(_tmp)
+            val _tmpDueDate: Long?
+            if (_cursor.isNull(_cursorIndexOfDueDate)) {
+              _tmpDueDate = null
+            } else {
+              _tmpDueDate = _cursor.getLong(_cursorIndexOfDueDate)
+            }
+            val _tmpDueTime: Long?
+            if (_cursor.isNull(_cursorIndexOfDueTime)) {
+              _tmpDueTime = null
+            } else {
+              _tmpDueTime = _cursor.getLong(_cursorIndexOfDueTime)
+            }
+            val _tmpRepeatType: RepeatType
+            val _tmp_1: String
+            _tmp_1 = _cursor.getString(_cursorIndexOfRepeatType)
+            _tmpRepeatType = __converters.stringToRepeatType(_tmp_1)
+            val _tmpRepeatInterval: Int
+            _tmpRepeatInterval = _cursor.getInt(_cursorIndexOfRepeatInterval)
+            val _tmpRepeatEndDate: Long?
+            if (_cursor.isNull(_cursorIndexOfRepeatEndDate)) {
+              _tmpRepeatEndDate = null
+            } else {
+              _tmpRepeatEndDate = _cursor.getLong(_cursorIndexOfRepeatEndDate)
+            }
+            val _tmpCompleted: Boolean
+            val _tmp_2: Int
+            _tmp_2 = _cursor.getInt(_cursorIndexOfCompleted)
+            _tmpCompleted = _tmp_2 != 0
+            val _tmpCompletedAt: Long?
+            if (_cursor.isNull(_cursorIndexOfCompletedAt)) {
+              _tmpCompletedAt = null
+            } else {
+              _tmpCompletedAt = _cursor.getLong(_cursorIndexOfCompletedAt)
+            }
+            val _tmpReminderEnabled: Boolean
+            val _tmp_3: Int
+            _tmp_3 = _cursor.getInt(_cursorIndexOfReminderEnabled)
+            _tmpReminderEnabled = _tmp_3 != 0
+            val _tmpReminderTime: Long?
+            if (_cursor.isNull(_cursorIndexOfReminderTime)) {
+              _tmpReminderTime = null
+            } else {
+              _tmpReminderTime = _cursor.getLong(_cursorIndexOfReminderTime)
+            }
+            val _tmpParentTaskId: Long?
+            if (_cursor.isNull(_cursorIndexOfParentTaskId)) {
+              _tmpParentTaskId = null
+            } else {
+              _tmpParentTaskId = _cursor.getLong(_cursorIndexOfParentTaskId)
+            }
+            val _tmpCreatedAt: Long
+            _tmpCreatedAt = _cursor.getLong(_cursorIndexOfCreatedAt)
+            val _tmpUpdatedAt: Long
+            _tmpUpdatedAt = _cursor.getLong(_cursorIndexOfUpdatedAt)
+            val _tmpDeletedAt: Long?
+            if (_cursor.isNull(_cursorIndexOfDeletedAt)) {
+              _tmpDeletedAt = null
+            } else {
+              _tmpDeletedAt = _cursor.getLong(_cursorIndexOfDeletedAt)
+            }
+            _result =
+                TaskEntity(_tmpId,_tmpTitle,_tmpDescription,_tmpPriority,_tmpDueDate,_tmpDueTime,_tmpRepeatType,_tmpRepeatInterval,_tmpRepeatEndDate,_tmpCompleted,_tmpCompletedAt,_tmpReminderEnabled,_tmpReminderTime,_tmpParentTaskId,_tmpCreatedAt,_tmpUpdatedAt,_tmpDeletedAt)
+          } else {
+            _result = null
+          }
+          return _result
+        } finally {
+          _cursor.close()
+        }
+      }
+
+      protected fun finalize() {
+        _statement.release()
+      }
+    })
+  }
+
+  public override fun observeToday(start: Long, end: Long): Flow<List<TaskEntity>> {
+    val _sql: String =
+        "SELECT * FROM task WHERE deletedAt IS NULL AND (dueDate IS NULL OR dueDate BETWEEN ? AND ?) ORDER BY completed, dueDate, title"
+    val _statement: RoomSQLiteQuery = acquire(_sql, 2)
+    var _argIndex: Int = 1
+    _statement.bindLong(_argIndex, start)
+    _argIndex = 2
+    _statement.bindLong(_argIndex, end)
+    return CoroutinesRoom.createFlow(__db, false, arrayOf("task"), object :
+        Callable<List<TaskEntity>> {
+      public override fun call(): List<TaskEntity> {
+        val _cursor: Cursor = query(__db, _statement, false, null)
+        try {
+          val _cursorIndexOfId: Int = getColumnIndexOrThrow(_cursor, "id")
+          val _cursorIndexOfTitle: Int = getColumnIndexOrThrow(_cursor, "title")
+          val _cursorIndexOfDescription: Int = getColumnIndexOrThrow(_cursor, "description")
+          val _cursorIndexOfPriority: Int = getColumnIndexOrThrow(_cursor, "priority")
+          val _cursorIndexOfDueDate: Int = getColumnIndexOrThrow(_cursor, "dueDate")
+          val _cursorIndexOfDueTime: Int = getColumnIndexOrThrow(_cursor, "dueTime")
+          val _cursorIndexOfRepeatType: Int = getColumnIndexOrThrow(_cursor, "repeatType")
+          val _cursorIndexOfRepeatInterval: Int = getColumnIndexOrThrow(_cursor, "repeatInterval")
+          val _cursorIndexOfRepeatEndDate: Int = getColumnIndexOrThrow(_cursor, "repeatEndDate")
+          val _cursorIndexOfCompleted: Int = getColumnIndexOrThrow(_cursor, "completed")
+          val _cursorIndexOfCompletedAt: Int = getColumnIndexOrThrow(_cursor, "completedAt")
+          val _cursorIndexOfReminderEnabled: Int = getColumnIndexOrThrow(_cursor, "reminderEnabled")
+          val _cursorIndexOfReminderTime: Int = getColumnIndexOrThrow(_cursor, "reminderTime")
+          val _cursorIndexOfParentTaskId: Int = getColumnIndexOrThrow(_cursor, "parentTaskId")
+          val _cursorIndexOfCreatedAt: Int = getColumnIndexOrThrow(_cursor, "createdAt")
+          val _cursorIndexOfUpdatedAt: Int = getColumnIndexOrThrow(_cursor, "updatedAt")
+          val _cursorIndexOfDeletedAt: Int = getColumnIndexOrThrow(_cursor, "deletedAt")
+          val _result: MutableList<TaskEntity> = ArrayList<TaskEntity>(_cursor.getCount())
+          while (_cursor.moveToNext()) {
+            val _item: TaskEntity
+            val _tmpId: Long
+            _tmpId = _cursor.getLong(_cursorIndexOfId)
+            val _tmpTitle: String
+            _tmpTitle = _cursor.getString(_cursorIndexOfTitle)
+            val _tmpDescription: String?
+            if (_cursor.isNull(_cursorIndexOfDescription)) {
+              _tmpDescription = null
+            } else {
+              _tmpDescription = _cursor.getString(_cursorIndexOfDescription)
+            }
+            val _tmpPriority: TaskPriority
+            val _tmp: String
+            _tmp = _cursor.getString(_cursorIndexOfPriority)
+            _tmpPriority = __converters.stringToPriority(_tmp)
+            val _tmpDueDate: Long?
+            if (_cursor.isNull(_cursorIndexOfDueDate)) {
+              _tmpDueDate = null
+            } else {
+              _tmpDueDate = _cursor.getLong(_cursorIndexOfDueDate)
+            }
+            val _tmpDueTime: Long?
+            if (_cursor.isNull(_cursorIndexOfDueTime)) {
+              _tmpDueTime = null
+            } else {
+              _tmpDueTime = _cursor.getLong(_cursorIndexOfDueTime)
+            }
+            val _tmpRepeatType: RepeatType
+            val _tmp_1: String
+            _tmp_1 = _cursor.getString(_cursorIndexOfRepeatType)
+            _tmpRepeatType = __converters.stringToRepeatType(_tmp_1)
+            val _tmpRepeatInterval: Int
+            _tmpRepeatInterval = _cursor.getInt(_cursorIndexOfRepeatInterval)
+            val _tmpRepeatEndDate: Long?
+            if (_cursor.isNull(_cursorIndexOfRepeatEndDate)) {
+              _tmpRepeatEndDate = null
+            } else {
+              _tmpRepeatEndDate = _cursor.getLong(_cursorIndexOfRepeatEndDate)
+            }
+            val _tmpCompleted: Boolean
+            val _tmp_2: Int
+            _tmp_2 = _cursor.getInt(_cursorIndexOfCompleted)
+            _tmpCompleted = _tmp_2 != 0
+            val _tmpCompletedAt: Long?
+            if (_cursor.isNull(_cursorIndexOfCompletedAt)) {
+              _tmpCompletedAt = null
+            } else {
+              _tmpCompletedAt = _cursor.getLong(_cursorIndexOfCompletedAt)
+            }
+            val _tmpReminderEnabled: Boolean
+            val _tmp_3: Int
+            _tmp_3 = _cursor.getInt(_cursorIndexOfReminderEnabled)
+            _tmpReminderEnabled = _tmp_3 != 0
+            val _tmpReminderTime: Long?
+            if (_cursor.isNull(_cursorIndexOfReminderTime)) {
+              _tmpReminderTime = null
+            } else {
+              _tmpReminderTime = _cursor.getLong(_cursorIndexOfReminderTime)
+            }
+            val _tmpParentTaskId: Long?
+            if (_cursor.isNull(_cursorIndexOfParentTaskId)) {
+              _tmpParentTaskId = null
+            } else {
+              _tmpParentTaskId = _cursor.getLong(_cursorIndexOfParentTaskId)
+            }
+            val _tmpCreatedAt: Long
+            _tmpCreatedAt = _cursor.getLong(_cursorIndexOfCreatedAt)
+            val _tmpUpdatedAt: Long
+            _tmpUpdatedAt = _cursor.getLong(_cursorIndexOfUpdatedAt)
+            val _tmpDeletedAt: Long?
+            if (_cursor.isNull(_cursorIndexOfDeletedAt)) {
+              _tmpDeletedAt = null
+            } else {
+              _tmpDeletedAt = _cursor.getLong(_cursorIndexOfDeletedAt)
+            }
+            _item =
+                TaskEntity(_tmpId,_tmpTitle,_tmpDescription,_tmpPriority,_tmpDueDate,_tmpDueTime,_tmpRepeatType,_tmpRepeatInterval,_tmpRepeatEndDate,_tmpCompleted,_tmpCompletedAt,_tmpReminderEnabled,_tmpReminderTime,_tmpParentTaskId,_tmpCreatedAt,_tmpUpdatedAt,_tmpDeletedAt)
+            _result.add(_item)
+          }
+          return _result
+        } finally {
+          _cursor.close()
+        }
+      }
+
+      protected fun finalize() {
+        _statement.release()
+      }
+    })
+  }
+
+  public override suspend fun activeReminders(): List<TaskEntity> {
+    val _sql: String =
+        "SELECT * FROM task WHERE deletedAt IS NULL AND reminderEnabled = 1 AND reminderTime IS NOT NULL AND completed = 0"
+    val _statement: RoomSQLiteQuery = acquire(_sql, 0)
+    val _cancellationSignal: CancellationSignal? = createCancellationSignal()
+    return execute(__db, false, _cancellationSignal, object : Callable<List<TaskEntity>> {
+      public override fun call(): List<TaskEntity> {
+        val _cursor: Cursor = query(__db, _statement, false, null)
+        try {
+          val _cursorIndexOfId: Int = getColumnIndexOrThrow(_cursor, "id")
+          val _cursorIndexOfTitle: Int = getColumnIndexOrThrow(_cursor, "title")
+          val _cursorIndexOfDescription: Int = getColumnIndexOrThrow(_cursor, "description")
+          val _cursorIndexOfPriority: Int = getColumnIndexOrThrow(_cursor, "priority")
+          val _cursorIndexOfDueDate: Int = getColumnIndexOrThrow(_cursor, "dueDate")
+          val _cursorIndexOfDueTime: Int = getColumnIndexOrThrow(_cursor, "dueTime")
+          val _cursorIndexOfRepeatType: Int = getColumnIndexOrThrow(_cursor, "repeatType")
+          val _cursorIndexOfRepeatInterval: Int = getColumnIndexOrThrow(_cursor, "repeatInterval")
+          val _cursorIndexOfRepeatEndDate: Int = getColumnIndexOrThrow(_cursor, "repeatEndDate")
+          val _cursorIndexOfCompleted: Int = getColumnIndexOrThrow(_cursor, "completed")
+          val _cursorIndexOfCompletedAt: Int = getColumnIndexOrThrow(_cursor, "completedAt")
+          val _cursorIndexOfReminderEnabled: Int = getColumnIndexOrThrow(_cursor, "reminderEnabled")
+          val _cursorIndexOfReminderTime: Int = getColumnIndexOrThrow(_cursor, "reminderTime")
+          val _cursorIndexOfParentTaskId: Int = getColumnIndexOrThrow(_cursor, "parentTaskId")
+          val _cursorIndexOfCreatedAt: Int = getColumnIndexOrThrow(_cursor, "createdAt")
+          val _cursorIndexOfUpdatedAt: Int = getColumnIndexOrThrow(_cursor, "updatedAt")
+          val _cursorIndexOfDeletedAt: Int = getColumnIndexOrThrow(_cursor, "deletedAt")
+          val _result: MutableList<TaskEntity> = ArrayList<TaskEntity>(_cursor.getCount())
+          while (_cursor.moveToNext()) {
+            val _item: TaskEntity
+            val _tmpId: Long
+            _tmpId = _cursor.getLong(_cursorIndexOfId)
+            val _tmpTitle: String
+            _tmpTitle = _cursor.getString(_cursorIndexOfTitle)
+            val _tmpDescription: String?
+            if (_cursor.isNull(_cursorIndexOfDescription)) {
+              _tmpDescription = null
+            } else {
+              _tmpDescription = _cursor.getString(_cursorIndexOfDescription)
+            }
+            val _tmpPriority: TaskPriority
+            val _tmp: String
+            _tmp = _cursor.getString(_cursorIndexOfPriority)
+            _tmpPriority = __converters.stringToPriority(_tmp)
+            val _tmpDueDate: Long?
+            if (_cursor.isNull(_cursorIndexOfDueDate)) {
+              _tmpDueDate = null
+            } else {
+              _tmpDueDate = _cursor.getLong(_cursorIndexOfDueDate)
+            }
+            val _tmpDueTime: Long?
+            if (_cursor.isNull(_cursorIndexOfDueTime)) {
+              _tmpDueTime = null
+            } else {
+              _tmpDueTime = _cursor.getLong(_cursorIndexOfDueTime)
+            }
+            val _tmpRepeatType: RepeatType
+            val _tmp_1: String
+            _tmp_1 = _cursor.getString(_cursorIndexOfRepeatType)
+            _tmpRepeatType = __converters.stringToRepeatType(_tmp_1)
+            val _tmpRepeatInterval: Int
+            _tmpRepeatInterval = _cursor.getInt(_cursorIndexOfRepeatInterval)
+            val _tmpRepeatEndDate: Long?
+            if (_cursor.isNull(_cursorIndexOfRepeatEndDate)) {
+              _tmpRepeatEndDate = null
+            } else {
+              _tmpRepeatEndDate = _cursor.getLong(_cursorIndexOfRepeatEndDate)
+            }
+            val _tmpCompleted: Boolean
+            val _tmp_2: Int
+            _tmp_2 = _cursor.getInt(_cursorIndexOfCompleted)
+            _tmpCompleted = _tmp_2 != 0
+            val _tmpCompletedAt: Long?
+            if (_cursor.isNull(_cursorIndexOfCompletedAt)) {
+              _tmpCompletedAt = null
+            } else {
+              _tmpCompletedAt = _cursor.getLong(_cursorIndexOfCompletedAt)
+            }
+            val _tmpReminderEnabled: Boolean
+            val _tmp_3: Int
+            _tmp_3 = _cursor.getInt(_cursorIndexOfReminderEnabled)
+            _tmpReminderEnabled = _tmp_3 != 0
+            val _tmpReminderTime: Long?
+            if (_cursor.isNull(_cursorIndexOfReminderTime)) {
+              _tmpReminderTime = null
+            } else {
+              _tmpReminderTime = _cursor.getLong(_cursorIndexOfReminderTime)
+            }
+            val _tmpParentTaskId: Long?
+            if (_cursor.isNull(_cursorIndexOfParentTaskId)) {
+              _tmpParentTaskId = null
+            } else {
+              _tmpParentTaskId = _cursor.getLong(_cursorIndexOfParentTaskId)
+            }
+            val _tmpCreatedAt: Long
+            _tmpCreatedAt = _cursor.getLong(_cursorIndexOfCreatedAt)
+            val _tmpUpdatedAt: Long
+            _tmpUpdatedAt = _cursor.getLong(_cursorIndexOfUpdatedAt)
+            val _tmpDeletedAt: Long?
+            if (_cursor.isNull(_cursorIndexOfDeletedAt)) {
+              _tmpDeletedAt = null
+            } else {
+              _tmpDeletedAt = _cursor.getLong(_cursorIndexOfDeletedAt)
+            }
+            _item =
+                TaskEntity(_tmpId,_tmpTitle,_tmpDescription,_tmpPriority,_tmpDueDate,_tmpDueTime,_tmpRepeatType,_tmpRepeatInterval,_tmpRepeatEndDate,_tmpCompleted,_tmpCompletedAt,_tmpReminderEnabled,_tmpReminderTime,_tmpParentTaskId,_tmpCreatedAt,_tmpUpdatedAt,_tmpDeletedAt)
+            _result.add(_item)
+          }
+          return _result
+        } finally {
+          _cursor.close()
+          _statement.release()
+        }
       }
     })
   }

@@ -31,6 +31,7 @@ android {
         }
     }
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -43,6 +44,7 @@ android {
 }
 
 dependencies {
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
     implementation(project(":core"))
     implementation(project(":data"))
     implementation(project(":domain"))
@@ -59,6 +61,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.material.icons.extended)
     implementation(libs.material)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.core.splashscreen)
@@ -70,6 +73,7 @@ dependencies {
     
     implementation(libs.coil.compose)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.vico.compose.m3)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
