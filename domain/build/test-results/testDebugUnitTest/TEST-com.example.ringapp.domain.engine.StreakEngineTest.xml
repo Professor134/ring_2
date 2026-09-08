@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.ringapp.domain.engine.StreakEngineTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-09-07T15:30:36.745Z" hostname="LAPTOP-F8B4MOBO" time="0.067">
+  <properties/>
+  <testcase name="currentStreakStopsAtFirstMiss" classname="com.example.ringapp.domain.engine.StreakEngineTest" time="0.065"/>
+  <testcase name="bestStreakFindsLongestRun" classname="com.example.ringapp.domain.engine.StreakEngineTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
