@@ -35,13 +35,21 @@ class PointRepository @Inject constructor(
 
     fun calculateLevel(lifetimeEarned: Int): Int {
         var level = 1
-        while (lifetimeEarned >= threshold(level) && level < 1000) level++
+        while (lifetimeEarned >= totalThreshold(level) && level < 1000) level++
         return level
     }
 
-    private fun threshold(level: Int): Int {
-        var value = 100.0
-        repeat((level - 1).coerceAtLeast(0)) { value *= 1.5 }
-        return value.toInt()
+    private fun neededForLevel(level: Int): Int {
+        var needed = 100.0
+        repeat(level - 1) { needed *= 1.25 }
+        return needed.toInt()
+    }
+
+    private fun totalThreshold(level: Int): Int {
+        var total = 0
+        for (i in 1..level) {
+            total += neededForLevel(i)
+        }
+        return total
     }
 }

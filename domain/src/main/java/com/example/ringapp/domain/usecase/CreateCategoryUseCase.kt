@@ -4,5 +4,5 @@ import com.example.ringapp.data.repository.CategoryRepository
 import javax.inject.Inject
 
 class CreateCategoryUseCase @Inject constructor(private val repository: CategoryRepository) {
-    suspend operator fun invoke(name: String, color: Int): Long = repository.create(name.trim(), color)
+    suspend operator fun invoke(name: String, color: Int, icon: String? = null): Long = repository.create(name.trim(), color, icon)
 }

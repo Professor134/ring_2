@@ -7,8 +7,8 @@ import javax.inject.Inject
 
 class CategoryRepository @Inject constructor(private val dao: CategoryDao) {
     fun observeAll(): Flow<List<CategoryEntity>> = dao.observeAll()
-    suspend fun create(name: String, color: Int): Long {
+    suspend fun create(name: String, color: Int, icon: String? = null): Long {
         val now = System.currentTimeMillis()
-        return dao.insert(CategoryEntity(name = name, color = color, createdAt = now, updatedAt = now))
+        return dao.insert(CategoryEntity(name = name, color = color, icon = icon, createdAt = now, updatedAt = now))
     }
 }

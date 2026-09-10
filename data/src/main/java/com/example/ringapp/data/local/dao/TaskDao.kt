@@ -29,4 +29,7 @@ interface TaskDao {
 
     @Query("UPDATE task SET deletedAt = :deletedAt, updatedAt = :deletedAt WHERE id = :taskId")
     suspend fun softDelete(taskId: Long, deletedAt: Long)
+
+    @Query("DELETE FROM task WHERE completed = 1 AND completedAt < :threshold")
+    suspend fun deleteCompletedBefore(threshold: Long)
 }

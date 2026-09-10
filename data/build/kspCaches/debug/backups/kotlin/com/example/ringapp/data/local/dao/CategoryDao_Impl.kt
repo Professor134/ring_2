@@ -37,19 +37,25 @@ public class CategoryDao_Impl(
     this.__insertionAdapterOfCategoryEntity = object : EntityInsertionAdapter<CategoryEntity>(__db)
         {
       protected override fun createQuery(): String =
-          "INSERT OR ABORT INTO `category` (`id`,`name`,`color`,`createdAt`,`updatedAt`,`deletedAt`) VALUES (nullif(?, 0),?,?,?,?,?)"
+          "INSERT OR ABORT INTO `category` (`id`,`name`,`color`,`icon`,`createdAt`,`updatedAt`,`deletedAt`) VALUES (nullif(?, 0),?,?,?,?,?,?)"
 
       protected override fun bind(statement: SupportSQLiteStatement, entity: CategoryEntity) {
         statement.bindLong(1, entity.id)
         statement.bindString(2, entity.name)
         statement.bindLong(3, entity.color.toLong())
-        statement.bindLong(4, entity.createdAt)
-        statement.bindLong(5, entity.updatedAt)
+        val _tmpIcon: String? = entity.icon
+        if (_tmpIcon == null) {
+          statement.bindNull(4)
+        } else {
+          statement.bindString(4, _tmpIcon)
+        }
+        statement.bindLong(5, entity.createdAt)
+        statement.bindLong(6, entity.updatedAt)
         val _tmpDeletedAt: Long? = entity.deletedAt
         if (_tmpDeletedAt == null) {
-          statement.bindNull(6)
+          statement.bindNull(7)
         } else {
-          statement.bindLong(6, _tmpDeletedAt)
+          statement.bindLong(7, _tmpDeletedAt)
         }
       }
     }
@@ -93,6 +99,7 @@ public class CategoryDao_Impl(
           val _cursorIndexOfId: Int = getColumnIndexOrThrow(_cursor, "id")
           val _cursorIndexOfName: Int = getColumnIndexOrThrow(_cursor, "name")
           val _cursorIndexOfColor: Int = getColumnIndexOrThrow(_cursor, "color")
+          val _cursorIndexOfIcon: Int = getColumnIndexOrThrow(_cursor, "icon")
           val _cursorIndexOfCreatedAt: Int = getColumnIndexOrThrow(_cursor, "createdAt")
           val _cursorIndexOfUpdatedAt: Int = getColumnIndexOrThrow(_cursor, "updatedAt")
           val _cursorIndexOfDeletedAt: Int = getColumnIndexOrThrow(_cursor, "deletedAt")
@@ -105,6 +112,12 @@ public class CategoryDao_Impl(
             _tmpName = _cursor.getString(_cursorIndexOfName)
             val _tmpColor: Int
             _tmpColor = _cursor.getInt(_cursorIndexOfColor)
+            val _tmpIcon: String?
+            if (_cursor.isNull(_cursorIndexOfIcon)) {
+              _tmpIcon = null
+            } else {
+              _tmpIcon = _cursor.getString(_cursorIndexOfIcon)
+            }
             val _tmpCreatedAt: Long
             _tmpCreatedAt = _cursor.getLong(_cursorIndexOfCreatedAt)
             val _tmpUpdatedAt: Long
@@ -116,7 +129,7 @@ public class CategoryDao_Impl(
               _tmpDeletedAt = _cursor.getLong(_cursorIndexOfDeletedAt)
             }
             _item =
-                CategoryEntity(_tmpId,_tmpName,_tmpColor,_tmpCreatedAt,_tmpUpdatedAt,_tmpDeletedAt)
+                CategoryEntity(_tmpId,_tmpName,_tmpColor,_tmpIcon,_tmpCreatedAt,_tmpUpdatedAt,_tmpDeletedAt)
             _result.add(_item)
           }
           return _result

@@ -3,38 +3,31 @@ package com.example.ringapp.ui.habits
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.ringapp.domain.usecase.CompleteHabitUseCase
-import com.example.ringapp.domain.usecase.DeleteHabitUseCase
-import com.example.ringapp.domain.usecase.HabitDetailData
-import com.example.ringapp.domain.usecase.ObserveHabitDetailUseCase
+import com.example.ringapp.domain.usecase.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 @HiltViewModel
-@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class HabitDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     observeDetail: ObserveHabitDetailUseCase,
-    private val completeHabit: CompleteHabitUseCase,
+    private val toggleHabit: ToggleHabitUseCase,
     private val deleteHabit: DeleteHabitUseCase
 ) : ViewModel() {
     private val habitId: Long = checkNotNull(savedStateHandle.get<String>("habitId")).toLong()
-    private val range = MutableStateFlow(30)
-    val selectedRange: StateFlow<Int> = range
-    val state: StateFlow<HabitDetailData?> = range.flatMapLatest { observeDetail(habitId, it) }
+    private val _range = MutableStateFlow(30)
+    val selectedRange: StateFlow<Int> = _range.asStateFlow()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val state: StateFlow<HabitDetailData?> = _range.flatMapLatest { days -> observeDetail(habitId, days) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    fun setRange(days: Int) { range.value = days }
-
-    fun completeToday() {
-        state.value?.habit?.let { habit -> viewModelScope.launch { completeHabit(habit) } }
+    fun setRange(days: Int) { _range.value = days }
+    fun completeToday() = viewModelScope.launch { 
+        state.value?.habit?.let { toggleHabit(it) }
     }
-
-    fun delete() { viewModelScope.launch { deleteHabit(habitId) } }
+    fun delete() = viewModelScope.launch { deleteHabit(habitId) }
 }

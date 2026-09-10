@@ -1,9 +1,15 @@
 package com.example.ringapp.domain.usecase
 
-import kotlin.math.pow
-
 object LevelCalculator {
-    fun threshold(level: Int): Long = (1000.0 * 1.5.pow((level - 1).coerceAtLeast(0))).toLong()
+    fun threshold(level: Int): Long {
+        var total = 0.0
+        var currentNeeded = 100.0
+        for (i in 1 until level) {
+            total += currentNeeded
+            currentNeeded *= 1.25
+        }
+        return total.toLong()
+    }
 
     fun levelForLifetimePoints(points: Long): Int {
         var level = 1

@@ -62,6 +62,7 @@ class HabitRepository @Inject constructor(
             updatedAt = now
         )
         dao.upsertProgress(progress)
+        
         if (completed && existing?.completed != true) {
             val updatedHabit = habit.copy(
                 currentStreak = habit.currentStreak + 1,
@@ -70,10 +71,68 @@ class HabitRepository @Inject constructor(
                 updatedAt = now
             )
             dao.update(updatedHabit)
-            pointRepository.record(TransactionType.HABIT_COMPLETE, 4, "habit-complete-${habit.id}-$date", "Habit completed", habitId = habit.id, timestamp = now)
+            val amount = if (habit.type == com.example.ringapp.data.local.entities.HabitType.YES_NO) 2 else 4
+            pointRepository.record(TransactionType.HABIT_COMPLETE, amount, "habit-complete-${habit.id}-$date", "Habit completed", habitId = habit.id, timestamp = now)
+        } else if (!completed && existing?.completed == true) {
+            val updatedHabit = habit.copy(
+                currentStreak = (habit.currentStreak - 1).coerceAtLeast(0),
+                totalCompletions = (habit.totalCompletions - 1).coerceAtLeast(0),
+                updatedAt = now
+            )
+            dao.update(updatedHabit)
+            val amount = if (habit.type == com.example.ringapp.data.local.entities.HabitType.YES_NO) -2 else -4
+            pointRepository.record(TransactionType.HABIT_UNCOMPLETE, amount, "habit-uncomplete-${habit.id}-$date-$now", "Habit completion reverted", habitId = habit.id, timestamp = now)
         } else if (!completed && existing == null) {
             pointRepository.record(TransactionType.MISSED_TARGET, -5, "habit-missed-${habit.id}-$date", "Habit target missed", habitId = habit.id, timestamp = now)
         }
+    }
+
+    suspend fun toggleHabit(habit: HabitEntity, date: Long) = database.withTransaction {
+        val existing = dao.progressForDate(habit.id, date)
+        if (existing?.completed == true) {
+            recordProgress(habit, date, 0, existing.note)
+        } else {
+            recordProgress(habit, date, habit.target, existing?.note)
+        }
+    }
+
+    suspend fun seedDefaults() = database.withTransaction {
+        val currentProgress = progressDao.getCurrent()
+        if (currentProgress == null) {
+            progressDao.insert(com.example.ringapp.data.local.entities.UserProgressEntity(currentPoints = 500, lifetimePoints = 500, level = 1, createdAt = System.currentTimeMillis(), updatedAt = System.currentTimeMillis()))
+            pointRepository.record(TransactionType.STARTING_POINTS, 500, "initial-points", "Welcome bonus points")
+        }
+        
+        val habitsList = dao.observeActive().first()
+        if (habitsList.isNotEmpty()) return@withTransaction
+        
+        val categories = listOf(
+            Triple("Health", 0xFF2E7D32.toInt(), "fitness"),
+            Triple("Personal", 0xFF1565C0.toInt(), "person"),
+            Triple("Work", 0xFFC62828.toInt(), "work"),
+            Triple("Study", 0xFF6A1B9A.toInt(), "school"),
+            Triple("Finance", 0xFFEF6C00.toInt(), "payments")
+        )
+        
+        val categoryIds = categories.map { (name, color, icon) ->
+            val now = System.currentTimeMillis()
+            database.categoryDao().insert(com.example.ringapp.data.local.entities.CategoryEntity(name = name, color = color, icon = icon, createdAt = now, updatedAt = now))
+        }
+        
+        val healthId = categoryIds[0]
+        val personalId = categoryIds[1]
+        
+        val now = System.currentTimeMillis()
+        val today = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        
+        val defaults = listOf(
+            HabitEntity(name = "Drink Water", categoryId = healthId, type = com.example.ringapp.data.local.entities.HabitType.MEASURABLE, target = 8, unit = "Glasses", scheduleType = com.example.ringapp.data.local.entities.ScheduleType.DAILY, startDate = today, color = 0xFF2E7D32.toInt(), createdAt = now, updatedAt = now),
+            HabitEntity(name = "Morning Exercise", categoryId = healthId, type = com.example.ringapp.data.local.entities.HabitType.YES_NO, target = 1, scheduleType = com.example.ringapp.data.local.entities.ScheduleType.DAILY, startDate = today, color = 0xFF2E7D32.toInt(), createdAt = now, updatedAt = now),
+            HabitEntity(name = "Read 10 Pages", categoryId = personalId, type = com.example.ringapp.data.local.entities.HabitType.MEASURABLE, target = 10, unit = "Pages", scheduleType = com.example.ringapp.data.local.entities.ScheduleType.DAILY, startDate = today, color = 0xFF1565C0.toInt(), createdAt = now, updatedAt = now),
+            HabitEntity(name = "Meditate", categoryId = personalId, type = com.example.ringapp.data.local.entities.HabitType.YES_NO, target = 1, scheduleType = com.example.ringapp.data.local.entities.ScheduleType.DAILY, startDate = today, color = 0xFF1565C0.toInt(), createdAt = now, updatedAt = now)
+        )
+        
+        defaults.forEach { dao.insert(it) }
     }
 
     suspend fun recordProgress(progress: HabitProgressEntity) = dao.upsertProgress(progress)
@@ -82,7 +141,8 @@ class HabitRepository @Inject constructor(
         dao.update(habit)
         dao.upsertProgress(progress)
         val now = progress.updatedAt
-        pointRepository.record(TransactionType.HABIT_COMPLETE, 4, "habit-complete-${habit.id}-${progress.date}", "Habit completed", habitId = habit.id, timestamp = now)
+        val amount = if (habit.type == com.example.ringapp.data.local.entities.HabitType.YES_NO) 2 else 4
+        pointRepository.record(TransactionType.HABIT_COMPLETE, amount, "habit-complete-${habit.id}-${progress.date}", "Habit completed", habitId = habit.id, timestamp = now)
         true
     }
     suspend fun delete(habitId: Long, deletedAt: Long) = database.withTransaction {

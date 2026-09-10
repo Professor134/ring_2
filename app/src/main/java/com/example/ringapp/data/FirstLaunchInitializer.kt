@@ -46,9 +46,49 @@ class FirstLaunchInitializer @Inject constructor(
             )
             database.appSettingsDao().upsert(AppSettingsEntity(onboardingCompleted = false, updatedAt = now))
             database.categoryDao().insertAll(
-                listOf("Health", "Learning", "Personal", "Work").map { name ->
-                    CategoryEntity(name = name, color = 0xFF6750A4.toInt(), createdAt = now, updatedAt = now)
+                listOf(
+                    Triple("Health", 0xFF2E7D32.toInt(), "fitness"),
+                    Triple("Learning", 0xFF1565C0.toInt(), "school"),
+                    Triple("Personal", 0xFFC62828.toInt(), "self"),
+                    Triple("Work", 0xFFFBC02D.toInt(), "work"),
+                    Triple("Habits", 0xFF6A1B9A.toInt(), "flag")
+                ).map { (name, color, icon) ->
+                    CategoryEntity(name = name, color = color, icon = icon, createdAt = now, updatedAt = now)
                 }
+            )
+            // Add Default Habits
+            val healthCatId = 1L
+            database.habitDao().insert(
+                com.example.ringapp.data.local.entities.HabitEntity(
+                    name = "Morning Walk",
+                    description = "A fresh start to the day.",
+                    categoryId = healthCatId,
+                    type = com.example.ringapp.data.local.entities.HabitType.YES_NO,
+                    target = 1,
+                    unit = null,
+                    scheduleType = com.example.ringapp.data.local.entities.ScheduleType.DAILY,
+                    scheduleDays = emptyList(),
+                    startDate = now,
+                    color = 0xFF2E7D32.toInt(),
+                    createdAt = now,
+                    updatedAt = now
+                )
+            )
+            database.habitDao().insert(
+                com.example.ringapp.data.local.entities.HabitEntity(
+                    name = "Read 20 Pages",
+                    description = "Expand your knowledge.",
+                    categoryId = 2L, // Learning
+                    type = com.example.ringapp.data.local.entities.HabitType.MEASURABLE,
+                    target = 20,
+                    unit = "Pages",
+                    scheduleType = com.example.ringapp.data.local.entities.ScheduleType.DAILY,
+                    scheduleDays = emptyList(),
+                    startDate = now,
+                    color = 0xFF1565C0.toInt(),
+                    createdAt = now,
+                    updatedAt = now
+                )
             )
             database.achievementDao().insertAll(
                 listOf(

@@ -47,11 +47,13 @@ public class TaskDao_Impl(
   private val __updateAdapterOfTaskEntity: EntityDeletionOrUpdateAdapter<TaskEntity>
 
   private val __preparedStmtOfSoftDelete: SharedSQLiteStatement
+
+  private val __preparedStmtOfDeleteCompletedBefore: SharedSQLiteStatement
   init {
     this.__db = __db
     this.__insertionAdapterOfTaskEntity = object : EntityInsertionAdapter<TaskEntity>(__db) {
       protected override fun createQuery(): String =
-          "INSERT OR ABORT INTO `task` (`id`,`title`,`description`,`priority`,`dueDate`,`dueTime`,`repeatType`,`repeatInterval`,`repeatEndDate`,`completed`,`completedAt`,`reminderEnabled`,`reminderTime`,`parentTaskId`,`createdAt`,`updatedAt`,`deletedAt`) VALUES (nullif(?, 0),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+          "INSERT OR ABORT INTO `task` (`id`,`title`,`description`,`priority`,`dueDate`,`dueTime`,`repeatType`,`repeatInterval`,`repeatDaysOfWeek`,`repeatDayOfMonth`,`repeatMonth`,`repeatEndDate`,`completed`,`completedAt`,`reminderEnabled`,`reminderTime`,`parentTaskId`,`createdAt`,`updatedAt`,`deletedAt`) VALUES (nullif(?, 0),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
 
       protected override fun bind(statement: SupportSQLiteStatement, entity: TaskEntity) {
         statement.bindLong(1, entity.id)
@@ -79,47 +81,65 @@ public class TaskDao_Impl(
         val _tmp_1: String = __converters.repeatTypeToString(entity.repeatType)
         statement.bindString(7, _tmp_1)
         statement.bindLong(8, entity.repeatInterval.toLong())
-        val _tmpRepeatEndDate: Long? = entity.repeatEndDate
-        if (_tmpRepeatEndDate == null) {
+        val _tmpRepeatDaysOfWeek: String? = entity.repeatDaysOfWeek
+        if (_tmpRepeatDaysOfWeek == null) {
           statement.bindNull(9)
         } else {
-          statement.bindLong(9, _tmpRepeatEndDate)
+          statement.bindString(9, _tmpRepeatDaysOfWeek)
         }
-        val _tmp_2: Int = if (entity.completed) 1 else 0
-        statement.bindLong(10, _tmp_2.toLong())
-        val _tmpCompletedAt: Long? = entity.completedAt
-        if (_tmpCompletedAt == null) {
+        val _tmpRepeatDayOfMonth: Int? = entity.repeatDayOfMonth
+        if (_tmpRepeatDayOfMonth == null) {
+          statement.bindNull(10)
+        } else {
+          statement.bindLong(10, _tmpRepeatDayOfMonth.toLong())
+        }
+        val _tmpRepeatMonth: Int? = entity.repeatMonth
+        if (_tmpRepeatMonth == null) {
           statement.bindNull(11)
         } else {
-          statement.bindLong(11, _tmpCompletedAt)
+          statement.bindLong(11, _tmpRepeatMonth.toLong())
+        }
+        val _tmpRepeatEndDate: Long? = entity.repeatEndDate
+        if (_tmpRepeatEndDate == null) {
+          statement.bindNull(12)
+        } else {
+          statement.bindLong(12, _tmpRepeatEndDate)
+        }
+        val _tmp_2: Int = if (entity.completed) 1 else 0
+        statement.bindLong(13, _tmp_2.toLong())
+        val _tmpCompletedAt: Long? = entity.completedAt
+        if (_tmpCompletedAt == null) {
+          statement.bindNull(14)
+        } else {
+          statement.bindLong(14, _tmpCompletedAt)
         }
         val _tmp_3: Int = if (entity.reminderEnabled) 1 else 0
-        statement.bindLong(12, _tmp_3.toLong())
+        statement.bindLong(15, _tmp_3.toLong())
         val _tmpReminderTime: Long? = entity.reminderTime
         if (_tmpReminderTime == null) {
-          statement.bindNull(13)
+          statement.bindNull(16)
         } else {
-          statement.bindLong(13, _tmpReminderTime)
+          statement.bindLong(16, _tmpReminderTime)
         }
         val _tmpParentTaskId: Long? = entity.parentTaskId
         if (_tmpParentTaskId == null) {
-          statement.bindNull(14)
-        } else {
-          statement.bindLong(14, _tmpParentTaskId)
-        }
-        statement.bindLong(15, entity.createdAt)
-        statement.bindLong(16, entity.updatedAt)
-        val _tmpDeletedAt: Long? = entity.deletedAt
-        if (_tmpDeletedAt == null) {
           statement.bindNull(17)
         } else {
-          statement.bindLong(17, _tmpDeletedAt)
+          statement.bindLong(17, _tmpParentTaskId)
+        }
+        statement.bindLong(18, entity.createdAt)
+        statement.bindLong(19, entity.updatedAt)
+        val _tmpDeletedAt: Long? = entity.deletedAt
+        if (_tmpDeletedAt == null) {
+          statement.bindNull(20)
+        } else {
+          statement.bindLong(20, _tmpDeletedAt)
         }
       }
     }
     this.__updateAdapterOfTaskEntity = object : EntityDeletionOrUpdateAdapter<TaskEntity>(__db) {
       protected override fun createQuery(): String =
-          "UPDATE OR ABORT `task` SET `id` = ?,`title` = ?,`description` = ?,`priority` = ?,`dueDate` = ?,`dueTime` = ?,`repeatType` = ?,`repeatInterval` = ?,`repeatEndDate` = ?,`completed` = ?,`completedAt` = ?,`reminderEnabled` = ?,`reminderTime` = ?,`parentTaskId` = ?,`createdAt` = ?,`updatedAt` = ?,`deletedAt` = ? WHERE `id` = ?"
+          "UPDATE OR ABORT `task` SET `id` = ?,`title` = ?,`description` = ?,`priority` = ?,`dueDate` = ?,`dueTime` = ?,`repeatType` = ?,`repeatInterval` = ?,`repeatDaysOfWeek` = ?,`repeatDayOfMonth` = ?,`repeatMonth` = ?,`repeatEndDate` = ?,`completed` = ?,`completedAt` = ?,`reminderEnabled` = ?,`reminderTime` = ?,`parentTaskId` = ?,`createdAt` = ?,`updatedAt` = ?,`deletedAt` = ? WHERE `id` = ?"
 
       protected override fun bind(statement: SupportSQLiteStatement, entity: TaskEntity) {
         statement.bindLong(1, entity.id)
@@ -147,48 +167,72 @@ public class TaskDao_Impl(
         val _tmp_1: String = __converters.repeatTypeToString(entity.repeatType)
         statement.bindString(7, _tmp_1)
         statement.bindLong(8, entity.repeatInterval.toLong())
-        val _tmpRepeatEndDate: Long? = entity.repeatEndDate
-        if (_tmpRepeatEndDate == null) {
+        val _tmpRepeatDaysOfWeek: String? = entity.repeatDaysOfWeek
+        if (_tmpRepeatDaysOfWeek == null) {
           statement.bindNull(9)
         } else {
-          statement.bindLong(9, _tmpRepeatEndDate)
+          statement.bindString(9, _tmpRepeatDaysOfWeek)
         }
-        val _tmp_2: Int = if (entity.completed) 1 else 0
-        statement.bindLong(10, _tmp_2.toLong())
-        val _tmpCompletedAt: Long? = entity.completedAt
-        if (_tmpCompletedAt == null) {
+        val _tmpRepeatDayOfMonth: Int? = entity.repeatDayOfMonth
+        if (_tmpRepeatDayOfMonth == null) {
+          statement.bindNull(10)
+        } else {
+          statement.bindLong(10, _tmpRepeatDayOfMonth.toLong())
+        }
+        val _tmpRepeatMonth: Int? = entity.repeatMonth
+        if (_tmpRepeatMonth == null) {
           statement.bindNull(11)
         } else {
-          statement.bindLong(11, _tmpCompletedAt)
+          statement.bindLong(11, _tmpRepeatMonth.toLong())
+        }
+        val _tmpRepeatEndDate: Long? = entity.repeatEndDate
+        if (_tmpRepeatEndDate == null) {
+          statement.bindNull(12)
+        } else {
+          statement.bindLong(12, _tmpRepeatEndDate)
+        }
+        val _tmp_2: Int = if (entity.completed) 1 else 0
+        statement.bindLong(13, _tmp_2.toLong())
+        val _tmpCompletedAt: Long? = entity.completedAt
+        if (_tmpCompletedAt == null) {
+          statement.bindNull(14)
+        } else {
+          statement.bindLong(14, _tmpCompletedAt)
         }
         val _tmp_3: Int = if (entity.reminderEnabled) 1 else 0
-        statement.bindLong(12, _tmp_3.toLong())
+        statement.bindLong(15, _tmp_3.toLong())
         val _tmpReminderTime: Long? = entity.reminderTime
         if (_tmpReminderTime == null) {
-          statement.bindNull(13)
+          statement.bindNull(16)
         } else {
-          statement.bindLong(13, _tmpReminderTime)
+          statement.bindLong(16, _tmpReminderTime)
         }
         val _tmpParentTaskId: Long? = entity.parentTaskId
         if (_tmpParentTaskId == null) {
-          statement.bindNull(14)
-        } else {
-          statement.bindLong(14, _tmpParentTaskId)
-        }
-        statement.bindLong(15, entity.createdAt)
-        statement.bindLong(16, entity.updatedAt)
-        val _tmpDeletedAt: Long? = entity.deletedAt
-        if (_tmpDeletedAt == null) {
           statement.bindNull(17)
         } else {
-          statement.bindLong(17, _tmpDeletedAt)
+          statement.bindLong(17, _tmpParentTaskId)
         }
-        statement.bindLong(18, entity.id)
+        statement.bindLong(18, entity.createdAt)
+        statement.bindLong(19, entity.updatedAt)
+        val _tmpDeletedAt: Long? = entity.deletedAt
+        if (_tmpDeletedAt == null) {
+          statement.bindNull(20)
+        } else {
+          statement.bindLong(20, _tmpDeletedAt)
+        }
+        statement.bindLong(21, entity.id)
       }
     }
     this.__preparedStmtOfSoftDelete = object : SharedSQLiteStatement(__db) {
       public override fun createQuery(): String {
         val _query: String = "UPDATE task SET deletedAt = ?, updatedAt = ? WHERE id = ?"
+        return _query
+      }
+    }
+    this.__preparedStmtOfDeleteCompletedBefore = object : SharedSQLiteStatement(__db) {
+      public override fun createQuery(): String {
+        val _query: String = "DELETE FROM task WHERE completed = 1 AND completedAt < ?"
         return _query
       }
     }
@@ -245,6 +289,26 @@ public class TaskDao_Impl(
     }
   })
 
+  public override suspend fun deleteCompletedBefore(threshold: Long): Unit =
+      CoroutinesRoom.execute(__db, true, object : Callable<Unit> {
+    public override fun call() {
+      val _stmt: SupportSQLiteStatement = __preparedStmtOfDeleteCompletedBefore.acquire()
+      var _argIndex: Int = 1
+      _stmt.bindLong(_argIndex, threshold)
+      try {
+        __db.beginTransaction()
+        try {
+          _stmt.executeUpdateDelete()
+          __db.setTransactionSuccessful()
+        } finally {
+          __db.endTransaction()
+        }
+      } finally {
+        __preparedStmtOfDeleteCompletedBefore.release(_stmt)
+      }
+    }
+  })
+
   public override fun observeActive(): Flow<List<TaskEntity>> {
     val _sql: String =
         "SELECT * FROM task WHERE deletedAt IS NULL ORDER BY completed, dueDate, title"
@@ -262,6 +326,11 @@ public class TaskDao_Impl(
           val _cursorIndexOfDueTime: Int = getColumnIndexOrThrow(_cursor, "dueTime")
           val _cursorIndexOfRepeatType: Int = getColumnIndexOrThrow(_cursor, "repeatType")
           val _cursorIndexOfRepeatInterval: Int = getColumnIndexOrThrow(_cursor, "repeatInterval")
+          val _cursorIndexOfRepeatDaysOfWeek: Int = getColumnIndexOrThrow(_cursor,
+              "repeatDaysOfWeek")
+          val _cursorIndexOfRepeatDayOfMonth: Int = getColumnIndexOrThrow(_cursor,
+              "repeatDayOfMonth")
+          val _cursorIndexOfRepeatMonth: Int = getColumnIndexOrThrow(_cursor, "repeatMonth")
           val _cursorIndexOfRepeatEndDate: Int = getColumnIndexOrThrow(_cursor, "repeatEndDate")
           val _cursorIndexOfCompleted: Int = getColumnIndexOrThrow(_cursor, "completed")
           val _cursorIndexOfCompletedAt: Int = getColumnIndexOrThrow(_cursor, "completedAt")
@@ -306,6 +375,24 @@ public class TaskDao_Impl(
             _tmpRepeatType = __converters.stringToRepeatType(_tmp_1)
             val _tmpRepeatInterval: Int
             _tmpRepeatInterval = _cursor.getInt(_cursorIndexOfRepeatInterval)
+            val _tmpRepeatDaysOfWeek: String?
+            if (_cursor.isNull(_cursorIndexOfRepeatDaysOfWeek)) {
+              _tmpRepeatDaysOfWeek = null
+            } else {
+              _tmpRepeatDaysOfWeek = _cursor.getString(_cursorIndexOfRepeatDaysOfWeek)
+            }
+            val _tmpRepeatDayOfMonth: Int?
+            if (_cursor.isNull(_cursorIndexOfRepeatDayOfMonth)) {
+              _tmpRepeatDayOfMonth = null
+            } else {
+              _tmpRepeatDayOfMonth = _cursor.getInt(_cursorIndexOfRepeatDayOfMonth)
+            }
+            val _tmpRepeatMonth: Int?
+            if (_cursor.isNull(_cursorIndexOfRepeatMonth)) {
+              _tmpRepeatMonth = null
+            } else {
+              _tmpRepeatMonth = _cursor.getInt(_cursorIndexOfRepeatMonth)
+            }
             val _tmpRepeatEndDate: Long?
             if (_cursor.isNull(_cursorIndexOfRepeatEndDate)) {
               _tmpRepeatEndDate = null
@@ -349,7 +436,7 @@ public class TaskDao_Impl(
               _tmpDeletedAt = _cursor.getLong(_cursorIndexOfDeletedAt)
             }
             _item =
-                TaskEntity(_tmpId,_tmpTitle,_tmpDescription,_tmpPriority,_tmpDueDate,_tmpDueTime,_tmpRepeatType,_tmpRepeatInterval,_tmpRepeatEndDate,_tmpCompleted,_tmpCompletedAt,_tmpReminderEnabled,_tmpReminderTime,_tmpParentTaskId,_tmpCreatedAt,_tmpUpdatedAt,_tmpDeletedAt)
+                TaskEntity(_tmpId,_tmpTitle,_tmpDescription,_tmpPriority,_tmpDueDate,_tmpDueTime,_tmpRepeatType,_tmpRepeatInterval,_tmpRepeatDaysOfWeek,_tmpRepeatDayOfMonth,_tmpRepeatMonth,_tmpRepeatEndDate,_tmpCompleted,_tmpCompletedAt,_tmpReminderEnabled,_tmpReminderTime,_tmpParentTaskId,_tmpCreatedAt,_tmpUpdatedAt,_tmpDeletedAt)
             _result.add(_item)
           }
           return _result
@@ -381,6 +468,11 @@ public class TaskDao_Impl(
           val _cursorIndexOfDueTime: Int = getColumnIndexOrThrow(_cursor, "dueTime")
           val _cursorIndexOfRepeatType: Int = getColumnIndexOrThrow(_cursor, "repeatType")
           val _cursorIndexOfRepeatInterval: Int = getColumnIndexOrThrow(_cursor, "repeatInterval")
+          val _cursorIndexOfRepeatDaysOfWeek: Int = getColumnIndexOrThrow(_cursor,
+              "repeatDaysOfWeek")
+          val _cursorIndexOfRepeatDayOfMonth: Int = getColumnIndexOrThrow(_cursor,
+              "repeatDayOfMonth")
+          val _cursorIndexOfRepeatMonth: Int = getColumnIndexOrThrow(_cursor, "repeatMonth")
           val _cursorIndexOfRepeatEndDate: Int = getColumnIndexOrThrow(_cursor, "repeatEndDate")
           val _cursorIndexOfCompleted: Int = getColumnIndexOrThrow(_cursor, "completed")
           val _cursorIndexOfCompletedAt: Int = getColumnIndexOrThrow(_cursor, "completedAt")
@@ -424,6 +516,24 @@ public class TaskDao_Impl(
             _tmpRepeatType = __converters.stringToRepeatType(_tmp_1)
             val _tmpRepeatInterval: Int
             _tmpRepeatInterval = _cursor.getInt(_cursorIndexOfRepeatInterval)
+            val _tmpRepeatDaysOfWeek: String?
+            if (_cursor.isNull(_cursorIndexOfRepeatDaysOfWeek)) {
+              _tmpRepeatDaysOfWeek = null
+            } else {
+              _tmpRepeatDaysOfWeek = _cursor.getString(_cursorIndexOfRepeatDaysOfWeek)
+            }
+            val _tmpRepeatDayOfMonth: Int?
+            if (_cursor.isNull(_cursorIndexOfRepeatDayOfMonth)) {
+              _tmpRepeatDayOfMonth = null
+            } else {
+              _tmpRepeatDayOfMonth = _cursor.getInt(_cursorIndexOfRepeatDayOfMonth)
+            }
+            val _tmpRepeatMonth: Int?
+            if (_cursor.isNull(_cursorIndexOfRepeatMonth)) {
+              _tmpRepeatMonth = null
+            } else {
+              _tmpRepeatMonth = _cursor.getInt(_cursorIndexOfRepeatMonth)
+            }
             val _tmpRepeatEndDate: Long?
             if (_cursor.isNull(_cursorIndexOfRepeatEndDate)) {
               _tmpRepeatEndDate = null
@@ -467,7 +577,7 @@ public class TaskDao_Impl(
               _tmpDeletedAt = _cursor.getLong(_cursorIndexOfDeletedAt)
             }
             _result =
-                TaskEntity(_tmpId,_tmpTitle,_tmpDescription,_tmpPriority,_tmpDueDate,_tmpDueTime,_tmpRepeatType,_tmpRepeatInterval,_tmpRepeatEndDate,_tmpCompleted,_tmpCompletedAt,_tmpReminderEnabled,_tmpReminderTime,_tmpParentTaskId,_tmpCreatedAt,_tmpUpdatedAt,_tmpDeletedAt)
+                TaskEntity(_tmpId,_tmpTitle,_tmpDescription,_tmpPriority,_tmpDueDate,_tmpDueTime,_tmpRepeatType,_tmpRepeatInterval,_tmpRepeatDaysOfWeek,_tmpRepeatDayOfMonth,_tmpRepeatMonth,_tmpRepeatEndDate,_tmpCompleted,_tmpCompletedAt,_tmpReminderEnabled,_tmpReminderTime,_tmpParentTaskId,_tmpCreatedAt,_tmpUpdatedAt,_tmpDeletedAt)
           } else {
             _result = null
           }
@@ -504,6 +614,11 @@ public class TaskDao_Impl(
           val _cursorIndexOfDueTime: Int = getColumnIndexOrThrow(_cursor, "dueTime")
           val _cursorIndexOfRepeatType: Int = getColumnIndexOrThrow(_cursor, "repeatType")
           val _cursorIndexOfRepeatInterval: Int = getColumnIndexOrThrow(_cursor, "repeatInterval")
+          val _cursorIndexOfRepeatDaysOfWeek: Int = getColumnIndexOrThrow(_cursor,
+              "repeatDaysOfWeek")
+          val _cursorIndexOfRepeatDayOfMonth: Int = getColumnIndexOrThrow(_cursor,
+              "repeatDayOfMonth")
+          val _cursorIndexOfRepeatMonth: Int = getColumnIndexOrThrow(_cursor, "repeatMonth")
           val _cursorIndexOfRepeatEndDate: Int = getColumnIndexOrThrow(_cursor, "repeatEndDate")
           val _cursorIndexOfCompleted: Int = getColumnIndexOrThrow(_cursor, "completed")
           val _cursorIndexOfCompletedAt: Int = getColumnIndexOrThrow(_cursor, "completedAt")
@@ -548,6 +663,24 @@ public class TaskDao_Impl(
             _tmpRepeatType = __converters.stringToRepeatType(_tmp_1)
             val _tmpRepeatInterval: Int
             _tmpRepeatInterval = _cursor.getInt(_cursorIndexOfRepeatInterval)
+            val _tmpRepeatDaysOfWeek: String?
+            if (_cursor.isNull(_cursorIndexOfRepeatDaysOfWeek)) {
+              _tmpRepeatDaysOfWeek = null
+            } else {
+              _tmpRepeatDaysOfWeek = _cursor.getString(_cursorIndexOfRepeatDaysOfWeek)
+            }
+            val _tmpRepeatDayOfMonth: Int?
+            if (_cursor.isNull(_cursorIndexOfRepeatDayOfMonth)) {
+              _tmpRepeatDayOfMonth = null
+            } else {
+              _tmpRepeatDayOfMonth = _cursor.getInt(_cursorIndexOfRepeatDayOfMonth)
+            }
+            val _tmpRepeatMonth: Int?
+            if (_cursor.isNull(_cursorIndexOfRepeatMonth)) {
+              _tmpRepeatMonth = null
+            } else {
+              _tmpRepeatMonth = _cursor.getInt(_cursorIndexOfRepeatMonth)
+            }
             val _tmpRepeatEndDate: Long?
             if (_cursor.isNull(_cursorIndexOfRepeatEndDate)) {
               _tmpRepeatEndDate = null
@@ -591,7 +724,7 @@ public class TaskDao_Impl(
               _tmpDeletedAt = _cursor.getLong(_cursorIndexOfDeletedAt)
             }
             _item =
-                TaskEntity(_tmpId,_tmpTitle,_tmpDescription,_tmpPriority,_tmpDueDate,_tmpDueTime,_tmpRepeatType,_tmpRepeatInterval,_tmpRepeatEndDate,_tmpCompleted,_tmpCompletedAt,_tmpReminderEnabled,_tmpReminderTime,_tmpParentTaskId,_tmpCreatedAt,_tmpUpdatedAt,_tmpDeletedAt)
+                TaskEntity(_tmpId,_tmpTitle,_tmpDescription,_tmpPriority,_tmpDueDate,_tmpDueTime,_tmpRepeatType,_tmpRepeatInterval,_tmpRepeatDaysOfWeek,_tmpRepeatDayOfMonth,_tmpRepeatMonth,_tmpRepeatEndDate,_tmpCompleted,_tmpCompletedAt,_tmpReminderEnabled,_tmpReminderTime,_tmpParentTaskId,_tmpCreatedAt,_tmpUpdatedAt,_tmpDeletedAt)
             _result.add(_item)
           }
           return _result
@@ -623,6 +756,11 @@ public class TaskDao_Impl(
           val _cursorIndexOfDueTime: Int = getColumnIndexOrThrow(_cursor, "dueTime")
           val _cursorIndexOfRepeatType: Int = getColumnIndexOrThrow(_cursor, "repeatType")
           val _cursorIndexOfRepeatInterval: Int = getColumnIndexOrThrow(_cursor, "repeatInterval")
+          val _cursorIndexOfRepeatDaysOfWeek: Int = getColumnIndexOrThrow(_cursor,
+              "repeatDaysOfWeek")
+          val _cursorIndexOfRepeatDayOfMonth: Int = getColumnIndexOrThrow(_cursor,
+              "repeatDayOfMonth")
+          val _cursorIndexOfRepeatMonth: Int = getColumnIndexOrThrow(_cursor, "repeatMonth")
           val _cursorIndexOfRepeatEndDate: Int = getColumnIndexOrThrow(_cursor, "repeatEndDate")
           val _cursorIndexOfCompleted: Int = getColumnIndexOrThrow(_cursor, "completed")
           val _cursorIndexOfCompletedAt: Int = getColumnIndexOrThrow(_cursor, "completedAt")
@@ -667,6 +805,24 @@ public class TaskDao_Impl(
             _tmpRepeatType = __converters.stringToRepeatType(_tmp_1)
             val _tmpRepeatInterval: Int
             _tmpRepeatInterval = _cursor.getInt(_cursorIndexOfRepeatInterval)
+            val _tmpRepeatDaysOfWeek: String?
+            if (_cursor.isNull(_cursorIndexOfRepeatDaysOfWeek)) {
+              _tmpRepeatDaysOfWeek = null
+            } else {
+              _tmpRepeatDaysOfWeek = _cursor.getString(_cursorIndexOfRepeatDaysOfWeek)
+            }
+            val _tmpRepeatDayOfMonth: Int?
+            if (_cursor.isNull(_cursorIndexOfRepeatDayOfMonth)) {
+              _tmpRepeatDayOfMonth = null
+            } else {
+              _tmpRepeatDayOfMonth = _cursor.getInt(_cursorIndexOfRepeatDayOfMonth)
+            }
+            val _tmpRepeatMonth: Int?
+            if (_cursor.isNull(_cursorIndexOfRepeatMonth)) {
+              _tmpRepeatMonth = null
+            } else {
+              _tmpRepeatMonth = _cursor.getInt(_cursorIndexOfRepeatMonth)
+            }
             val _tmpRepeatEndDate: Long?
             if (_cursor.isNull(_cursorIndexOfRepeatEndDate)) {
               _tmpRepeatEndDate = null
@@ -710,7 +866,7 @@ public class TaskDao_Impl(
               _tmpDeletedAt = _cursor.getLong(_cursorIndexOfDeletedAt)
             }
             _item =
-                TaskEntity(_tmpId,_tmpTitle,_tmpDescription,_tmpPriority,_tmpDueDate,_tmpDueTime,_tmpRepeatType,_tmpRepeatInterval,_tmpRepeatEndDate,_tmpCompleted,_tmpCompletedAt,_tmpReminderEnabled,_tmpReminderTime,_tmpParentTaskId,_tmpCreatedAt,_tmpUpdatedAt,_tmpDeletedAt)
+                TaskEntity(_tmpId,_tmpTitle,_tmpDescription,_tmpPriority,_tmpDueDate,_tmpDueTime,_tmpRepeatType,_tmpRepeatInterval,_tmpRepeatDaysOfWeek,_tmpRepeatDayOfMonth,_tmpRepeatMonth,_tmpRepeatEndDate,_tmpCompleted,_tmpCompletedAt,_tmpReminderEnabled,_tmpReminderTime,_tmpParentTaskId,_tmpCreatedAt,_tmpUpdatedAt,_tmpDeletedAt)
             _result.add(_item)
           }
           return _result

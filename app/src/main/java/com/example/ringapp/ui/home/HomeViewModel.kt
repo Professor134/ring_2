@@ -15,6 +15,7 @@ import com.example.ringapp.domain.usecase.ObserveProfileUseCase
 import com.example.ringapp.domain.usecase.ObserveTodayDataUseCase
 import com.example.ringapp.domain.usecase.ObserveUserProgressUseCase
 import com.example.ringapp.domain.usecase.RecordHabitProgressUseCase
+import com.example.ringapp.domain.usecase.ToggleHabitUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalDate
 import java.time.ZoneId
@@ -36,7 +37,9 @@ class HomeViewModel @Inject constructor(
     observeTodayData: ObserveTodayDataUseCase,
     observeCategories: ObserveCategoriesUseCase,
     observeProgressRange: ObserveProgressRangeUseCase,
-    private val completeHabit: CompleteHabitUseCase,
+    private val habitRepository: com.example.ringapp.data.repository.HabitRepository,
+    private val taskRepository: com.example.ringapp.data.repository.TaskRepository,
+    private val toggleHabit: ToggleHabitUseCase,
     private val completeTask: CompleteTaskUseCase,
     private val recordProgress: RecordHabitProgressUseCase
 ) : ViewModel() {
@@ -44,6 +47,13 @@ class HomeViewModel @Inject constructor(
     private val from = today.minusDays(13).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
     private val to = today.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli() - 1
 
+    init {
+        viewModelScope.launch {
+            habitRepository.seedDefaults()
+            taskRepository.cleanupOldTasks()
+        }
+    }
+    
     val uiState: StateFlow<HomeUiState> = combine(
         observeHabits(), observeProfile(), observeUserProgress(), observeTodayData(),
         observeCategories(), observeProgressRange(from, to)
@@ -59,10 +69,17 @@ class HomeViewModel @Inject constructor(
         val chart = (0..13).map { offset ->
             val date = today.minusDays((13 - offset).toLong())
             val timestamp = date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-            val records = allProgress.filter { it.date == timestamp }
+            val activeHabits = habits.filter { ScheduleEngine.isActiveOnDate(it, date) }
+            val dailyProgress = if (activeHabits.isEmpty()) 0 else {
+                val dayRecords = allProgress.filter { it.date == timestamp }
+                val totalPercentage = activeHabits.sumOf { habit ->
+                    dayRecords.firstOrNull { it.habitId == habit.id }?.percentage ?: 0
+                }
+                totalPercentage / activeHabits.size
+            }
             ChartPoint(
                 date.format(DateTimeFormatter.ofPattern("d MMM", Locale.getDefault())),
-                if (records.isEmpty()) 0 else records.map { it.percentage }.average().toInt()
+                dailyProgress
             )
         }
         HomeUiState(
@@ -70,6 +87,7 @@ class HomeViewModel @Inject constructor(
             tasks = todayData.tasks,
             categories = categories,
             todayProgress = todayData.progress,
+            allProgress = allProgress,
             chart = chart,
             greeting = greeting(),
             date = today.format(DateTimeFormatter.ofPattern("EEEE, MMMM d", Locale.getDefault())),
@@ -82,7 +100,7 @@ class HomeViewModel @Inject constructor(
 
     fun onEvent(event: HomeEvent) {
         when (event) {
-            is HomeEvent.CompleteHabit -> viewModelScope.launch { completeHabit(event.habit) }
+            is HomeEvent.CompleteHabit -> viewModelScope.launch { toggleHabit(event.habit) }
             is HomeEvent.RecordProgress -> viewModelScope.launch { recordProgress(event.habit, event.date, event.value, event.note) }
             is HomeEvent.ToggleTask -> viewModelScope.launch { completeTask(event.task) }
             HomeEvent.AddHabit, HomeEvent.AddTask -> Unit
@@ -103,6 +121,7 @@ data class HomeUiState(
     val tasks: List<TaskEntity> = emptyList(),
     val categories: List<com.example.ringapp.data.local.entities.CategoryEntity> = emptyList(),
     val todayProgress: List<HabitProgressEntity> = emptyList(),
+    val allProgress: List<HabitProgressEntity> = emptyList(),
     val chart: List<ChartPoint> = emptyList(),
     val greeting: String = "Good Morning,",
     val date: String = "",

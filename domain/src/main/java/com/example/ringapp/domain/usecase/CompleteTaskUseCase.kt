@@ -8,11 +8,12 @@ class CompleteTaskUseCase @Inject constructor(
     private val repository: TaskRepository
 ) {
     suspend operator fun invoke(task: TaskEntity) {
+        val now = System.currentTimeMillis()
         if (task.completed) {
-            repository.update(task.copy(completed = false, completedAt = null, updatedAt = System.currentTimeMillis()))
+            repository.update(task.copy(completed = false, completedAt = null, updatedAt = now))
+            repository.revokeTaskPoints(task.id, now)
             return
         }
-        val now = System.currentTimeMillis()
         repository.update(task.copy(completed = true, completedAt = now, updatedAt = now))
         repository.awardTaskPoints(task.id, now)
         if (task.repeatType != com.example.ringapp.data.local.entities.RepeatType.NONE) {
