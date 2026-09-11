@@ -17,7 +17,7 @@ private fun startOfDay(date: LocalDate): Long = date.atStartOfDay(ZoneId.systemD
 data class AnalyticsPoint(val date: LocalDate, val score: Int, val actual: Int = 0, val target: Int = 0, val completed: Boolean = false)
 data class AnalyticsUiState(val habits: List<HabitEntity> = emptyList(), val tasks: List<TaskEntity> = emptyList(), val categories: List<CategoryEntity> = emptyList(), val progress: List<HabitProgressEntity> = emptyList(), val points: Int = 0, val bestStreak: Int = 0, val loading: Boolean = true, val error: String? = null)
 
-data class PersonalAnalyticsState(val habit: HabitEntity? = null, val progress: List<HabitProgressEntity> = emptyList(), val transactions: List<PointTransactionEntity> = emptyList(), val points: Int = 0, val habitPoints: Int = 0, val loading: Boolean = true, val error: String? = null)
+data class PersonalAnalyticsState(val habit: HabitEntity? = null, val category: CategoryEntity? = null, val progress: List<HabitProgressEntity> = emptyList(), val transactions: List<PointTransactionEntity> = emptyList(), val points: Int = 0, val habitPoints: Int = 0, val loading: Boolean = true, val error: String? = null)
 
 @HiltViewModel
 class AnalyticsViewModel @Inject constructor(
@@ -40,12 +40,20 @@ class PersonalAnalyticsViewModel @Inject constructor(
     observeDetail: ObserveHabitDetailUseCase,
     observeTransactions: ObserveHabitTransactionsUseCase,
     observeUserProgress: ObserveUserProgressUseCase,
+    observeCategories: ObserveCategoriesUseCase,
     private val deleteHabit: DeleteHabitUseCase
 ) : ViewModel() {
     private val habitId = checkNotNull(savedStateHandle.get<String>("habitId")).toLong()
-    val state: StateFlow<PersonalAnalyticsState> = combine(observeDetail(habitId, 365), observeTransactions(habitId), observeUserProgress()) { detail, transactions, user -> 
+    val state: StateFlow<PersonalAnalyticsState> = combine(
+        observeDetail(habitId, 365), 
+        observeTransactions(habitId), 
+        observeUserProgress(),
+        observeCategories()
+    ) { detail, transactions, user, categories -> 
+        val habit = detail?.habit
         PersonalAnalyticsState(
-            habit = detail?.habit, 
+            habit = habit, 
+            category = categories.find { it.id == habit?.categoryId },
             progress = detail?.progress.orEmpty(), 
             transactions = transactions, 
             points = user?.currentPoints ?: 0, 

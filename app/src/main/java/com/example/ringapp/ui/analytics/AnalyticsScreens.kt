@@ -94,7 +94,7 @@ fun PersonalAnalyticsScreen(onBack: () -> Unit = {}, onEdit: (Long) -> Unit = {}
     
     val activePoints = points.filter { it.isActive }
     val successRate = if (activePoints.isEmpty()) 0 else activePoints.count { it.completed } * 100 / activePoints.size
-    val habitColor = Color(habit.color)
+    val habitColor = Color(state.category?.color ?: habit.color)
 
     val isDark = isSystemInDarkTheme()
     val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background

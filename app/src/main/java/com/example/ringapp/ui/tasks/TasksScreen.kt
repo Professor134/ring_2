@@ -54,26 +54,47 @@ fun TasksScreen(onAddTask: () -> Unit, onTaskClick: (Long) -> Unit, viewModel: T
             containerColor = bgColor
         ) { padding ->
             if (filtered.isEmpty()) Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) { Text("No tasks found", color = textColor); Button(onClick = onAddTask) { Text("+ Add Task") } } }
-            else LazyColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp), contentPadding = PaddingValues(bottom = 96.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                items(filtered, key = { it.id }) { task -> TaskCard(task, textColor, { onTaskClick(task.id) }) { viewModel.toggle(task) } }
+            else {
+                val pending = filtered.filter { !it.completed }
+                val completed = filtered.filter { it.completed }
+                LazyColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp), contentPadding = PaddingValues(bottom = 96.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    if (pending.isNotEmpty()) {
+                        item { Text("Pending", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = textColor, modifier = Modifier.padding(top = 8.dp)) }
+                        items(pending, key = { it.id }) { task -> TaskCard(task, textColor, { onTaskClick(task.id) }) { viewModel.toggle(task) } }
+                    }
+                    if (completed.isNotEmpty()) {
+                        item { Text("Completed", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = textColor.copy(alpha = 0.6f), modifier = Modifier.padding(top = 16.dp)) }
+                        items(completed, key = { it.id }) { task -> TaskCard(task, textColor, { onTaskClick(task.id) }) { viewModel.toggle(task) } }
+                    }
+                }
             }
         }
     }
 }
 
-@Composable private fun TaskCard(task: TaskEntity, textColor: Color, onClick: () -> Unit, onToggle: () -> Unit) { 
-    Card(onClick = onClick) { 
-        Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) { 
+@Composable private fun TaskCard(task: TaskEntity, textColor: Color, onClick: () -> Unit, onToggle: () -> Unit) {
+    val dueString = task.dueDate?.let { date ->
+        val calendar = Calendar.getInstance().apply { timeInMillis = date }
+        task.dueTime?.let { time ->
+            val timeCal = Calendar.getInstance().apply { timeInMillis = time }
+            calendar.set(Calendar.HOUR_OF_DAY, timeCal.get(Calendar.HOUR_OF_DAY))
+            calendar.set(Calendar.MINUTE, timeCal.get(Calendar.MINUTE))
+        }
+        SimpleDateFormat("d MMM, HH:mm", Locale.getDefault()).format(calendar.time)
+    } ?: "No due date"
+
+    Card(onClick = onClick) {
+        Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(10.dp).background(priorityColor(task.priority), CircleShape))
-            Column(Modifier.weight(1f).padding(horizontal = 12.dp)) { 
+            Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
                 Text(task.title, style = MaterialTheme.typography.titleMedium, color = textColor)
-                Text("${task.priority.name}  •  ${task.dueDate?.let { SimpleDateFormat("d MMM, HH:mm", Locale.getDefault()).format(Date(it)) } ?: "No due date"}", style = MaterialTheme.typography.bodySmall, color = textColor.copy(alpha = 0.6f)) 
+                Text("${task.priority.name}  •  $dueString", style = MaterialTheme.typography.bodySmall, color = textColor.copy(alpha = 0.6f))
             }
             IconButton(onClick = onToggle, modifier = Modifier.size(38.dp).background(if (task.completed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant, CircleShape)) {
                 Icon(Icons.Default.Check, null, tint = if (task.completed) Color.White else textColor.copy(alpha = 0.6f))
             }
-        } 
-    } 
+        }
+    }
 }
 private fun priorityColor(priority: TaskPriority) = when (priority) { TaskPriority.HIGH -> Color(0xFFD32F2F); TaskPriority.MEDIUM -> Color(0xFFFBC02D); TaskPriority.LOW -> Color(0xFF388E3C) }
 private fun startOfDay(time: Long): Long = Calendar.getInstance().apply { timeInMillis = time; set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }.timeInMillis

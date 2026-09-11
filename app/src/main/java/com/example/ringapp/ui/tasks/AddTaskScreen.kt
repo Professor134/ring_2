@@ -118,7 +118,20 @@ fun AddTaskScreen(taskId: Long? = null, onSaved: () -> Unit, onBack: () -> Unit,
             FormSection("Priority") {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     TaskPriority.values().forEach { option ->
-                        FilterChip(selected = priority == option, onClick = { priority = option }, label = { Text(option.name.lowercase().replaceFirstChar { it.uppercase() }) }, colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MaterialTheme.colorScheme.primary, selectedLabelColor = Color.White, labelColor = textColor))
+                        FilterChip(
+                            selected = priority == option,
+                            onClick = { priority = option },
+                            label = { Text(option.name.lowercase().replaceFirstChar { it.uppercase() }) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = when (option) {
+                                    TaskPriority.LOW -> Color(0xFF388E3C)
+                                    TaskPriority.MEDIUM -> Color(0xFFFBC02D)
+                                    TaskPriority.HIGH -> Color(0xFFD32F2F)
+                                },
+                                selectedLabelColor = Color.White,
+                                labelColor = textColor
+                            )
+                        )
                     }
                 }
             }
