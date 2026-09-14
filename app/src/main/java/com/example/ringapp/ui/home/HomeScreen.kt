@@ -103,7 +103,7 @@ fun HomeScreen(
     val category = categories.firstOrNull { it.id == habit.categoryId }
     val baseColor = category?.color?.let(::Color) ?: Color(habit.color)
     val isCompleted = progress?.completed == true
-    val isPartial = (progress?.actual ?: 0) > 0 && !isCompleted
+    val isPartial = (progress?.actual ?: 0.0) > 0.0 && !isCompleted
     
     val buttonColor = when {
         isCompleted -> baseColor
@@ -122,7 +122,7 @@ fun HomeScreen(
                     Text(habit.name, fontWeight = FontWeight.SemiBold, color = textColor)
                     Text("${category?.name ?: "Personal"}  •  ${habit.currentStreak} 🔥", color = textColor.copy(alpha = 0.6f), style = MaterialTheme.typography.bodySmall)
                     val progressValue = if (habit.type == HabitType.MEASURABLE) {
-                        ((progress?.actual ?: 0).toFloat() / habit.target.coerceAtLeast(1)).coerceIn(0f, 1f)
+                        ((progress?.actual ?: 0.0) / habit.target.coerceAtLeast(1.0)).toFloat().coerceIn(0f, 1f)
                     } else {
                         if (isCompleted) 1f else 0f
                     }
@@ -226,6 +226,6 @@ private fun categoryIcon(iconName: String): ImageVector = when (iconName.lowerca
     } 
 }
 
-@Composable private fun ProgressDialog(habit: HabitEntity, progress: HabitProgressEntity?, onDismiss: () -> Unit, onSave: (Int, String?) -> Unit) { var value by remember(progress) { mutableStateOf((progress?.actual ?: 0).toString()) }; var note by remember(progress) { mutableStateOf(progress?.note.orEmpty()) }; AlertDialog(onDismissRequest = onDismiss, title = { Text("Today's Progress") }, text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { Text("Target: ${habit.target} ${habit.unit.orEmpty()}"); OutlinedTextField(value, { value = it.filter(Char::isDigit) }, label = { Text("Value") }, singleLine = true); OutlinedTextField(note, { note = it }, label = { Text("Add Note (optional)") }) } }, confirmButton = { TextButton(onClick = { onSave(value.toIntOrNull() ?: 0, note.ifBlank { null }) }) { Text("Save") } }, dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }) }
+@Composable private fun ProgressDialog(habit: HabitEntity, progress: HabitProgressEntity?, onDismiss: () -> Unit, onSave: (Double, String?) -> Unit) { var value by remember(progress) { mutableStateOf((progress?.actual ?: 0.0).toString()) }; var note by remember(progress) { mutableStateOf(progress?.note.orEmpty()) }; AlertDialog(onDismissRequest = onDismiss, title = { Text("Today's Progress") }, text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { Text("Target: ${habit.target} ${habit.unit.orEmpty()}"); OutlinedTextField(value, { value = it.filter { c -> c.isDigit() || c == '.' } }, label = { Text("Value") }, singleLine = true); OutlinedTextField(note, { note = it }, label = { Text("Add Note (optional)") }) } }, confirmButton = { TextButton(onClick = { onSave(value.toDoubleOrNull() ?: 0.0, note.ifBlank { null }) }) { Text("Save") } }, dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }) }
 
 private fun todayTimestamp(): Long = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()

@@ -13,7 +13,9 @@ class RingWorkerFactory(
         appContext: Context,
         workerClassName: String,
         workerParameters: WorkerParameters
-    ): ListenableWorker? = if (workerClassName == DailyMaintenanceWorker::class.java.name) {
-        DailyMaintenanceWorker(appContext, workerParameters).also { it.preferences = preferences }
-    } else null
+    ): ListenableWorker? = when (workerClassName) {
+        DailyMaintenanceWorker::class.java.name -> DailyMaintenanceWorker(appContext, workerParameters).also { it.preferences = preferences }
+        MotivationWorker::class.java.name -> MotivationWorker(appContext, workerParameters)
+        else -> null
+    }
 }

@@ -82,7 +82,7 @@ abstract class AppDatabase : RoomDatabase() {
                 context.applicationContext,
                 AppDatabase::class.java,
                 "ring_database"
-            ).addMigrations(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7).build().also { instance = it }
+            ).addMigrations(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8).build().also { instance = it }
         }
     }
 }

@@ -64,7 +64,7 @@ class FirstLaunchInitializer @Inject constructor(
                     description = "A fresh start to the day.",
                     categoryId = healthCatId,
                     type = com.example.ringapp.data.local.entities.HabitType.YES_NO,
-                    target = 1,
+                    target = 1.0,
                     unit = null,
                     scheduleType = com.example.ringapp.data.local.entities.ScheduleType.DAILY,
                     scheduleDays = emptyList(),
@@ -80,7 +80,7 @@ class FirstLaunchInitializer @Inject constructor(
                     description = "Expand your knowledge.",
                     categoryId = 2L, // Learning
                     type = com.example.ringapp.data.local.entities.HabitType.MEASURABLE,
-                    target = 20,
+                    target = 20.0,
                     unit = "Pages",
                     scheduleType = com.example.ringapp.data.local.entities.ScheduleType.DAILY,
                     scheduleDays = emptyList(),

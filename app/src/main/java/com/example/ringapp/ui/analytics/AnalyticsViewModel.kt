@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 
 private fun startOfDay(date: LocalDate): Long = date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
-data class AnalyticsPoint(val date: LocalDate, val score: Int, val actual: Int = 0, val target: Int = 0, val completed: Boolean = false)
+data class AnalyticsPoint(val date: LocalDate, val score: Int, val actual: Double = 0.0, val target: Double = 0.0, val completed: Boolean = false)
 data class AnalyticsUiState(val habits: List<HabitEntity> = emptyList(), val tasks: List<TaskEntity> = emptyList(), val categories: List<CategoryEntity> = emptyList(), val progress: List<HabitProgressEntity> = emptyList(), val points: Int = 0, val bestStreak: Int = 0, val loading: Boolean = true, val error: String? = null)
 
 data class PersonalAnalyticsState(val habit: HabitEntity? = null, val category: CategoryEntity? = null, val progress: List<HabitProgressEntity> = emptyList(), val transactions: List<PointTransactionEntity> = emptyList(), val points: Int = 0, val habitPoints: Int = 0, val loading: Boolean = true, val error: String? = null)

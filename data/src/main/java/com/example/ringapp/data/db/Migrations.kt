@@ -32,8 +32,24 @@ val MIGRATION_6_7 = object : Migration(6, 7) {
         db.execSQL("CREATE INDEX IF NOT EXISTS index_task_reminders_triggerAt ON task_reminders(triggerAt)")
         db.execSQL("CREATE TABLE IF NOT EXISTS user_achievements (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, achievementId INTEGER NOT NULL, unlockedAt INTEGER, progress INTEGER NOT NULL, rewardTransactionId INTEGER, FOREIGN KEY(achievementId) REFERENCES achievement(id) ON UPDATE NO ACTION ON DELETE CASCADE)")
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_user_achievements_achievementId ON user_achievements(achievementId)")
-        db.execSQL("CREATE TABLE IF NOT EXISTS analytics_daily (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, date INTEGER NOT NULL, habitScore INTEGER NOT NULL, taskScore INTEGER NOT NULL, consistencyScore INTEGER NOT NULL, streakScore INTEGER NOT NULL, productivityScore INTEGER NOT NULL, completionRate INTEGER NOT NULL, habitCompletions INTEGER NOT NULL, taskCompletions INTEGER NOT NULL, activeHabits INTEGER NOT NULL, activeTasks INTEGER NOT NULL, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL)")
+        db.execSQL("CREATE TABLE IF NOT EXISTS analytics_daily (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, date INTEGER NOT NULL, habitScore INTEGER NOT NULL, taskScore INTEGER NOT NULL, consistencyScore INTEGER NOT NULL, streakScore INTEGER NOT NULL, productivityScore INTEGER NOT NULL, consistencyScore INTEGER NOT NULL, completenessRate INTEGER, completionRate INTEGER NOT NULL, habitCompletions INTEGER NOT NULL, taskCompletions INTEGER NOT NULL, activeHabits INTEGER NOT NULL, activeTasks INTEGER NOT NULL, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL)")
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_analytics_daily_date ON analytics_daily(date)")
+    }
+}
+
+val MIGRATION_7_8 = object : Migration(7, 8) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE habit RENAME TO old_habit")
+        db.execSQL("CREATE TABLE IF NOT EXISTS habit (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name TEXT NOT NULL, description TEXT, categoryId INTEGER NOT NULL, type TEXT NOT NULL, target REAL NOT NULL, unit TEXT, scheduleType TEXT NOT NULL, scheduleDays TEXT, startDate INTEGER NOT NULL, currentStreak INTEGER NOT NULL, bestStreak INTEGER NOT NULL, totalCompletions INTEGER NOT NULL, color INTEGER NOT NULL, deletedAt INTEGER, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL, FOREIGN KEY(categoryId) REFERENCES category(id) ON UPDATE NO ACTION ON DELETE RESTRICT)")
+        db.execSQL("INSERT INTO habit (id, name, description, categoryId, type, target, unit, scheduleType, scheduleDays, startDate, currentStreak, bestStreak, totalCompletions, color, deletedAt, createdAt, updatedAt) SELECT id, name, description, categoryId, type, CAST(target AS REAL), unit, scheduleType, scheduleDays, startDate, currentStreak, bestStreak, totalCompletions, color, deletedAt, createdAt, updatedAt FROM old_habit")
+        db.execSQL("DROP TABLE old_habit")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_habit_categoryId ON habit(categoryId)")
+
+        db.execSQL("ALTER TABLE habit_progress RENAME TO old_habit_progress")
+        db.execSQL("CREATE TABLE IF NOT EXISTS habit_progress (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, habitId INTEGER NOT NULL, date INTEGER NOT NULL, target REAL NOT NULL, actual REAL NOT NULL, percentage INTEGER NOT NULL, completed INTEGER NOT NULL, note TEXT, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL, FOREIGN KEY(habitId) REFERENCES habit(id) ON UPDATE NO ACTION ON DELETE CASCADE)")
+        db.execSQL("INSERT INTO habit_progress (id, habitId, date, target, actual, percentage, completed, note, createdAt, updatedAt) SELECT id, habitId, date, CAST(target AS REAL), CAST(actual AS REAL), percentage, completed, note, createdAt, updatedAt FROM old_habit_progress")
+        db.execSQL("DROP TABLE old_habit_progress")
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_habit_progress_habitId_date ON habit_progress(habitId, date)")
     }
 }
 

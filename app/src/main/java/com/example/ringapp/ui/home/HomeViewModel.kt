@@ -133,7 +133,7 @@ data class HomeUiState(
 
 sealed interface HomeEvent {
     data class CompleteHabit(val habit: HabitEntity) : HomeEvent
-    data class RecordProgress(val habit: HabitEntity, val date: Long, val value: Int, val note: String?) : HomeEvent
+    data class RecordProgress(val habit: HabitEntity, val date: Long, val value: Double, val note: String?) : HomeEvent
     data class ToggleTask(val task: TaskEntity) : HomeEvent
     data object AddHabit : HomeEvent
     data object AddTask : HomeEvent

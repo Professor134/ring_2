@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit
 
 object WorkScheduler {
     private const val DAILY_MAINTENANCE = "daily_maintenance"
+    private const val MOTIVATION_WORK = "motivation_work"
 
     fun scheduleDailyMaintenance(context: Context) {
         val request = PeriodicWorkRequestBuilder<DailyMaintenanceWorker>(1, TimeUnit.DAYS)
@@ -20,6 +21,15 @@ object WorkScheduler {
             DAILY_MAINTENANCE,
             ExistingPeriodicWorkPolicy.UPDATE,
             request
+        )
+
+        val motivationRequest = PeriodicWorkRequestBuilder<MotivationWorker>(12, TimeUnit.HOURS)
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            MOTIVATION_WORK,
+            ExistingPeriodicWorkPolicy.UPDATE,
+            motivationRequest
         )
     }
 

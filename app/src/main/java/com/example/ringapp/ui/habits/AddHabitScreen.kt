@@ -56,15 +56,15 @@ class AddHabitViewModel @Inject constructor(
     fun delete(habitId: Long, onDeleted: () -> Unit) = viewModelScope.launch { deleteHabit(habitId); onDeleted() }
 }
 
-data class HabitFields(val name: String, val description: String, val categoryId: Long, val type: HabitType, val target: Int, val unit: String, val schedule: ScheduleType, val days: List<Int>, val startDate: Long, val color: Int)
+data class HabitFields(val name: String, val description: String, val categoryId: Long, val type: HabitType, val target: Double, val unit: String, val schedule: ScheduleType, val days: List<Int>, val startDate: Long, val color: Int)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AddHabitScreen(habitId: Long? = null, onSaved: () -> Unit, onBack: () -> Unit, viewModel: AddHabitViewModel = hiltViewModel()) {
     val habits by viewModel.habits.collectAsStateWithLifecycle(); val categories by viewModel.categories.collectAsStateWithLifecycle(); val existing = habits.firstOrNull { it.id == habitId }; val context = LocalContext.current
-    var name by remember(existing) { mutableStateOf(existing?.name.orEmpty()) }; var description by remember(existing) { mutableStateOf(existing?.description.orEmpty()) }; var type by remember(existing) { mutableStateOf(existing?.type ?: HabitType.YES_NO) }; var target by remember(existing) { mutableStateOf((existing?.target ?: 1).toString()) }; var unit by remember(existing) { mutableStateOf(existing?.unit ?: "Pages") }; var schedule by remember(existing) { mutableStateOf(existing?.scheduleType ?: ScheduleType.DAILY) }; var days by remember(existing) { mutableStateOf(existing?.scheduleDays ?: emptyList()) }; var startDate by remember(existing) { mutableStateOf(existing?.startDate ?: todayTimestamp()) }; var categoryId by remember(existing, categories) { mutableStateOf(existing?.categoryId ?: categories.firstOrNull()?.id ?: 0L) }; var error by remember { mutableStateOf<String?>(null) }; var showCategoryDialog by remember { mutableStateOf(false) }; var confirmDelete by remember { mutableStateOf(false) }
+    var name by remember(existing) { mutableStateOf(existing?.name.orEmpty()) }; var description by remember(existing) { mutableStateOf(existing?.description.orEmpty()) }; var type by remember(existing) { mutableStateOf(existing?.type ?: HabitType.YES_NO) }; var target by remember(existing) { mutableStateOf((existing?.target ?: 1.0).toString()) }; var unit by remember(existing) { mutableStateOf(existing?.unit ?: "Pages") }; var schedule by remember(existing) { mutableStateOf(existing?.scheduleType ?: ScheduleType.DAILY) }; var days by remember(existing) { mutableStateOf(existing?.scheduleDays ?: emptyList()) }; var startDate by remember(existing) { mutableStateOf(existing?.startDate ?: todayTimestamp()) }; var categoryId by remember(existing, categories) { mutableStateOf(existing?.categoryId ?: categories.filter { it.name.lowercase() != "habits" }.firstOrNull()?.id ?: 0L) }; var error by remember { mutableStateOf<String?>(null) }; var showCategoryDialog by remember { mutableStateOf(false) }; var confirmDelete by remember { mutableStateOf(false) }
     
-    val category = categories.firstOrNull { it.id == categoryId }; val color = category?.color ?: 0xFF00A84F.toInt(); val editing = habitId != null; val targetValid = type == HabitType.YES_NO || (target.toIntOrNull() ?: 0) > 0; val scheduleValid = schedule != ScheduleType.WEEKLY || days.isNotEmpty(); val canSave = name.isNotBlank() && targetValid && scheduleValid
+    val category = categories.firstOrNull { it.id == categoryId }; val color = category?.color ?: 0xFF00A84F.toInt(); val editing = habitId != null; val targetValid = type == HabitType.YES_NO || (target.toDoubleOrNull() ?: 0.0) > 0.0; val scheduleValid = schedule != ScheduleType.WEEKLY || days.isNotEmpty(); val canSave = name.isNotBlank() && targetValid && scheduleValid
     
     val isDark = isSystemInDarkTheme()
     val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
@@ -75,7 +75,7 @@ fun AddHabitScreen(habitId: Long? = null, onSaved: () -> Unit, onBack: () -> Uni
             Row(Modifier.fillMaxWidth().padding(top = 48.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back", tint = textColor) }
                 Text(if (editing) "Edit Habit" else "Create Habit", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = textColor)
-                TextButton(onClick = { if (canSave) viewModel.save(existing, HabitFields(name, description, categoryId, type, target.toIntOrNull() ?: 1, unit, schedule, days, startDate, color), onSaved) { error = it } }, enabled = canSave) { Text(if (editing) "Save" else "Create", color = MaterialTheme.colorScheme.primary) }
+                TextButton(onClick = { if (canSave) viewModel.save(existing, HabitFields(name, description, categoryId, type, target.toDoubleOrNull() ?: 1.0, unit, schedule, days, startDate, color), onSaved) { error = it } }, enabled = canSave) { Text(if (editing) "Save" else "Create", color = MaterialTheme.colorScheme.primary) }
             }
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             
@@ -88,7 +88,7 @@ fun AddHabitScreen(habitId: Long? = null, onSaved: () -> Unit, onBack: () -> Uni
             FormSection("Category") {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        categories.forEach { item ->
+                        categories.filter { it.name.lowercase() != "habits" }.forEach { item ->
                             FilterChip(
                                 selected = categoryId == item.id,
                                 onClick = { categoryId = item.id },
@@ -116,7 +116,7 @@ fun AddHabitScreen(habitId: Long? = null, onSaved: () -> Unit, onBack: () -> Uni
             
             if (type == HabitType.MEASURABLE) FormSection("Measurable Settings") {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedTextField(target, { target = it.filter(Char::isDigit) }, Modifier.weight(1f), label = { Text("Target") }, isError = !targetValid, singleLine = true, colors = OutlinedTextFieldDefaults.colors(focusedTextColor = textColor, unfocusedTextColor = textColor))
+                    OutlinedTextField(target, { target = it.filter { c -> c.isDigit() || c == '.' } }, Modifier.weight(1f), label = { Text("Target") }, isError = !targetValid, singleLine = true, colors = OutlinedTextFieldDefaults.colors(focusedTextColor = textColor, unfocusedTextColor = textColor))
                     OutlinedTextField(unit, { unit = it }, Modifier.weight(1f), label = { Text("Unit") }, singleLine = true, colors = OutlinedTextFieldDefaults.colors(focusedTextColor = textColor, unfocusedTextColor = textColor))
                 }
             }
@@ -159,7 +159,7 @@ fun AddHabitScreen(habitId: Long? = null, onSaved: () -> Unit, onBack: () -> Uni
             }
             
             if (!editing) Text("Create Habit (Costs 25 Points)", color = Color.Red, modifier = Modifier.align(Alignment.CenterHorizontally), fontWeight = FontWeight.Bold)
-            else if (existing != null && existing.target != (target.toIntOrNull() ?: existing.target)) Text("Change Target (Costs 10 Points)", color = Color.Red, modifier = Modifier.align(Alignment.CenterHorizontally), fontWeight = FontWeight.Bold)
+            else if (existing != null && existing.target != (target.toDoubleOrNull() ?: existing.target)) Text("Change Target (Costs 10 Points)", color = Color.Red, modifier = Modifier.align(Alignment.CenterHorizontally), fontWeight = FontWeight.Bold)
             
             if (editing && existing != null) {
                 Button(onClick = { confirmDelete = true }, Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Color.Red), shape = RoundedCornerShape(12.dp)) {

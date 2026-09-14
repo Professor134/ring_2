@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 7,
-    "identityHash": "34ad196aa1ffb156004d7b2be6ce0a76",
+    "identityHash": "e49ac19bcb96e49884eebf8743a1e420",
     "entities": [
       {
         "tableName": "habit",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `description` TEXT, `categoryId` INTEGER NOT NULL, `type` TEXT NOT NULL, `target` INTEGER NOT NULL, `unit` TEXT, `scheduleType` TEXT NOT NULL, `scheduleDays` TEXT, `startDate` INTEGER NOT NULL, `currentStreak` INTEGER NOT NULL, `bestStreak` INTEGER NOT NULL, `totalCompletions` INTEGER NOT NULL, `color` INTEGER NOT NULL, `deletedAt` INTEGER, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, FOREIGN KEY(`categoryId`) REFERENCES `category`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `description` TEXT, `categoryId` INTEGER NOT NULL, `type` TEXT NOT NULL, `target` REAL NOT NULL, `unit` TEXT, `scheduleType` TEXT NOT NULL, `scheduleDays` TEXT, `startDate` INTEGER NOT NULL, `currentStreak` INTEGER NOT NULL, `bestStreak` INTEGER NOT NULL, `totalCompletions` INTEGER NOT NULL, `color` INTEGER NOT NULL, `deletedAt` INTEGER, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, FOREIGN KEY(`categoryId`) REFERENCES `category`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
         "fields": [
           {
             "fieldPath": "id",
@@ -41,7 +41,7 @@
           {
             "fieldPath": "target",
             "columnName": "target",
-            "affinity": "INTEGER",
+            "affinity": "REAL",
             "notNull": true
           },
           {
@@ -144,7 +144,7 @@
       },
       {
         "tableName": "habit_progress",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `habitId` INTEGER NOT NULL, `date` INTEGER NOT NULL, `target` INTEGER NOT NULL, `actual` INTEGER NOT NULL, `percentage` INTEGER NOT NULL, `completed` INTEGER NOT NULL, `note` TEXT, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, FOREIGN KEY(`habitId`) REFERENCES `habit`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `habitId` INTEGER NOT NULL, `date` INTEGER NOT NULL, `target` REAL NOT NULL, `actual` REAL NOT NULL, `percentage` INTEGER NOT NULL, `completed` INTEGER NOT NULL, `note` TEXT, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, FOREIGN KEY(`habitId`) REFERENCES `habit`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -167,13 +167,13 @@
           {
             "fieldPath": "target",
             "columnName": "target",
-            "affinity": "INTEGER",
+            "affinity": "REAL",
             "notNull": true
           },
           {
             "fieldPath": "actual",
             "columnName": "actual",
-            "affinity": "INTEGER",
+            "affinity": "REAL",
             "notNull": true
           },
           {
@@ -1622,7 +1622,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '34ad196aa1ffb156004d7b2be6ce0a76')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'e49ac19bcb96e49884eebf8743a1e420')"
     ]
   }
 }

@@ -31,10 +31,10 @@ class TaskRepository @Inject constructor(
     }
     suspend fun activeReminders(): List<TaskEntity> = dao.activeReminders()
     suspend fun awardTaskPoints(taskId: Long, timestamp: Long): Boolean {
-        return pointRepository.record(com.example.ringapp.data.local.entities.TransactionType.TASK_COMPLETE, 2, "task-complete-$taskId", "Task completed", taskId = taskId, timestamp = timestamp)
+        return pointRepository.record(com.example.ringapp.data.local.entities.TransactionType.TASK_COMPLETE, 4, "task-complete-$taskId-$timestamp", "Task completed", taskId = taskId, timestamp = timestamp)
     }
     suspend fun revokeTaskPoints(taskId: Long, timestamp: Long): Boolean {
-        return pointRepository.record(com.example.ringapp.data.local.entities.TransactionType.TASK_UNCOMPLETE, -2, "task-uncomplete-$taskId-$timestamp", "Task completion reverted", taskId = taskId, timestamp = timestamp)
+        return pointRepository.record(com.example.ringapp.data.local.entities.TransactionType.TASK_UNCOMPLETE, -4, "task-uncomplete-$taskId-$timestamp", "Task completion reverted", taskId = taskId, timestamp = timestamp)
     }
     suspend fun cleanupOldTasks() {
         val weekAgo = System.currentTimeMillis() - (7 * 24 * 60 * 60 * 1000L)

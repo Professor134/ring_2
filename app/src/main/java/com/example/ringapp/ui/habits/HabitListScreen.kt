@@ -46,7 +46,7 @@ class HabitListViewModel @Inject constructor(
     val state: StateFlow<HabitListState> = combine(observeHabits(), observeCategories(), observeProgress(from, to), observeUserProgress()) { habits, categories, progress, userProgress -> HabitListState(habits, categories, progress, userProgress?.currentPoints ?: 0) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HabitListState())
     fun complete(habit: HabitEntity) = viewModelScope.launch { toggleHabit(habit) }
-    fun record(habit: HabitEntity, value: Int, note: String?) = viewModelScope.launch { recordProgress(habit, todayTimestamp(), value, note) }
+    fun record(habit: HabitEntity, value: Double, note: String?) = viewModelScope.launch { recordProgress(habit, todayTimestamp(), value, note) }
 }
 
 data class HabitListState(val habits: List<HabitEntity> = emptyList(), val categories: List<CategoryEntity> = emptyList(), val progress: List<HabitProgressEntity> = emptyList(), val points: Int = 0)
@@ -75,7 +75,8 @@ fun HabitListScreen(onHabitClick: (Long) -> Unit, onAddHabit: () -> Unit, viewMo
                     OutlinedTextField(value = query, onValueChange = { query = it }, modifier = Modifier.fillMaxWidth(), placeholder = { Text("Search habits...") }, singleLine = true, leadingIcon = { Icon(Icons.Default.Search, null) }, shape = RoundedCornerShape(14.dp), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = textColor, unfocusedTextColor = textColor))
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(vertical = 12.dp)) { 
                         item { FilterChip(categoryFilter == "All", { categoryFilter = "All" }, label = { Text("All") }, colors = FilterChipDefaults.filterChipColors(labelColor = textColor, selectedLabelColor = Color.White, selectedContainerColor = MaterialTheme.colorScheme.primary)) }
-                        items(state.categories) { category -> FilterChip(categoryFilter == category.name, { categoryFilter = category.name }, label = { Text(category.name) }, colors = FilterChipDefaults.filterChipColors(labelColor = textColor, selectedLabelColor = Color.White, selectedContainerColor = MaterialTheme.colorScheme.primary)) }
+                        val filteredCategories = state.categories.filter { it.name.lowercase() != "habits" }
+                        items(filteredCategories) { category -> FilterChip(categoryFilter == category.name, { categoryFilter = category.name }, label = { Text(category.name) }, colors = FilterChipDefaults.filterChipColors(labelColor = textColor, selectedLabelColor = Color.White, selectedContainerColor = MaterialTheme.colorScheme.primary)) }
                     }
                 }
             },
@@ -108,7 +109,7 @@ fun HabitListScreen(onHabitClick: (Long) -> Unit, onAddHabit: () -> Unit, viewMo
     val todayProgress = progress.firstOrNull { it.habitId == habit.id && it.date == todayTimestamp() }
     
     val isCompleted = todayProgress?.completed == true
-    val isPartial = (todayProgress?.actual ?: 0) > 0 && !isCompleted
+    val isPartial = (todayProgress?.actual ?: 0.0) > 0.0 && !isCompleted
     
     val buttonColor = when {
         isCompleted -> baseColor
@@ -130,7 +131,7 @@ fun HabitListScreen(onHabitClick: (Long) -> Unit, onAddHabit: () -> Unit, viewMo
                     }
                     Text("${category?.name ?: "Personal"}", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                     val progressValue = if (habit.type == HabitType.MEASURABLE) {
-                        ((todayProgress?.actual ?: 0).toFloat() / habit.target.coerceAtLeast(1)).coerceIn(0f, 1f)
+                        ((todayProgress?.actual ?: 0.0) / habit.target.coerceAtLeast(1.0)).toFloat().coerceIn(0f, 1f)
                     } else {
                         if (isCompleted) 1f else 0f
                     }
@@ -216,7 +217,7 @@ fun HabitListScreen(onHabitClick: (Long) -> Unit, onAddHabit: () -> Unit, viewMo
     }
 }
 
-@Composable private fun ProgressDialog(habit: HabitEntity, progress: HabitProgressEntity?, onDismiss: () -> Unit, onSave: (Int, String?) -> Unit) { var value by remember(progress) { mutableStateOf((progress?.actual ?: 0).toString()) }; var note by remember(progress) { mutableStateOf(progress?.note.orEmpty()) }; AlertDialog(onDismissRequest = onDismiss, title = { Text("Today's Progress") }, text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { Text("Target: ${habit.target} ${habit.unit.orEmpty()}"); OutlinedTextField(value, { value = it.filter(Char::isDigit) }, label = { Text("Value") }, singleLine = true); OutlinedTextField(note, { note = it }, label = { Text("Add Note (optional)") }) } }, confirmButton = { TextButton(onClick = { onSave(value.toIntOrNull() ?: 0, note.ifBlank { null }) }) { Text("Save") } }, dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }) }
+@Composable private fun ProgressDialog(habit: HabitEntity, progress: HabitProgressEntity?, onDismiss: () -> Unit, onSave: (Double, String?) -> Unit) { var value by remember(progress) { mutableStateOf((progress?.actual ?: 0.0).toString()) }; var note by remember(progress) { mutableStateOf(progress?.note.orEmpty()) }; AlertDialog(onDismissRequest = onDismiss, title = { Text("Today's Progress") }, text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { Text("Target: ${habit.target} ${habit.unit.orEmpty()}"); OutlinedTextField(value, { value = it.filter { c -> c.isDigit() || c == '.' } }, label = { Text("Value") }, singleLine = true); OutlinedTextField(note, { note = it }, label = { Text("Add Note (optional)") }) } }, confirmButton = { TextButton(onClick = { onSave(value.toDoubleOrNull() ?: 0.0, note.ifBlank { null }) }) { Text("Save") } }, dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }) }
 
 private fun scheduleLabel(habit: HabitEntity): String = when (habit.scheduleType) { ScheduleType.ODD_DAYS -> "Odd days"; ScheduleType.EVEN_DAYS -> "Even days"; ScheduleType.WEEKLY -> "Weekly"; ScheduleType.MONTHLY -> "Monthly"; ScheduleType.YEARLY -> "Yearly"; ScheduleType.CUSTOM -> "Every ${habit.scheduleDays?.firstOrNull() ?: 1} days"; else -> "Daily" }
 private fun categoryIcon(iconName: String?): ImageVector = when (iconName?.lowercase()) { "gym" -> Icons.Default.FitnessCenter; "fitness" -> Icons.Default.FitnessCenter; "finance" -> Icons.Default.Payments; "payments" -> Icons.Default.Payments; "study" -> Icons.Default.School; "school" -> Icons.Default.School; "work" -> Icons.Default.Work; "sleep" -> Icons.Default.Bedtime; "bedtime" -> Icons.Default.Bedtime; "yoga" -> Icons.Default.SelfImprovement; "self" -> Icons.Default.SelfImprovement; "personal" -> Icons.Default.Person; "person" -> Icons.Default.Person; "book" -> Icons.AutoMirrored.Filled.MenuBook; else -> Icons.Default.Flag }

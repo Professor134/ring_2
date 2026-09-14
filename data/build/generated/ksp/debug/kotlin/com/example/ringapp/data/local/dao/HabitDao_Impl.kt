@@ -24,6 +24,7 @@ import java.util.ArrayList
 import java.util.concurrent.Callable
 import javax.`annotation`.processing.Generated
 import kotlin.Boolean
+import kotlin.Double
 import kotlin.Int
 import kotlin.Long
 import kotlin.String
@@ -68,7 +69,7 @@ public class HabitDao_Impl(
         statement.bindLong(4, entity.categoryId)
         val _tmp: String = __converters.habitTypeToString(entity.type)
         statement.bindString(5, _tmp)
-        statement.bindLong(6, entity.target.toLong())
+        statement.bindDouble(6, entity.target)
         val _tmpUnit: String? = entity.unit
         if (_tmpUnit == null) {
           statement.bindNull(7)
@@ -108,8 +109,8 @@ public class HabitDao_Impl(
         statement.bindLong(1, entity.id)
         statement.bindLong(2, entity.habitId)
         statement.bindLong(3, entity.date)
-        statement.bindLong(4, entity.target.toLong())
-        statement.bindLong(5, entity.actual.toLong())
+        statement.bindDouble(4, entity.target)
+        statement.bindDouble(5, entity.actual)
         statement.bindLong(6, entity.percentage.toLong())
         val _tmp: Int = if (entity.completed) 1 else 0
         statement.bindLong(7, _tmp.toLong())
@@ -139,7 +140,7 @@ public class HabitDao_Impl(
         statement.bindLong(4, entity.categoryId)
         val _tmp: String = __converters.habitTypeToString(entity.type)
         statement.bindString(5, _tmp)
-        statement.bindLong(6, entity.target.toLong())
+        statement.bindDouble(6, entity.target)
         val _tmpUnit: String? = entity.unit
         if (_tmpUnit == null) {
           statement.bindNull(7)
@@ -288,8 +289,8 @@ public class HabitDao_Impl(
             val _tmp: String
             _tmp = _cursor.getString(_cursorIndexOfType)
             _tmpType = __converters.stringToHabitType(_tmp)
-            val _tmpTarget: Int
-            _tmpTarget = _cursor.getInt(_cursorIndexOfTarget)
+            val _tmpTarget: Double
+            _tmpTarget = _cursor.getDouble(_cursorIndexOfTarget)
             val _tmpUnit: String?
             if (_cursor.isNull(_cursorIndexOfUnit)) {
               _tmpUnit = null
@@ -390,8 +391,8 @@ public class HabitDao_Impl(
             val _tmp: String
             _tmp = _cursor.getString(_cursorIndexOfType)
             _tmpType = __converters.stringToHabitType(_tmp)
-            val _tmpTarget: Int
-            _tmpTarget = _cursor.getInt(_cursorIndexOfTarget)
+            val _tmpTarget: Double
+            _tmpTarget = _cursor.getDouble(_cursorIndexOfTarget)
             val _tmpUnit: String?
             if (_cursor.isNull(_cursorIndexOfUnit)) {
               _tmpUnit = null
@@ -486,10 +487,10 @@ public class HabitDao_Impl(
             _tmpHabitId = _cursor.getLong(_cursorIndexOfHabitId)
             val _tmpDate: Long
             _tmpDate = _cursor.getLong(_cursorIndexOfDate)
-            val _tmpTarget: Int
-            _tmpTarget = _cursor.getInt(_cursorIndexOfTarget)
-            val _tmpActual: Int
-            _tmpActual = _cursor.getInt(_cursorIndexOfActual)
+            val _tmpTarget: Double
+            _tmpTarget = _cursor.getDouble(_cursorIndexOfTarget)
+            val _tmpActual: Double
+            _tmpActual = _cursor.getDouble(_cursorIndexOfActual)
             val _tmpPercentage: Int
             _tmpPercentage = _cursor.getInt(_cursorIndexOfPercentage)
             val _tmpCompleted: Boolean
@@ -552,10 +553,10 @@ public class HabitDao_Impl(
             _tmpHabitId = _cursor.getLong(_cursorIndexOfHabitId)
             val _tmpDate: Long
             _tmpDate = _cursor.getLong(_cursorIndexOfDate)
-            val _tmpTarget: Int
-            _tmpTarget = _cursor.getInt(_cursorIndexOfTarget)
-            val _tmpActual: Int
-            _tmpActual = _cursor.getInt(_cursorIndexOfActual)
+            val _tmpTarget: Double
+            _tmpTarget = _cursor.getDouble(_cursorIndexOfTarget)
+            val _tmpActual: Double
+            _tmpActual = _cursor.getDouble(_cursorIndexOfActual)
             val _tmpPercentage: Int
             _tmpPercentage = _cursor.getInt(_cursorIndexOfPercentage)
             val _tmpCompleted: Boolean
@@ -620,10 +621,10 @@ public class HabitDao_Impl(
             _tmpHabitId = _cursor.getLong(_cursorIndexOfHabitId)
             val _tmpDate: Long
             _tmpDate = _cursor.getLong(_cursorIndexOfDate)
-            val _tmpTarget: Int
-            _tmpTarget = _cursor.getInt(_cursorIndexOfTarget)
-            val _tmpActual: Int
-            _tmpActual = _cursor.getInt(_cursorIndexOfActual)
+            val _tmpTarget: Double
+            _tmpTarget = _cursor.getDouble(_cursorIndexOfTarget)
+            val _tmpActual: Double
+            _tmpActual = _cursor.getDouble(_cursorIndexOfActual)
             val _tmpPercentage: Int
             _tmpPercentage = _cursor.getInt(_cursorIndexOfPercentage)
             val _tmpCompleted: Boolean
@@ -686,10 +687,10 @@ public class HabitDao_Impl(
             _tmpHabitId = _cursor.getLong(_cursorIndexOfHabitId)
             val _tmpDate: Long
             _tmpDate = _cursor.getLong(_cursorIndexOfDate)
-            val _tmpTarget: Int
-            _tmpTarget = _cursor.getInt(_cursorIndexOfTarget)
-            val _tmpActual: Int
-            _tmpActual = _cursor.getInt(_cursorIndexOfActual)
+            val _tmpTarget: Double
+            _tmpTarget = _cursor.getDouble(_cursorIndexOfTarget)
+            val _tmpActual: Double
+            _tmpActual = _cursor.getDouble(_cursorIndexOfActual)
             val _tmpPercentage: Int
             _tmpPercentage = _cursor.getInt(_cursorIndexOfPercentage)
             val _tmpCompleted: Boolean

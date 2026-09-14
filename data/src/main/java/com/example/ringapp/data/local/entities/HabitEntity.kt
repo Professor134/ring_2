@@ -21,7 +21,7 @@ data class HabitEntity(
     val description: String? = null,
     val categoryId: Long,
     val type: HabitType,
-    val target: Int,
+    val target: Double,
     val unit: String? = null,
     val scheduleType: ScheduleType,
     val scheduleDays: List<Int>? = null,
