@@ -117,7 +117,7 @@ public class AppDatabase_Impl : AppDatabase() {
     val _openCallback: SupportSQLiteOpenHelper.Callback = RoomOpenHelper(config, object :
         RoomOpenHelper.Delegate(7) {
       public override fun createAllTables(db: SupportSQLiteDatabase) {
-        db.execSQL("CREATE TABLE IF NOT EXISTS `habit` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `description` TEXT, `categoryId` INTEGER NOT NULL, `type` TEXT NOT NULL, `target` REAL NOT NULL, `unit` TEXT, `scheduleType` TEXT NOT NULL, `scheduleDays` TEXT, `startDate` INTEGER NOT NULL, `currentStreak` INTEGER NOT NULL, `bestStreak` INTEGER NOT NULL, `totalCompletions` INTEGER NOT NULL, `color` INTEGER NOT NULL, `deletedAt` INTEGER, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, FOREIGN KEY(`categoryId`) REFERENCES `category`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )")
+        db.execSQL("CREATE TABLE IF NOT EXISTS `habit` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `description` TEXT, `categoryId` INTEGER, `type` TEXT NOT NULL, `target` REAL NOT NULL, `unit` TEXT, `scheduleType` TEXT NOT NULL, `scheduleDays` TEXT, `startDate` INTEGER NOT NULL, `currentStreak` INTEGER NOT NULL, `bestStreak` INTEGER NOT NULL, `totalCompletions` INTEGER NOT NULL, `color` INTEGER NOT NULL, `deletedAt` INTEGER, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, FOREIGN KEY(`categoryId`) REFERENCES `category`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )")
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_habit_categoryId` ON `habit` (`categoryId`)")
         db.execSQL("CREATE TABLE IF NOT EXISTS `habit_progress` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `habitId` INTEGER NOT NULL, `date` INTEGER NOT NULL, `target` REAL NOT NULL, `actual` REAL NOT NULL, `percentage` INTEGER NOT NULL, `completed` INTEGER NOT NULL, `note` TEXT, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, FOREIGN KEY(`habitId`) REFERENCES `habit`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )")
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_habit_progress_habitId_date` ON `habit_progress` (`habitId`, `date`)")
@@ -152,7 +152,7 @@ public class AppDatabase_Impl : AppDatabase() {
         db.execSQL("CREATE TABLE IF NOT EXISTS `analytics_daily` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `date` INTEGER NOT NULL, `habitScore` INTEGER NOT NULL, `taskScore` INTEGER NOT NULL, `consistencyScore` INTEGER NOT NULL, `streakScore` INTEGER NOT NULL, `productivityScore` INTEGER NOT NULL, `completionRate` INTEGER NOT NULL, `habitCompletions` INTEGER NOT NULL, `taskCompletions` INTEGER NOT NULL, `activeHabits` INTEGER NOT NULL, `activeTasks` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL)")
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_analytics_daily_date` ON `analytics_daily` (`date`)")
         db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)")
-        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'e49ac19bcb96e49884eebf8743a1e420')")
+        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd4cf7cbc5876f6165cb4e3a9f9d5e7b6')")
       }
 
       public override fun dropAllTables(db: SupportSQLiteDatabase) {
@@ -218,7 +218,7 @@ public class AppDatabase_Impl : AppDatabase() {
             TableInfo.CREATED_FROM_ENTITY))
         _columnsHabit.put("description", TableInfo.Column("description", "TEXT", false, 0, null,
             TableInfo.CREATED_FROM_ENTITY))
-        _columnsHabit.put("categoryId", TableInfo.Column("categoryId", "INTEGER", true, 0, null,
+        _columnsHabit.put("categoryId", TableInfo.Column("categoryId", "INTEGER", false, 0, null,
             TableInfo.CREATED_FROM_ENTITY))
         _columnsHabit.put("type", TableInfo.Column("type", "TEXT", true, 0, null,
             TableInfo.CREATED_FROM_ENTITY))
@@ -911,7 +911,7 @@ public class AppDatabase_Impl : AppDatabase() {
         }
         return RoomOpenHelper.ValidationResult(true, null)
       }
-    }, "e49ac19bcb96e49884eebf8743a1e420", "f7a9a4906bb025718266a29070a8bd5e")
+    }, "d4cf7cbc5876f6165cb4e3a9f9d5e7b6", "49ea1b342e8dd04b2e7498ae53c7b383")
     val _sqliteConfig: SupportSQLiteOpenHelper.Configuration =
         SupportSQLiteOpenHelper.Configuration.builder(config.context).name(config.name).callback(_openCallback).build()
     val _helper: SupportSQLiteOpenHelper = config.sqliteOpenHelperFactory.create(_sqliteConfig)

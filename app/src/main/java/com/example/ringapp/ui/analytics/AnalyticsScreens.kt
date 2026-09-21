@@ -65,11 +65,15 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) { 
                     items(categoryNames.size) { index -> 
                         val item = categoryNames[index]
+                        val categoryColor = item.second.let { name ->
+                            if (name == "All Categories") MaterialTheme.colorScheme.primary
+                            else Color(CategoryConstants.getColorForCategory(name))
+                        }
                         FilterChip(
                             selected = category == item.first, 
                             onClick = { category = item.first }, 
                             label = { Text(item.second) }, 
-                            colors = FilterChipDefaults.filterChipColors(labelColor = textColor, selectedLabelColor = Color.White, selectedContainerColor = MaterialTheme.colorScheme.primary)
+                            colors = FilterChipDefaults.filterChipColors(labelColor = textColor, selectedLabelColor = Color.White, selectedContainerColor = categoryColor)
                         ) 
                     } 
                 } 
@@ -87,15 +91,31 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
 fun PersonalAnalyticsScreen(onBack: () -> Unit = {}, onEdit: (Long) -> Unit = {}, viewModel: PersonalAnalyticsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle(); var range by remember { mutableStateOf("Days") }; var selected by remember { mutableStateOf<LinePoint?>(null) }; var confirmDelete by remember { mutableStateOf(false) }; val habit = state.habit
     if (state.loading || habit == null) { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(state.error ?: "Loading habit analytics...", Modifier.padding(24.dp)) }; return }
-    val days = when (range) { "Weeks" -> 28; "Months" -> 90; "Year" -> 365; else -> 14 }; val dates = (days - 1 downTo 0).map { LocalDate.now().minusDays(it.toLong()) }; val points = dates.map { date ->
-        val active = ScheduleEngine.isActiveOnDate(habit, date)
-        val record = state.progress.firstOrNull { it.date == dayStart(date) }
-        LinePoint(date.format(dateFormatter), if (active) (record?.percentage ?: 0) else 0, if (active) (record?.actual ?: 0.0) else 0.0, habit.target, record?.completed == true && active, date = date, isActive = active)
+    
+    val isSteps = habit.isStepsHabit()
+    val days = when (range) { "Weeks" -> 28; "Months" -> 90; "Year" -> 365; else -> 14 }; val dates = (days - 1 downTo 0).map { LocalDate.now().minusDays(it.toLong()) }
+    
+    val maxActual = dates.maxOfOrNull { date -> state.progress.firstOrNull { it.date == dayStart(date) }?.actual ?: 0.0 } ?: 0.0
+    val dynamicCeiling = when {
+        maxActual <= 100 -> 100.0
+        maxActual <= 500 -> 500.0
+        maxActual <= 1000 -> 1000.0
+        maxActual <= 2000 -> 2000.0
+        maxActual <= 5000 -> 5000.0
+        maxActual <= 10000 -> 10000.0
+        else -> (kotlin.math.ceil(maxActual / 5000.0) * 5000.0).coerceAtLeast(10000.0)
     }
 
-    val activePoints = points.filter { it.isActive }
+    val points = dates.map { date ->
+        val record = state.progress.firstOrNull { it.date == dayStart(date) }
+        val actual = record?.actual ?: 0.0
+        val score = (actual * 100 / dynamicCeiling).toInt().coerceIn(0, 100)
+        LinePoint(date.format(dateFormatter), score, actual, dynamicCeiling, record?.completed == true, date = date, isActive = true)
+    }
+
+    val activePoints = points
     val successRate = if (activePoints.isEmpty()) 0 else activePoints.count { it.completed } * 100 / activePoints.size
-    val habitColor = Color(state.category?.color ?: habit.color)
+    val habitColor = Color(if (isSteps) HabitEntity.PLATINUM_COLOR else (state.category?.color ?: habit.color))
 
     val isDark = isSystemInDarkTheme()
     val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
@@ -108,21 +128,26 @@ fun PersonalAnalyticsScreen(onBack: () -> Unit = {}, onEdit: (Long) -> Unit = {}
                     IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back", tint = textColor) }
                     Column(Modifier.weight(1f)) {
                         Text(habit.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = textColor)
-                        Text("Personal Insights", style = MaterialTheme.typography.labelMedium, color = textColor.copy(alpha = 0.6f))
+                        Text(if (isSteps) "Automatic Step Counter" else "Personal Insights", style = MaterialTheme.typography.labelMedium, color = textColor.copy(alpha = 0.6f))
                     }
-                    IconButton(onClick = { onEdit(habit.id) }) { Icon(Icons.Default.Edit, "Edit", tint = textColor) }
+                    if (!isSteps) IconButton(onClick = { onEdit(habit.id) }) { Icon(Icons.Default.Edit, "Edit", tint = textColor) }
                 }
             }
             item {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Metric("Current Streak", "${habit.currentStreak} 🔥", Modifier.weight(1f), textColor)
+                    if (isSteps) {
+                        Metric("Total Steps", habit.totalCompletions.toString(), Modifier.weight(1f), textColor) // Using completions as placeholder or add new field
+                    } else {
+                        Metric("Current Streak", "${habit.currentStreak} 🔥", Modifier.weight(1f), textColor)
+                    }
                     Metric("Habit Points", state.habitPoints.toString(), Modifier.weight(1f), textColor)
                     Metric("Elite Points", state.points.toString(), Modifier.weight(1f), textColor)
                 }
             }
-            item { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { Metric("Total Done", habit.totalCompletions.toString(), Modifier.weight(1f), textColor); Metric("Success Rate", "$successRate%", Modifier.weight(1f), textColor) } }
+            if (!isSteps) item { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { Metric("Total Done", habit.totalCompletions.toString(), Modifier.weight(1f), textColor); Metric("Success Rate", "$successRate%", Modifier.weight(1f), textColor) } }
+            
             val desc = habit.description
-            if (!desc.isNullOrBlank()) {
+            if (!desc.isNullOrBlank() && !isSteps) {
                 item {
                     Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))) {
                         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -132,8 +157,7 @@ fun PersonalAnalyticsScreen(onBack: () -> Unit = {}, onEdit: (Long) -> Unit = {}
                     }
                 }
             }
-            item { Targets(habit, state.progress, textColor) }
-            item { TimeFilters(range) { range = it } }
+            if (!isSteps) item { Targets(habit, state.progress, habitColor, textColor) }
             item { AnalyticsLineChart(activePoints, Modifier.fillMaxWidth().height(220.dp), color = habitColor, onPointTap = { selected = it }) }
             if (selected != null) item {
                 val point = selected!!
@@ -141,8 +165,15 @@ fun PersonalAnalyticsScreen(onBack: () -> Unit = {}, onEdit: (Long) -> Unit = {}
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
                     Column(Modifier.padding(14.dp)) {
                         Text(point.label, fontWeight = FontWeight.Bold)
-                        Text("${point.actual} / ${point.target} ${habit.unit.orEmpty()}")
-                        Text("${point.score}%  ${if (point.completed) "Complete" else if (point.actual > 0) "Partial" else "Missed"}")
+                        if (isSteps) {
+                            Text("${point.actual.toInt()} steps")
+                            Text("Chart Scale: 0 - ${point.target.toInt()}", style = MaterialTheme.typography.bodySmall, color = textColor.copy(alpha = 0.6f))
+                            Text("${point.actual.toInt() / 1000} Elite Points earned")
+                        } else {
+                            Text("${point.actual} / ${point.target} ${habit.unit.orEmpty()}")
+                            Text("Chart Scale: 0 - ${point.target.toInt()} ${habit.unit.orEmpty()}", style = MaterialTheme.typography.bodySmall, color = textColor.copy(alpha = 0.6f))
+                            Text("${point.score}%  ${if (point.completed) "Complete" else if (point.actual > 0) "Partial" else "Missed"}")
+                        }
                         if (!record?.note.isNullOrBlank()) {
                             Spacer(Modifier.height(8.dp))
                             Text("Note: ${record!!.note}", style = MaterialTheme.typography.bodySmall)
@@ -152,16 +183,17 @@ fun PersonalAnalyticsScreen(onBack: () -> Unit = {}, onEdit: (Long) -> Unit = {}
             }
             item { HabitCalendar(habit, state.progress, textColor) { date ->
                 val record = state.progress.firstOrNull { it.date == dayStart(date) }
-                selected = LinePoint(date.format(dateFormatter), record?.percentage ?: 0, record?.actual ?: 0.0, habit.target, record?.completed == true, date = date)
+                val score = ((record?.actual ?: 0.0) * 100 / dynamicCeiling).toInt().coerceIn(0, 100)
+                selected = LinePoint(date.format(dateFormatter), score, record?.actual ?: 0.0, dynamicCeiling, record?.completed == true, date = date)
             } }
             item { PointSummary(state.transactions, textColor) }
-            item { Button(onClick = { confirmDelete = true }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB00020)), modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) { Icon(Icons.Default.Delete, null, tint = Color.White); Spacer(Modifier.width(8.dp)); Text("Delete Habit", color = Color.White) } }
+            if (!isSteps) item { Button(onClick = { confirmDelete = true }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB00020)), modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) { Icon(Icons.Default.Delete, null, tint = Color.White); Spacer(Modifier.width(8.dp)); Text("Delete Habit", color = Color.White) } }
         }
     }
     if (confirmDelete) AlertDialog(onDismissRequest = { confirmDelete = false }, title = { Text("Delete habit?") }, text = { Text("The habit will be hidden, but historical analytics remain available.") }, confirmButton = { TextButton(onClick = { confirmDelete = false; viewModel.delete() }) { Text("Delete", color = MaterialTheme.colorScheme.error) } }, dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } })
 }
 
-@Composable private fun Targets(habit: HabitEntity, progress: List<HabitProgressEntity>, textColor: Color) {
+@Composable private fun Targets(habit: HabitEntity, progress: List<HabitProgressEntity>, color: Color, textColor: Color) {
     val unit = habit.unit.orEmpty()
     val today = LocalDate.now()
 
@@ -193,15 +225,15 @@ fun PersonalAnalyticsScreen(onBack: () -> Unit = {}, onEdit: (Long) -> Unit = {}
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("Targets", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = textColor)
 
-        TargetRow("Daily", if (todayActive) (todayRecord?.actual ?: 0.0) else 0.0, if (todayActive) habit.target else 0.0, unit, habit.type, textColor)
-        TargetRow("Weekly", weekProg.first, weekProg.second, unit, habit.type, textColor)
-        TargetRow("Monthly", monthProg.first, monthProg.second, unit, habit.type, textColor)
-        TargetRow("Yearly", yearProg.first, yearProg.second, unit, habit.type, textColor)
+        TargetRow("Daily", if (todayActive) (todayRecord?.actual ?: 0.0) else 0.0, if (todayActive) habit.target else 0.0, unit, habit.type, color, textColor)
+        TargetRow("Weekly", weekProg.first, weekProg.second, unit, habit.type, color, textColor)
+        TargetRow("Monthly", monthProg.first, monthProg.second, unit, habit.type, color, textColor)
+        TargetRow("Yearly", yearProg.first, yearProg.second, unit, habit.type, color, textColor)
     }
 }
 
 @Composable
-private fun TargetRow(label: String, completed: Double, target: Double, unit: String, type: HabitType, textColor: Color) {
+private fun TargetRow(label: String, completed: Double, target: Double, unit: String, type: HabitType, color: Color, textColor: Color) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(label, color = textColor, fontWeight = FontWeight.Medium)
@@ -214,8 +246,8 @@ private fun TargetRow(label: String, completed: Double, target: Double, unit: St
         LinearProgressIndicator(
             progress = { if (target > 0.0) (completed / target).toFloat().coerceIn(0f, 1f) else 0f },
             modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
-            color = MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+            color = color,
+            trackColor = color.copy(alpha = 0.2f)
         )
     }
 }
@@ -251,19 +283,18 @@ private fun TargetRow(label: String, completed: Double, target: Double, unit: St
                         val date = currentMonth.withDayOfMonth(dayOfMonth)
                         val record = progress.firstOrNull { it.date == dayStart(date) }
                         val active = ScheduleEngine.isActiveOnDate(habit, date)
+                        val isSteps = habit.isStepsHabit()
                         val color = when {
                             date.isAfter(LocalDate.now()) -> Color.Gray.copy(alpha = 0.2f)
-                            !active -> Color.Transparent
-                            record?.completed == true -> MaterialTheme.colorScheme.primary
-                            record != null -> MaterialTheme.colorScheme.tertiary
-                            else -> MaterialTheme.colorScheme.errorContainer
+                            record != null && record.actual > 0 -> if (isSteps) Color(HabitEntity.PLATINUM_COLOR) else MaterialTheme.colorScheme.primary
+                            else -> Color.Transparent
                         }
                         Box(
                             Modifier.size(34.dp).background(color, CircleShape)
-                                .clickable(enabled = active) { onDateClick(date) },
+                                .clickable { onDateClick(date) },
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(dayOfMonth.toString(), style = MaterialTheme.typography.labelSmall, color = if (color == Color.Transparent) textColor else Color.White)
+                            Text(dayOfMonth.toString(), style = MaterialTheme.typography.labelSmall, color = if (color == Color.Transparent) textColor else if (isSteps) Color.Black else Color.White)
                         }
                     } else {
                         Spacer(Modifier.size(34.dp))
@@ -323,7 +354,7 @@ data class LinePoint(val label: String, val score: Int, val actual: Double = 0.0
     }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) { 
         categories.forEach { category -> 
-            val color = Color(category.color)
+            val color = Color(CategoryConstants.getColorForCategory(category.name))
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) { 
                     Box(Modifier.size(10.dp).background(color, CircleShape))

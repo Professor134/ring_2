@@ -29,6 +29,9 @@ interface HabitDao {
     @Query("SELECT * FROM habit_progress WHERE habitId = :habitId AND date = :date LIMIT 1")
     suspend fun progressForDate(habitId: Long, date: Long): HabitProgressEntity?
 
+    @Query("SELECT * FROM habit_progress WHERE habitId = :habitId")
+    suspend fun getProgressForHabit(habitId: Long): List<HabitProgressEntity>
+
     @Insert
     suspend fun insert(habit: HabitEntity): Long
 

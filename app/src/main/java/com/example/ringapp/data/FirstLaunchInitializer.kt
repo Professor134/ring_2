@@ -56,36 +56,20 @@ class FirstLaunchInitializer @Inject constructor(
                     CategoryEntity(name = name, color = color, icon = icon, createdAt = now, updatedAt = now)
                 }
             )
-            // Add Default Habits
-            val healthCatId = 1L
+            // Add Default Habit: Steps
             database.habitDao().insert(
                 com.example.ringapp.data.local.entities.HabitEntity(
-                    name = "Morning Walk",
-                    description = "A fresh start to the day.",
-                    categoryId = healthCatId,
-                    type = com.example.ringapp.data.local.entities.HabitType.YES_NO,
-                    target = 1.0,
-                    unit = null,
-                    scheduleType = com.example.ringapp.data.local.entities.ScheduleType.DAILY,
-                    scheduleDays = emptyList(),
-                    startDate = now,
-                    color = 0xFF2E7D32.toInt(),
-                    createdAt = now,
-                    updatedAt = now
-                )
-            )
-            database.habitDao().insert(
-                com.example.ringapp.data.local.entities.HabitEntity(
-                    name = "Read 20 Pages",
-                    description = "Expand your knowledge.",
-                    categoryId = 2L, // Learning
+                    id = com.example.ringapp.data.local.entities.HabitEntity.STEPS_HABIT_ID,
+                    name = com.example.ringapp.data.local.entities.HabitEntity.STEPS_HABIT_NAME,
+                    description = "Track your daily activity automatically.",
+                    categoryId = null,
                     type = com.example.ringapp.data.local.entities.HabitType.MEASURABLE,
-                    target = 20.0,
-                    unit = "Pages",
+                    target = 10000.0,
+                    unit = "Steps",
                     scheduleType = com.example.ringapp.data.local.entities.ScheduleType.DAILY,
                     scheduleDays = emptyList(),
                     startDate = now,
-                    color = 0xFF1565C0.toInt(),
+                    color = com.example.ringapp.data.local.entities.HabitEntity.PLATINUM_COLOR,
                     createdAt = now,
                     updatedAt = now
                 )

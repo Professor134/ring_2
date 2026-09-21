@@ -66,6 +66,7 @@ class HomeViewModel @Inject constructor(
         val allProgress = array[5] as List<HabitProgressEntity>
 
         val todaysHabits = habits.filter { ScheduleEngine.isActiveOnDate(it, today) }
+            .sortedWith(compareByDescending<HabitEntity> { it.isStepsHabit() }.thenBy { it.name })
         val chart = (0..13).map { offset ->
             val date = today.minusDays((13 - offset).toLong())
             val timestamp = date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()

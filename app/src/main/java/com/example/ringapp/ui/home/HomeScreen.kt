@@ -1,5 +1,6 @@
 package com.example.ringapp.ui.home
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -9,7 +10,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,13 +22,17 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ringapp.data.local.entities.*
+import com.example.ringapp.data.local.entities.CategoryConstants
 import com.example.ringapp.domain.engine.ScheduleEngine
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZoneOffset
+import java.text.SimpleDateFormat
+import java.util.*
 
 @Composable
 fun HomeScreen(
@@ -101,45 +106,85 @@ fun HomeScreen(
     textColor: Color
 ) { 
     val category = categories.firstOrNull { it.id == habit.categoryId }
-    val baseColor = category?.color?.let(::Color) ?: Color(habit.color)
+    val isSteps = habit.isStepsHabit()
+    val categoryName = if (isSteps) "System" else (category?.name ?: "Personal")
+    val baseColor = if (isSteps) Color(HabitEntity.PLATINUM_COLOR) else Color(CategoryConstants.getColorForCategory(categoryName))
+    
     val isCompleted = progress?.completed == true
     val isPartial = (progress?.actual ?: 0.0) > 0.0 && !isCompleted
     
     val buttonColor = when {
+        isSteps -> baseColor
         isCompleted -> baseColor
         isPartial -> baseColor.copy(alpha = 0.5f)
         else -> if (isSystemInDarkTheme()) Color(0xFF333333) else MaterialTheme.colorScheme.surfaceVariant
     }
-    val iconTint = if (isCompleted || isPartial) Color.White else baseColor
+    val iconTint = if (isCompleted || isPartial || isSteps) Color.White else baseColor
 
-    Card(onClick = onHabitClick, modifier = Modifier.fillMaxWidth()) { 
+    val cardColor = if (isSteps) baseColor.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surface
+    val cardBorder = if (isSteps) BorderStroke(2.dp, baseColor) else null
+
+    Card(
+        onClick = onHabitClick,
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
+        border = cardBorder
+    ) { 
         Column(Modifier.padding(16.dp)) { 
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { 
                 Surface(color = baseColor.copy(alpha = 0.18f), shape = RoundedCornerShape(12.dp), modifier = Modifier.size(48.dp)) { 
-                    Box(contentAlignment = Alignment.Center) { Icon(categoryIcon(category?.icon ?: "flag"), null, tint = baseColor) } 
+                    Box(contentAlignment = Alignment.Center) { 
+                        Icon(
+                            imageVector = if (isSteps) Icons.AutoMirrored.Filled.DirectionsRun else categoryIcon(CategoryConstants.getIconForCategory(categoryName)),
+                            contentDescription = null, 
+                            tint = baseColor
+                        ) 
+                    } 
                 }
                 Column(Modifier.weight(1f).padding(horizontal = 12.dp)) { 
-                    Text(habit.name, fontWeight = FontWeight.SemiBold, color = textColor)
-                    Text("${category?.name ?: "Personal"}  •  ${habit.currentStreak} 🔥", color = textColor.copy(alpha = 0.6f), style = MaterialTheme.typography.bodySmall)
-                    val progressValue = if (habit.type == HabitType.MEASURABLE) {
-                        ((progress?.actual ?: 0.0) / habit.target.coerceAtLeast(1.0)).toFloat().coerceIn(0f, 1f)
-                    } else {
-                        if (isCompleted) 1f else 0f
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                        Text(habit.name, fontWeight = FontWeight.Bold, color = textColor)
+                        if (!isSteps) Text("🔥 ${habit.currentStreak}", color = Color.Red, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
                     }
-                    LinearProgressIndicator(
-                        progress = { progressValue }, 
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                        color = baseColor,
-                        trackColor = baseColor.copy(alpha = 0.2f)
-                    )
+                    Text(if (isSteps) "Automatic Step Tracker" else categoryName, color = textColor.copy(alpha = 0.6f), style = MaterialTheme.typography.bodySmall)
+                    
+                    if (isSteps) {
+                        val steps = progress?.actual?.toInt() ?: 0
+                        val points = steps / 1000
+                        Spacer(Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("$steps", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = textColor)
+                            Text(" steps", style = MaterialTheme.typography.bodyMedium, color = textColor.copy(alpha = 0.7f))
+                            Spacer(Modifier.width(8.dp))
+                            Text("+$points pts", color = baseColor, fontWeight = FontWeight.Bold)
+                        }
+                    } else {
+                        val progressValue = if (habit.type == HabitType.MEASURABLE) {
+                            ((progress?.actual ?: 0.0) / habit.target.coerceAtLeast(1.0)).toFloat().coerceIn(0f, 1f)
+                        } else {
+                            if (isCompleted) 1f else 0f
+                        }
+                        LinearProgressIndicator(
+                            progress = { progressValue }, 
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                            color = baseColor,
+                            trackColor = baseColor.copy(alpha = 0.2f)
+                        )
+                    }
                 }
                 IconButton(
-                    onClick = onComplete, 
-                    modifier = Modifier.size(44.dp).background(buttonColor, CircleShape)
+                    onClick = { if (!isSteps) onComplete() }, 
+                    enabled = isSteps || ScheduleEngine.isActiveOnDate(habit, LocalDate.now()),
+                    modifier = Modifier.size(44.dp).background(if (isSteps) baseColor else buttonColor, CircleShape)
                 ) { 
                     Icon(
-                        if (habit.type == HabitType.MEASURABLE) Icons.Default.Edit else if (isCompleted) Icons.Default.Check else Icons.Default.Add, 
-                        "Complete ${habit.name}", 
+                        imageVector = when {
+                            isSteps -> Icons.AutoMirrored.Filled.TrendingUp
+                            habit.type == HabitType.MEASURABLE -> Icons.Default.Edit
+                            isCompleted -> Icons.Default.Check
+                            else -> Icons.Default.Add
+                        }, 
+                        contentDescription = "Action", 
                         tint = iconTint
                     ) 
                 } 
@@ -163,6 +208,7 @@ fun HomeScreen(
                         val isRecordCompleted = record?.completed == true
                         val isRecordPartial = record != null && record.actual > 0 && !isRecordCompleted
                         
+                        val dateStr = date.format(java.time.format.DateTimeFormatter.ofPattern("d/M"))
                         Surface(
                             color = when {
                                 isRecordCompleted -> baseColor.copy(alpha = 0.2f)
@@ -171,22 +217,34 @@ fun HomeScreen(
                                 else -> Color.Gray.copy(alpha = 0.1f)
                             },
                             shape = RoundedCornerShape(4.dp),
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.padding(horizontal = 2.dp)
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
+                            Column(
+                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 3.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = dateStr,
+                                    fontSize = 8.sp,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = textColor.copy(alpha = 0.6f)
+                                )
                                 if (habit.type == HabitType.MEASURABLE) {
+                                    val valText = if (isSteps) record?.actual?.toInt()?.toString() ?: "0" else record?.actual?.let { if(it == it.toInt().toDouble()) it.toInt().toString() else it.toString() } ?: "0"
                                     Text(
-                                        text = record?.actual?.toString() ?: "0",
+                                        text = valText,
+                                        fontSize = 8.sp,
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = if (record != null) baseColor else textColor.copy(alpha = 0.3f),
+                                        color = if (record != null) baseColor else textColor.copy(alpha = 0.4f),
                                         fontWeight = FontWeight.Bold
                                     )
                                 } else {
                                     Icon(
                                         imageVector = if (isRecordCompleted) Icons.Default.Check else Icons.Default.Close,
                                         contentDescription = null,
-                                        modifier = Modifier.size(14.dp),
-                                        tint = if (isRecordCompleted) baseColor else if (record != null) Color.Red else textColor.copy(alpha = 0.3f)
+                                        modifier = Modifier.size(10.dp),
+                                        tint = if (isRecordCompleted) baseColor else if (record != null) Color.Red else textColor.copy(alpha = 0.4f)
                                     )
                                 }
                             }
@@ -204,7 +262,23 @@ fun HomeScreen(
 }
 
 @Composable private fun IconContainer(iconName: String, color: Color) { Surface(color = color.copy(alpha = 0.18f), shape = RoundedCornerShape(12.dp), modifier = Modifier.size(48.dp)) { Box(contentAlignment = Alignment.Center) { Icon(categoryIcon(iconName), null, tint = color) } } }
-private fun categoryIcon(iconName: String): ImageVector = when (iconName.lowercase()) { "fitness" -> Icons.Default.FitnessCenter; "payments" -> Icons.Default.Payments; "school" -> Icons.Default.School; "work" -> Icons.Default.Work; "bedtime" -> Icons.Default.Bedtime; "self" -> Icons.Default.SelfImprovement; "person" -> Icons.Default.Person; "book" -> Icons.AutoMirrored.Filled.MenuBook; else -> Icons.Default.Flag }
+private fun categoryIcon(iconName: String): ImageVector = when (iconName.lowercase()) { 
+    "gym" -> Icons.Default.FitnessCenter
+    "fitness" -> Icons.Default.FitnessCenter
+    "finance" -> Icons.Default.Payments
+    "payments" -> Icons.Default.Payments
+    "study" -> Icons.Default.School
+    "school" -> Icons.Default.School
+    "work" -> Icons.Default.Work
+    "sleep" -> Icons.Default.Bedtime
+    "bedtime" -> Icons.Default.Bedtime
+    "yoga" -> Icons.Default.SelfImprovement
+    "self" -> Icons.Default.SelfImprovement
+    "personal" -> Icons.Default.Person
+    "person" -> Icons.Default.Person
+    "book" -> Icons.AutoMirrored.Filled.MenuBook
+    else -> Icons.Default.Flag 
+}
 
 @Composable private fun HomeTaskCard(task: TaskEntity, textColor: Color, onToggle: () -> Unit) { 
     val priorityColor = when (task.priority) {

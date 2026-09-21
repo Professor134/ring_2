@@ -19,7 +19,7 @@ data class HabitEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
     val description: String? = null,
-    val categoryId: Long,
+    val categoryId: Long?,
     val type: HabitType,
     val target: Double,
     val unit: String? = null,
@@ -33,4 +33,12 @@ data class HabitEntity(
     val deletedAt: Long? = null,
     val createdAt: Long,
     val updatedAt: Long
-)
+) {
+    companion object {
+        const val STEPS_HABIT_ID = 1L
+        const val STEPS_HABIT_NAME = "Steps"
+        const val PLATINUM_COLOR = 0xFFE5E4E2.toInt()
+    }
+    
+    fun isStepsHabit() = id == STEPS_HABIT_ID || name == STEPS_HABIT_NAME
+}

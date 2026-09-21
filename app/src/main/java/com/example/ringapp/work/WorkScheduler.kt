@@ -23,7 +23,7 @@ object WorkScheduler {
             request
         )
 
-        val motivationRequest = PeriodicWorkRequestBuilder<MotivationWorker>(12, TimeUnit.HOURS)
+        val motivationRequest = PeriodicWorkRequestBuilder<MotivationWorker>(24, TimeUnit.HOURS)
             .build()
 
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(

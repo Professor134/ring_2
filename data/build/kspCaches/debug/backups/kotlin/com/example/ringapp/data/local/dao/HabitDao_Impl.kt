@@ -66,7 +66,12 @@ public class HabitDao_Impl(
         } else {
           statement.bindString(3, _tmpDescription)
         }
-        statement.bindLong(4, entity.categoryId)
+        val _tmpCategoryId: Long? = entity.categoryId
+        if (_tmpCategoryId == null) {
+          statement.bindNull(4)
+        } else {
+          statement.bindLong(4, _tmpCategoryId)
+        }
         val _tmp: String = __converters.habitTypeToString(entity.type)
         statement.bindString(5, _tmp)
         statement.bindDouble(6, entity.target)
@@ -137,7 +142,12 @@ public class HabitDao_Impl(
         } else {
           statement.bindString(3, _tmpDescription)
         }
-        statement.bindLong(4, entity.categoryId)
+        val _tmpCategoryId: Long? = entity.categoryId
+        if (_tmpCategoryId == null) {
+          statement.bindNull(4)
+        } else {
+          statement.bindLong(4, _tmpCategoryId)
+        }
         val _tmp: String = __converters.habitTypeToString(entity.type)
         statement.bindString(5, _tmp)
         statement.bindDouble(6, entity.target)
@@ -283,8 +293,12 @@ public class HabitDao_Impl(
             } else {
               _tmpDescription = _cursor.getString(_cursorIndexOfDescription)
             }
-            val _tmpCategoryId: Long
-            _tmpCategoryId = _cursor.getLong(_cursorIndexOfCategoryId)
+            val _tmpCategoryId: Long?
+            if (_cursor.isNull(_cursorIndexOfCategoryId)) {
+              _tmpCategoryId = null
+            } else {
+              _tmpCategoryId = _cursor.getLong(_cursorIndexOfCategoryId)
+            }
             val _tmpType: HabitType
             val _tmp: String
             _tmp = _cursor.getString(_cursorIndexOfType)
@@ -385,8 +399,12 @@ public class HabitDao_Impl(
             } else {
               _tmpDescription = _cursor.getString(_cursorIndexOfDescription)
             }
-            val _tmpCategoryId: Long
-            _tmpCategoryId = _cursor.getLong(_cursorIndexOfCategoryId)
+            val _tmpCategoryId: Long?
+            if (_cursor.isNull(_cursorIndexOfCategoryId)) {
+              _tmpCategoryId = null
+            } else {
+              _tmpCategoryId = _cursor.getLong(_cursorIndexOfCategoryId)
+            }
             val _tmpType: HabitType
             val _tmp: String
             _tmp = _cursor.getString(_cursorIndexOfType)
@@ -711,6 +729,69 @@ public class HabitDao_Impl(
                 HabitProgressEntity(_tmpId,_tmpHabitId,_tmpDate,_tmpTarget,_tmpActual,_tmpPercentage,_tmpCompleted,_tmpNote,_tmpCreatedAt,_tmpUpdatedAt)
           } else {
             _result = null
+          }
+          return _result
+        } finally {
+          _cursor.close()
+          _statement.release()
+        }
+      }
+    })
+  }
+
+  public override suspend fun getProgressForHabit(habitId: Long): List<HabitProgressEntity> {
+    val _sql: String = "SELECT * FROM habit_progress WHERE habitId = ?"
+    val _statement: RoomSQLiteQuery = acquire(_sql, 1)
+    var _argIndex: Int = 1
+    _statement.bindLong(_argIndex, habitId)
+    val _cancellationSignal: CancellationSignal? = createCancellationSignal()
+    return execute(__db, false, _cancellationSignal, object : Callable<List<HabitProgressEntity>> {
+      public override fun call(): List<HabitProgressEntity> {
+        val _cursor: Cursor = query(__db, _statement, false, null)
+        try {
+          val _cursorIndexOfId: Int = getColumnIndexOrThrow(_cursor, "id")
+          val _cursorIndexOfHabitId: Int = getColumnIndexOrThrow(_cursor, "habitId")
+          val _cursorIndexOfDate: Int = getColumnIndexOrThrow(_cursor, "date")
+          val _cursorIndexOfTarget: Int = getColumnIndexOrThrow(_cursor, "target")
+          val _cursorIndexOfActual: Int = getColumnIndexOrThrow(_cursor, "actual")
+          val _cursorIndexOfPercentage: Int = getColumnIndexOrThrow(_cursor, "percentage")
+          val _cursorIndexOfCompleted: Int = getColumnIndexOrThrow(_cursor, "completed")
+          val _cursorIndexOfNote: Int = getColumnIndexOrThrow(_cursor, "note")
+          val _cursorIndexOfCreatedAt: Int = getColumnIndexOrThrow(_cursor, "createdAt")
+          val _cursorIndexOfUpdatedAt: Int = getColumnIndexOrThrow(_cursor, "updatedAt")
+          val _result: MutableList<HabitProgressEntity> =
+              ArrayList<HabitProgressEntity>(_cursor.getCount())
+          while (_cursor.moveToNext()) {
+            val _item: HabitProgressEntity
+            val _tmpId: Long
+            _tmpId = _cursor.getLong(_cursorIndexOfId)
+            val _tmpHabitId: Long
+            _tmpHabitId = _cursor.getLong(_cursorIndexOfHabitId)
+            val _tmpDate: Long
+            _tmpDate = _cursor.getLong(_cursorIndexOfDate)
+            val _tmpTarget: Double
+            _tmpTarget = _cursor.getDouble(_cursorIndexOfTarget)
+            val _tmpActual: Double
+            _tmpActual = _cursor.getDouble(_cursorIndexOfActual)
+            val _tmpPercentage: Int
+            _tmpPercentage = _cursor.getInt(_cursorIndexOfPercentage)
+            val _tmpCompleted: Boolean
+            val _tmp: Int
+            _tmp = _cursor.getInt(_cursorIndexOfCompleted)
+            _tmpCompleted = _tmp != 0
+            val _tmpNote: String?
+            if (_cursor.isNull(_cursorIndexOfNote)) {
+              _tmpNote = null
+            } else {
+              _tmpNote = _cursor.getString(_cursorIndexOfNote)
+            }
+            val _tmpCreatedAt: Long
+            _tmpCreatedAt = _cursor.getLong(_cursorIndexOfCreatedAt)
+            val _tmpUpdatedAt: Long
+            _tmpUpdatedAt = _cursor.getLong(_cursorIndexOfUpdatedAt)
+            _item =
+                HabitProgressEntity(_tmpId,_tmpHabitId,_tmpDate,_tmpTarget,_tmpActual,_tmpPercentage,_tmpCompleted,_tmpNote,_tmpCreatedAt,_tmpUpdatedAt)
+            _result.add(_item)
           }
           return _result
         } finally {

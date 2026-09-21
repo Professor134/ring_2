@@ -40,7 +40,6 @@ class AddHabitViewModel @Inject constructor(
     observeCategories: ObserveCategoriesUseCase,
     private val createHabit: CreateHabitUseCase,
     private val updateHabit: UpdateHabitUseCase,
-    private val createCategory: CreateCategoryUseCase,
     private val deleteHabit: DeleteHabitUseCase
 ) : ViewModel() {
     val habits = observeHabits().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -52,19 +51,19 @@ class AddHabitViewModel @Inject constructor(
             onSaved()
         } catch (error: Exception) { onError(error.message ?: "Unable to save habit") }
     }
-    fun addCategory(name: String, color: Int, icon: String, onCreated: (Long) -> Unit) = viewModelScope.launch { onCreated(createCategory(name, color, icon)) }
     fun delete(habitId: Long, onDeleted: () -> Unit) = viewModelScope.launch { deleteHabit(habitId); onDeleted() }
 }
 
-data class HabitFields(val name: String, val description: String, val categoryId: Long, val type: HabitType, val target: Double, val unit: String, val schedule: ScheduleType, val days: List<Int>, val startDate: Long, val color: Int)
+data class HabitFields(val name: String, val description: String, val categoryId: Long?, val type: HabitType, val target: Double, val unit: String, val schedule: ScheduleType, val days: List<Int>, val startDate: Long, val color: Int)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AddHabitScreen(habitId: Long? = null, onSaved: () -> Unit, onBack: () -> Unit, viewModel: AddHabitViewModel = hiltViewModel()) {
     val habits by viewModel.habits.collectAsStateWithLifecycle(); val categories by viewModel.categories.collectAsStateWithLifecycle(); val existing = habits.firstOrNull { it.id == habitId }; val context = LocalContext.current
-    var name by remember(existing) { mutableStateOf(existing?.name.orEmpty()) }; var description by remember(existing) { mutableStateOf(existing?.description.orEmpty()) }; var type by remember(existing) { mutableStateOf(existing?.type ?: HabitType.YES_NO) }; var target by remember(existing) { mutableStateOf((existing?.target ?: 1.0).toString()) }; var unit by remember(existing) { mutableStateOf(existing?.unit ?: "Pages") }; var schedule by remember(existing) { mutableStateOf(existing?.scheduleType ?: ScheduleType.DAILY) }; var days by remember(existing) { mutableStateOf(existing?.scheduleDays ?: emptyList()) }; var startDate by remember(existing) { mutableStateOf(existing?.startDate ?: todayTimestamp()) }; var categoryId by remember(existing, categories) { mutableStateOf(existing?.categoryId ?: categories.filter { it.name.lowercase() != "habits" }.firstOrNull()?.id ?: 0L) }; var error by remember { mutableStateOf<String?>(null) }; var showCategoryDialog by remember { mutableStateOf(false) }; var confirmDelete by remember { mutableStateOf(false) }
+    val isSteps = existing?.isStepsHabit() ?: false
+    var name by remember(existing) { mutableStateOf(existing?.name.orEmpty()) }; var description by remember(existing) { mutableStateOf(existing?.description.orEmpty()) }; var type by remember(existing) { mutableStateOf(existing?.type ?: HabitType.YES_NO) }; var target by remember(existing) { mutableStateOf((existing?.target ?: 1.0).toString()) }; var unit by remember(existing) { mutableStateOf(existing?.unit ?: "Pages") }; var schedule by remember(existing) { mutableStateOf(existing?.scheduleType ?: ScheduleType.DAILY) }; var days by remember(existing) { mutableStateOf(existing?.scheduleDays ?: emptyList()) }; var startDate by remember(existing) { mutableStateOf(existing?.startDate ?: todayTimestamp()) }; var categoryId by remember(existing, categories) { mutableStateOf(existing?.categoryId ?: categories.filter { it.name.lowercase() != "habits" }.firstOrNull()?.id ?: 0L) }; var error by remember { mutableStateOf<String?>(null) }; var confirmDelete by remember { mutableStateOf(false) }
     
-    val category = categories.firstOrNull { it.id == categoryId }; val color = category?.color ?: 0xFF00A84F.toInt(); val editing = habitId != null; val targetValid = type == HabitType.YES_NO || (target.toDoubleOrNull() ?: 0.0) > 0.0; val scheduleValid = schedule != ScheduleType.WEEKLY || days.isNotEmpty(); val canSave = name.isNotBlank() && targetValid && scheduleValid
+    val category = categories.firstOrNull { it.id == categoryId }; val categoryName = if (isSteps) "System" else (category?.name ?: "Personal"); val color = if (isSteps) HabitEntity.PLATINUM_COLOR else CategoryConstants.getColorForCategory(categoryName); val editing = habitId != null; val targetValid = type == HabitType.YES_NO || (target.toDoubleOrNull() ?: 0.0) > 0.0; val scheduleValid = schedule != ScheduleType.WEEKLY || days.isNotEmpty(); val canSave = !isSteps && name.isNotBlank() && targetValid && scheduleValid
     
     val isDark = isSystemInDarkTheme()
     val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
@@ -74,12 +73,18 @@ fun AddHabitScreen(habitId: Long? = null, onSaved: () -> Unit, onBack: () -> Uni
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
             Row(Modifier.fillMaxWidth().padding(top = 48.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back", tint = textColor) }
-                Text(if (editing) "Edit Habit" else "Create Habit", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = textColor)
-                TextButton(onClick = { if (canSave) viewModel.save(existing, HabitFields(name, description, categoryId, type, target.toDoubleOrNull() ?: 1.0, unit, schedule, days, startDate, color), onSaved) { error = it } }, enabled = canSave) { Text(if (editing) "Save" else "Create", color = MaterialTheme.colorScheme.primary) }
+                Text(if (isSteps) "Steps Habit" else if (editing) "Edit Habit" else "Create Habit", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = textColor)
+                if (!isSteps) TextButton(onClick = { if (canSave) viewModel.save(existing, HabitFields(name, description, categoryId, type, target.toDoubleOrNull() ?: 1.0, unit, schedule, days, startDate, color), onSaved) { error = it } }, enabled = canSave) { Text(if (editing) "Save" else "Create", color = MaterialTheme.colorScheme.primary) }
+                else Spacer(Modifier.width(48.dp))
+            }
+            if (isSteps) {
+                Card(colors = CardDefaults.cardColors(containerColor = Color(HabitEntity.PLATINUM_COLOR).copy(alpha = 0.1f))) {
+                    Text("This is a special automated habit that tracks your steps. It cannot be edited or deleted.", Modifier.padding(16.dp), color = textColor.copy(alpha = 0.7f))
+                }
             }
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             
-            OutlinedTextField(name, { name = it; error = null }, Modifier.fillMaxWidth(), label = { Text("Habit Name") }, singleLine = true, isError = name.isBlank() && error != null, colors = OutlinedTextFieldDefaults.colors(focusedTextColor = textColor, unfocusedTextColor = textColor, focusedLabelColor = MaterialTheme.colorScheme.primary, unfocusedLabelColor = textColor.copy(alpha = 0.7f)))
+            OutlinedTextField(name, { name = it; error = null }, Modifier.fillMaxWidth(), label = { Text("Habit Name") }, singleLine = true, enabled = !isSteps, isError = name.isBlank() && error != null, colors = OutlinedTextFieldDefaults.colors(focusedTextColor = textColor, unfocusedTextColor = textColor, focusedLabelColor = MaterialTheme.colorScheme.primary, unfocusedLabelColor = textColor.copy(alpha = 0.7f)))
 
             FormSection("Description / Note") {
                 OutlinedTextField(description, { description = it }, Modifier.fillMaxWidth(), label = { Text("Description / Note") }, minLines = 3, colors = OutlinedTextFieldDefaults.colors(focusedTextColor = textColor, unfocusedTextColor = textColor))
@@ -94,15 +99,14 @@ fun AddHabitScreen(habitId: Long? = null, onSaved: () -> Unit, onBack: () -> Uni
                                 onClick = { categoryId = item.id },
                                 label = {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(iconFor(item.icon ?: "flag"), null, Modifier.size(16.dp))
+                                        Icon(iconFor(CategoryConstants.getIconForCategory(item.name)), null, Modifier.size(16.dp))
                                         Spacer(Modifier.width(4.dp))
-                                        Text(item.name.replace("habit", "", ignoreCase = true).trim())
+                                        Text(item.name)
                                     }
                                 },
-                                colors = FilterChipDefaults.filterChipColors(labelColor = textColor, selectedLabelColor = Color.White, selectedContainerColor = MaterialTheme.colorScheme.primary)
+                                colors = FilterChipDefaults.filterChipColors(labelColor = textColor, selectedLabelColor = Color.White, selectedContainerColor = Color(CategoryConstants.getColorForCategory(item.name)))
                             )
                         }
-                        OutlinedButton(onClick = { showCategoryDialog = true }, shape = RoundedCornerShape(12.dp)) { Text("add+", color = textColor) }
                     }
                 }
             }
@@ -130,8 +134,10 @@ fun AddHabitScreen(habitId: Long? = null, onSaved: () -> Unit, onBack: () -> Uni
                 if (schedule == ScheduleType.WEEKLY) {
                     Text("Select weekdays", fontWeight = FontWeight.Medium, color = textColor)
                     FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat").forEachIndexed { index, label ->
-                            val dayNum = index + 1
+                        val weekdays = listOf(
+                            "Mon" to 1, "Tue" to 2, "Wed" to 3, "Thu" to 4, "Fri" to 5, "Sat" to 6, "Sun" to 7
+                        )
+                        weekdays.forEach { (label, dayNum) ->
                             val isSelected = days.contains(dayNum)
                             FilterChip(
                                 selected = isSelected,
@@ -161,7 +167,7 @@ fun AddHabitScreen(habitId: Long? = null, onSaved: () -> Unit, onBack: () -> Uni
             if (!editing) Text("Create Habit (Costs 25 Points)", color = Color.Red, modifier = Modifier.align(Alignment.CenterHorizontally), fontWeight = FontWeight.Bold)
             else if (existing != null && existing.target != (target.toDoubleOrNull() ?: existing.target)) Text("Change Target (Costs 10 Points)", color = Color.Red, modifier = Modifier.align(Alignment.CenterHorizontally), fontWeight = FontWeight.Bold)
             
-            if (editing && existing != null) {
+            if (editing && existing != null && !isSteps) {
                 Button(onClick = { confirmDelete = true }, Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Color.Red), shape = RoundedCornerShape(12.dp)) {
                     Text("Delete Habit (Costs 50 Points)", color = Color.White)
                 }
@@ -171,47 +177,6 @@ fun AddHabitScreen(habitId: Long? = null, onSaved: () -> Unit, onBack: () -> Uni
         }
     }
     
-    if (showCategoryDialog) {
-        var newName by remember { mutableStateOf("") }
-        var newIcon by remember { mutableStateOf("flag") }
-        var selectedColor by remember { mutableIntStateOf(0xFF00A84F.toInt()) }
-        var showIconPicker by remember { mutableStateOf(false) }
-        var showColorPicker by remember { mutableStateOf(false) }
-        val usedIcons = categories.mapNotNull { it.icon }; val usedColors = categories.map { it.color }
-
-        AlertDialog(
-            onDismissRequest = { showCategoryDialog = false },
-            title = { Text("Add Category") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedTextField(newName, { newName = it }, label = { Text("Category name") }, singleLine = true)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(onClick = { showIconPicker = !showIconPicker }, Modifier.weight(1f)) { Icon(iconFor(newIcon), null); Spacer(Modifier.width(8.dp)); Text("Icon") }
-                        OutlinedButton(onClick = { showColorPicker = !showColorPicker }, Modifier.weight(1f)) { Box(Modifier.size(16.dp).background(Color(selectedColor), CircleShape)); Spacer(Modifier.width(8.dp)); Text("Color") }
-                    }
-                    if (showIconPicker) {
-                        Text("Available Icons", style = MaterialTheme.typography.labelSmall)
-                        FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("flag", "fitness", "school", "work", "book", "self", "payments", "bedtime", "person").filter { it !in usedIcons || it == newIcon }.forEach { icon ->
-                                IconButton(onClick = { newIcon = icon; showIconPicker = false }) { Icon(iconFor(icon), null, tint = if (newIcon == icon) MaterialTheme.colorScheme.primary else textColor) }
-                            }
-                        }
-                    }
-                    if (showColorPicker) {
-                        Text("Available Colors", style = MaterialTheme.typography.labelSmall)
-                        FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf(0xFF2E7D32.toInt(), 0xFF1565C0.toInt(), 0xFFC62828.toInt(), 0xFF6A1B9A.toInt(), 0xFFEF6C00.toInt(), 0xFF00796B.toInt(), 0xFF388E3C.toInt(), 0xFFD32F2F.toInt(), 0xFFFBC02D.toInt()).filter { it !in usedColors || it == selectedColor }.forEach { colorVal ->
-                                Box(Modifier.size(32.dp).background(Color(colorVal), CircleShape).clickable { selectedColor = colorVal; showColorPicker = false })
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = { TextButton(enabled = newName.isNotBlank(), onClick = { viewModel.addCategory(newName, selectedColor, newIcon) { categoryId = it; showCategoryDialog = false } }) { Text("Add") } },
-            dismissButton = { TextButton(onClick = { showCategoryDialog = false }) { Text("Cancel") } }
-        )
-    }
-
     if (confirmDelete && existing != null) {
         AlertDialog(onDismissRequest = { confirmDelete = false }, title = { Text("Delete habit?") }, text = { Text("Delete Habit (Costs 50 Points)", color = Color.Red) }, confirmButton = { TextButton(onClick = { viewModel.delete(existing.id) { onBack() } }) { Text("Delete", color = Color.Red) } }, dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } })
     }

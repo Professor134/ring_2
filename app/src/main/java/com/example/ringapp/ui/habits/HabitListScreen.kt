@@ -1,5 +1,6 @@
 package com.example.ringapp.ui.habits
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -7,7 +8,7 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,11 +18,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ringapp.data.local.entities.*
+import com.example.ringapp.data.local.entities.CategoryConstants
 import com.example.ringapp.domain.engine.ScheduleEngine
 import com.example.ringapp.domain.usecase.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -43,7 +46,10 @@ class HabitListViewModel @Inject constructor(
     private val today = LocalDate.now()
     private val from = today.minusDays(30).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
     private val to = today.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli() - 1
-    val state: StateFlow<HabitListState> = combine(observeHabits(), observeCategories(), observeProgress(from, to), observeUserProgress()) { habits, categories, progress, userProgress -> HabitListState(habits, categories, progress, userProgress?.currentPoints ?: 0) }
+    val state: StateFlow<HabitListState> = combine(observeHabits(), observeCategories(), observeProgress(from, to), observeUserProgress()) { habits, categories, progress, userProgress -> 
+        val sortedHabits = habits.sortedWith(compareByDescending<HabitEntity> { it.isStepsHabit() }.thenBy { it.name })
+        HabitListState(sortedHabits, categories, progress, userProgress?.currentPoints ?: 0) 
+    }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HabitListState())
     fun complete(habit: HabitEntity) = viewModelScope.launch { toggleHabit(habit) }
     fun record(habit: HabitEntity, value: Double, note: String?) = viewModelScope.launch { recordProgress(habit, todayTimestamp(), value, note) }
@@ -56,8 +62,15 @@ fun HabitListScreen(onHabitClick: (Long) -> Unit, onAddHabit: () -> Unit, viewMo
     val state by viewModel.state.collectAsStateWithLifecycle()
     var query by remember { mutableStateOf("") }
     var categoryFilter by remember { mutableStateOf("All") }
+    var scheduleFilter by remember { mutableStateOf("All") }
     var measurableHabit by remember { mutableStateOf<HabitEntity?>(null) }
-    val filtered = state.habits.filter { habit -> habit.name.contains(query, ignoreCase = true) && (categoryFilter == "All" || state.categories.firstOrNull { it.id == habit.categoryId }?.name == categoryFilter) }
+    
+    val filtered = state.habits.filter { habit -> 
+        val matchesQuery = habit.name.contains(query, ignoreCase = true)
+        val matchesCategory = categoryFilter == "All" || state.categories.find { it.id == habit.categoryId }?.name == categoryFilter
+        val matchesSchedule = scheduleFilter == "All" || scheduleLabel(habit) == scheduleFilter
+        matchesQuery && matchesCategory && matchesSchedule
+    }
     
     val isDark = isSystemInDarkTheme()
     val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
@@ -73,10 +86,18 @@ fun HabitListScreen(onHabitClick: (Long) -> Unit, onAddHabit: () -> Unit, viewMo
                     }
                     Spacer(Modifier.height(12.dp))
                     OutlinedTextField(value = query, onValueChange = { query = it }, modifier = Modifier.fillMaxWidth(), placeholder = { Text("Search habits...") }, singleLine = true, leadingIcon = { Icon(Icons.Default.Search, null) }, shape = RoundedCornerShape(14.dp), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = textColor, unfocusedTextColor = textColor))
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(vertical = 12.dp)) { 
-                        item { FilterChip(categoryFilter == "All", { categoryFilter = "All" }, label = { Text("All") }, colors = FilterChipDefaults.filterChipColors(labelColor = textColor, selectedLabelColor = Color.White, selectedContainerColor = MaterialTheme.colorScheme.primary)) }
+                    
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(vertical = 8.dp)) { 
+                        item { FilterChip(categoryFilter == "All", { categoryFilter = "All" }, label = { Text("All Categories") }, colors = FilterChipDefaults.filterChipColors(labelColor = textColor, selectedLabelColor = Color.White, selectedContainerColor = MaterialTheme.colorScheme.primary)) }
                         val filteredCategories = state.categories.filter { it.name.lowercase() != "habits" }
                         items(filteredCategories) { category -> FilterChip(categoryFilter == category.name, { categoryFilter = category.name }, label = { Text(category.name) }, colors = FilterChipDefaults.filterChipColors(labelColor = textColor, selectedLabelColor = Color.White, selectedContainerColor = MaterialTheme.colorScheme.primary)) }
+                    }
+
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(bottom = 12.dp)) {
+                        item { FilterChip(scheduleFilter == "All", { scheduleFilter = "All" }, label = { Text("All Schedules") }, colors = FilterChipDefaults.filterChipColors(labelColor = textColor, selectedLabelColor = Color.White, selectedContainerColor = MaterialTheme.colorScheme.secondary)) }
+                        items(listOf("Daily", "Weekly", "Odd days", "Even days", "Custom")) { schedule ->
+                            FilterChip(scheduleFilter == schedule, { scheduleFilter = schedule }, label = { Text(schedule) }, colors = FilterChipDefaults.filterChipColors(labelColor = textColor, selectedLabelColor = Color.White, selectedContainerColor = MaterialTheme.colorScheme.secondary))
+                        }
                     }
                 }
             },
@@ -86,7 +107,7 @@ fun HabitListScreen(onHabitClick: (Long) -> Unit, onAddHabit: () -> Unit, viewMo
             if (filtered.isEmpty()) { Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) { Text("No habits yet", style = MaterialTheme.typography.titleLarge, color = textColor); Button(onClick = onAddHabit) { Text("+ Add Habit") } } } }
             else LazyColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { 
                 items(filtered, key = { it.id }) { habit -> 
-                    HabitRow(habit, state.categories, state.progress, onHabitClick) { 
+                    HabitRow(habit, state.categories, state.progress, onHabitClick, textColor) { 
                         if (habit.type == HabitType.MEASURABLE) measurableHabit = habit else viewModel.complete(habit) 
                     } 
                 } 
@@ -102,9 +123,11 @@ fun HabitListScreen(onHabitClick: (Long) -> Unit, onAddHabit: () -> Unit, viewMo
 
 @Composable private fun PointsPill(points: Int) { Text("ELITE  $points", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, modifier = Modifier.background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(12.dp)).padding(horizontal = 10.dp, vertical = 6.dp)) }
 
-@Composable private fun HabitRow(habit: HabitEntity, categories: List<CategoryEntity>, progress: List<HabitProgressEntity>, onHabitClick: (Long) -> Unit, onAction: () -> Unit) {
+@Composable private fun HabitRow(habit: HabitEntity, categories: List<CategoryEntity>, progress: List<HabitProgressEntity>, onHabitClick: (Long) -> Unit, textColor: Color, onAction: () -> Unit) {
     val category = categories.firstOrNull { it.id == habit.categoryId }
-    val baseColor = category?.color?.let(::Color) ?: Color(habit.color)
+    val isSteps = habit.isStepsHabit()
+    val categoryName = if (isSteps) "System" else (category?.name ?: "Personal")
+    val baseColor = if (isSteps) Color(HabitEntity.PLATINUM_COLOR) else Color(CategoryConstants.getColorForCategory(categoryName))
     val active = ScheduleEngine.isActiveOnDate(habit, LocalDate.now())
     val todayProgress = progress.firstOrNull { it.habitId == habit.id && it.date == todayTimestamp() }
     
@@ -112,57 +135,88 @@ fun HabitListScreen(onHabitClick: (Long) -> Unit, onAddHabit: () -> Unit, viewMo
     val isPartial = (todayProgress?.actual ?: 0.0) > 0.0 && !isCompleted
     
     val buttonColor = when {
+        isSteps -> baseColor
         isCompleted -> baseColor
         isPartial -> baseColor.copy(alpha = 0.5f)
         else -> if (isSystemInDarkTheme()) Color(0xFF333333) else MaterialTheme.colorScheme.surfaceVariant
     }
-    val iconTint = if (isCompleted || isPartial) Color.White else baseColor
+    val iconTint = if (isCompleted || isPartial || isSteps) Color.White else baseColor
 
-    Card(onClick = { onHabitClick(habit.id) }) { 
+    val cardColor = if (isSteps) baseColor.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surface
+    val cardBorder = if (isSteps) BorderStroke(2.dp, baseColor) else null
+
+    Card(
+        onClick = { onHabitClick(habit.id) },
+        colors = CardDefaults.cardColors(containerColor = cardColor),
+        border = cardBorder
+    ) { 
         Column(Modifier.padding(16.dp)) { 
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { 
                 Surface(color = baseColor.copy(alpha = 0.18f), shape = RoundedCornerShape(12.dp), modifier = Modifier.size(48.dp)) { 
-                    Box(contentAlignment = Alignment.Center) { Icon(categoryIcon(category?.icon), null, tint = baseColor) } 
+                    Box(contentAlignment = Alignment.Center) { 
+                        Icon(
+                            imageVector = if (isSteps) Icons.AutoMirrored.Filled.DirectionsRun else categoryIcon(CategoryConstants.getIconForCategory(categoryName)), 
+                            contentDescription = null, 
+                            tint = if (isSteps) baseColor else baseColor
+                        ) 
+                    } 
                 }
                 Column(Modifier.weight(1f).padding(horizontal = 12.dp)) { 
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                        Text(habit.name, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                        Text("🔥 ${habit.currentStreak}", color = Color.Red, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                        Text(habit.name, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f), color = textColor)
+                        if (!isSteps) Text("🔥 ${habit.currentStreak}", color = Color.Red, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
                     }
-                    Text("${category?.name ?: "Personal"}", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
-                    val progressValue = if (habit.type == HabitType.MEASURABLE) {
-                        ((todayProgress?.actual ?: 0.0) / habit.target.coerceAtLeast(1.0)).toFloat().coerceIn(0f, 1f)
+                    Text(if (isSteps) "Automatic Step Tracker" else categoryName, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                    
+                    if (isSteps) {
+                        val steps = todayProgress?.actual?.toInt() ?: 0
+                        val points = steps / 1000
+                        Spacer(Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("$steps", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = textColor)
+                            Text(" steps", style = MaterialTheme.typography.bodyMedium, color = textColor.copy(alpha = 0.7f))
+                            Spacer(Modifier.width(8.dp))
+                            Text("+$points pts", color = baseColor, fontWeight = FontWeight.Bold)
+                        }
                     } else {
-                        if (isCompleted) 1f else 0f
+                        val progressValue = if (habit.type == HabitType.MEASURABLE) {
+                            ((todayProgress?.actual ?: 0.0) / habit.target.coerceAtLeast(1.0)).toFloat().coerceIn(0f, 1f)
+                        } else {
+                            if (isCompleted) 1f else 0f
+                        }
+                        LinearProgressIndicator(
+                            progress = { progressValue }, 
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                            color = baseColor,
+                            trackColor = baseColor.copy(alpha = 0.2f)
+                        )
                     }
-                    LinearProgressIndicator(
-                        progress = { progressValue }, 
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                        color = baseColor,
-                        trackColor = baseColor.copy(alpha = 0.2f)
-                    )
-                    if (!active) Text("Inactive today", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall) 
+                    if (!active && !isSteps) Text("Inactive today", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall) 
                 }
                 IconButton(
-                    onClick = onAction, 
-                    enabled = active, 
-                    modifier = Modifier.size(44.dp).background(if (active) buttonColor else MaterialTheme.colorScheme.surfaceVariant, CircleShape)
+                    onClick = { if (!isSteps) onAction() }, 
+                    enabled = (active && !isSteps) || isSteps, 
+                    modifier = Modifier.size(44.dp).background(if (isSteps) baseColor else if (active) buttonColor else MaterialTheme.colorScheme.surfaceVariant, CircleShape)
                 ) { 
                     Icon(
-                        if (habit.type == HabitType.MEASURABLE) Icons.Default.Edit else if (isCompleted) Icons.Default.Check else Icons.Default.Add, 
-                        null, 
-                        tint = if (active) iconTint else MaterialTheme.colorScheme.onSurfaceVariant
+                        imageVector = when {
+                            isSteps -> Icons.AutoMirrored.Filled.TrendingUp
+                            habit.type == HabitType.MEASURABLE -> Icons.Default.Edit
+                            isCompleted -> Icons.Default.Check
+                            else -> Icons.Default.Add
+                        }, 
+                        contentDescription = null, 
+                        tint = if (isSteps || active) iconTint else MaterialTheme.colorScheme.onSurfaceVariant
                     ) 
                 } 
             }
-            HistoryRow(habit, progress)
+            HistoryRow(habit, progress, baseColor)
         } 
     } 
 }
 
-@Composable private fun HistoryRow(habit: HabitEntity, progress: List<HabitProgressEntity>) { 
+@Composable private fun HistoryRow(habit: HabitEntity, progress: List<HabitProgressEntity>, categoryColor: Color) { 
     val today = LocalDate.now()
-    val categoryColor = Color(habit.color)
     val textColor = if (isSystemInDarkTheme()) Color.White else MaterialTheme.colorScheme.onSurface
     
     Spacer(Modifier.height(12.dp))
@@ -181,6 +235,7 @@ fun HabitListScreen(onHabitClick: (Long) -> Unit, onAddHabit: () -> Unit, viewMo
                 val isRecordCompleted = record?.completed == true
                 val isRecordPartial = record != null && record.actual > 0 && !isRecordCompleted
                 
+                val dateStr = date.format(java.time.format.DateTimeFormatter.ofPattern("d/M"))
                 Surface(
                     color = when {
                         isRecordCompleted -> categoryColor.copy(alpha = 0.2f)
@@ -189,22 +244,38 @@ fun HabitListScreen(onHabitClick: (Long) -> Unit, onAddHabit: () -> Unit, viewMo
                         else -> Color.Gray.copy(alpha = 0.1f)
                     },
                     shape = RoundedCornerShape(4.dp),
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.padding(horizontal = 2.dp)
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 3.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = dateStr,
+                            fontSize = 8.sp,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = textColor.copy(alpha = 0.6f)
+                        )
                         if (habit.type == HabitType.MEASURABLE) {
+                            val valueText = if (habit.isStepsHabit()) {
+                                record?.actual?.toInt()?.toString() ?: "0"
+                            } else {
+                                record?.actual?.let { if(it == it.toInt().toDouble()) it.toInt().toString() else it.toString() } ?: "0"
+                            }
                             Text(
-                                text = record?.actual?.toString() ?: "0",
+                                text = valueText,
+                                fontSize = 8.sp,
                                 style = MaterialTheme.typography.labelSmall,
-                                color = if (record != null) categoryColor else textColor.copy(alpha = 0.3f),
+                                color = if (record != null) categoryColor else textColor.copy(alpha = 0.4f),
                                 fontWeight = FontWeight.Bold
                             )
                         } else {
                             Icon(
                                 imageVector = if (isRecordCompleted) Icons.Default.Check else Icons.Default.Close,
                                 contentDescription = null,
-                                modifier = Modifier.size(14.dp),
-                                tint = if (isRecordCompleted) categoryColor else if (record != null) Color.Red else textColor.copy(alpha = 0.3f)
+                                modifier = Modifier.size(10.dp),
+                                tint = if (isRecordCompleted) categoryColor else if (record != null) Color.Red else textColor.copy(alpha = 0.4f)
                             )
                         }
                     }
@@ -219,6 +290,14 @@ fun HabitListScreen(onHabitClick: (Long) -> Unit, onAddHabit: () -> Unit, viewMo
 
 @Composable private fun ProgressDialog(habit: HabitEntity, progress: HabitProgressEntity?, onDismiss: () -> Unit, onSave: (Double, String?) -> Unit) { var value by remember(progress) { mutableStateOf((progress?.actual ?: 0.0).toString()) }; var note by remember(progress) { mutableStateOf(progress?.note.orEmpty()) }; AlertDialog(onDismissRequest = onDismiss, title = { Text("Today's Progress") }, text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { Text("Target: ${habit.target} ${habit.unit.orEmpty()}"); OutlinedTextField(value, { value = it.filter { c -> c.isDigit() || c == '.' } }, label = { Text("Value") }, singleLine = true); OutlinedTextField(note, { note = it }, label = { Text("Add Note (optional)") }) } }, confirmButton = { TextButton(onClick = { onSave(value.toDoubleOrNull() ?: 0.0, note.ifBlank { null }) }) { Text("Save") } }, dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }) }
 
-private fun scheduleLabel(habit: HabitEntity): String = when (habit.scheduleType) { ScheduleType.ODD_DAYS -> "Odd days"; ScheduleType.EVEN_DAYS -> "Even days"; ScheduleType.WEEKLY -> "Weekly"; ScheduleType.MONTHLY -> "Monthly"; ScheduleType.YEARLY -> "Yearly"; ScheduleType.CUSTOM -> "Every ${habit.scheduleDays?.firstOrNull() ?: 1} days"; else -> "Daily" }
+private fun scheduleLabel(habit: HabitEntity): String = when (habit.scheduleType) { 
+    ScheduleType.ODD_DAYS -> "Odd days"
+    ScheduleType.EVEN_DAYS -> "Even days"
+    ScheduleType.WEEKLY -> "Weekly"
+    ScheduleType.MONTHLY -> "Monthly"
+    ScheduleType.YEARLY -> "Yearly"
+    ScheduleType.CUSTOM -> "Custom"
+    else -> "Daily" 
+}
 private fun categoryIcon(iconName: String?): ImageVector = when (iconName?.lowercase()) { "gym" -> Icons.Default.FitnessCenter; "fitness" -> Icons.Default.FitnessCenter; "finance" -> Icons.Default.Payments; "payments" -> Icons.Default.Payments; "study" -> Icons.Default.School; "school" -> Icons.Default.School; "work" -> Icons.Default.Work; "sleep" -> Icons.Default.Bedtime; "bedtime" -> Icons.Default.Bedtime; "yoga" -> Icons.Default.SelfImprovement; "self" -> Icons.Default.SelfImprovement; "personal" -> Icons.Default.Person; "person" -> Icons.Default.Person; "book" -> Icons.AutoMirrored.Filled.MenuBook; else -> Icons.Default.Flag }
 private fun todayTimestamp(): Long = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
