@@ -1,7 +1,12 @@
 package com.example.ringapp.ui.habits
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -14,7 +19,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -27,6 +36,8 @@ import com.example.ringapp.data.local.entities.*
 import com.example.ringapp.data.local.entities.CategoryConstants
 import com.example.ringapp.domain.engine.ScheduleEngine
 import com.example.ringapp.domain.usecase.*
+import com.example.ringapp.ui.theme.CyberNeonBlue
+import com.example.ringapp.ui.theme.CyberNeonGreen
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalDate
 import java.time.ZoneId
@@ -73,45 +84,112 @@ fun HabitListScreen(onHabitClick: (Long) -> Unit, onAddHabit: () -> Unit, viewMo
     }
     
     val isDark = isSystemInDarkTheme()
-    val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
-    val textColor = if (isDark) Color.White else MaterialTheme.colorScheme.onBackground
+    val bgColor = if (isDark) MaterialTheme.colorScheme.background else Color(0xFFF0F2F5)
+    val textColor = MaterialTheme.colorScheme.onBackground
 
-    Surface(modifier = Modifier.fillMaxSize(), color = bgColor, contentColor = textColor) {
+    Surface(modifier = Modifier.fillMaxSize(), color = bgColor) {
         Scaffold(
             topBar = {
-                Column(Modifier.padding(horizontal = 16.dp).padding(top = 48.dp)) {
+                Column(
+                    Modifier
+                        .background(bgColor)
+                        .statusBarsPadding()
+                        .padding(horizontal = 16.dp)
+                        .padding(top = 24.dp, bottom = 8.dp)
+                ) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { 
-                        Text("Habits", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = textColor)
+                        Text("HABITS", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black, color = textColor, letterSpacing = 2.sp)
                         PointsPill(state.points) 
                     }
-                    Spacer(Modifier.height(12.dp))
-                    OutlinedTextField(value = query, onValueChange = { query = it }, modifier = Modifier.fillMaxWidth(), placeholder = { Text("Search habits...") }, singleLine = true, leadingIcon = { Icon(Icons.Default.Search, null) }, shape = RoundedCornerShape(14.dp), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = textColor, unfocusedTextColor = textColor))
+                    Spacer(Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = query, 
+                        onValueChange = { query = it }, 
+                        modifier = Modifier.fillMaxWidth(), 
+                        placeholder = { Text("Find Habits...", style = MaterialTheme.typography.bodyMedium) },
+                        singleLine = true, 
+                        leadingIcon = { Icon(Icons.Default.Search, null, tint = MaterialTheme.colorScheme.primary) }, 
+                        shape = RoundedCornerShape(16.dp), 
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = textColor, 
+                            unfocusedTextColor = textColor,
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = textColor.copy(alpha = 0.1f),
+                            focusedContainerColor = if (isDark) Color(0xFF1A1D23) else Color.White,
+                            unfocusedContainerColor = if (isDark) Color(0xFF161920) else Color.White
+                        )
+                    )
                     
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(vertical = 8.dp)) { 
-                        item { FilterChip(categoryFilter == "All", { categoryFilter = "All" }, label = { Text("All Categories") }, colors = FilterChipDefaults.filterChipColors(labelColor = textColor, selectedLabelColor = Color.White, selectedContainerColor = MaterialTheme.colorScheme.primary)) }
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(vertical = 12.dp)) { 
+                        item { 
+                            FilterChip(
+                                selected = categoryFilter == "All", 
+                                onClick = { categoryFilter = "All" }, 
+                                label = { Text("ALL") }, 
+                                shape = RoundedCornerShape(12.dp),
+                                colors = FilterChipDefaults.filterChipColors(labelColor = textColor.copy(alpha = 0.6f), selectedLabelColor = Color.White, selectedContainerColor = MaterialTheme.colorScheme.primary)
+                            ) 
+                        }
                         val filteredCategories = state.categories.filter { it.name.lowercase() != "habits" }
-                        items(filteredCategories) { category -> FilterChip(categoryFilter == category.name, { categoryFilter = category.name }, label = { Text(category.name) }, colors = FilterChipDefaults.filterChipColors(labelColor = textColor, selectedLabelColor = Color.White, selectedContainerColor = MaterialTheme.colorScheme.primary)) }
+                        items(filteredCategories) { category -> 
+                            FilterChip(
+                                selected = categoryFilter == category.name, 
+                                onClick = { categoryFilter = category.name }, 
+                                label = { Text(category.name.uppercase()) }, 
+                                shape = RoundedCornerShape(12.dp),
+                                colors = FilterChipDefaults.filterChipColors(labelColor = textColor.copy(alpha = 0.6f), selectedLabelColor = Color.White, selectedContainerColor = MaterialTheme.colorScheme.primary)
+                            ) 
+                        }
                     }
 
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(bottom = 12.dp)) {
-                        item { FilterChip(scheduleFilter == "All", { scheduleFilter = "All" }, label = { Text("All Schedules") }, colors = FilterChipDefaults.filterChipColors(labelColor = textColor, selectedLabelColor = Color.White, selectedContainerColor = MaterialTheme.colorScheme.secondary)) }
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(bottom = 8.dp)) {
+                        item { 
+                            FilterChip(
+                                selected = scheduleFilter == "All", 
+                                onClick = { scheduleFilter = "All" }, 
+                                label = { Text("ANY SCHEDULE") }, 
+                                shape = RoundedCornerShape(12.dp),
+                                colors = FilterChipDefaults.filterChipColors(labelColor = textColor.copy(alpha = 0.6f), selectedLabelColor = Color.White, selectedContainerColor = MaterialTheme.colorScheme.secondary)
+                            ) 
+                        }
                         items(listOf("Daily", "Weekly", "Odd days", "Even days", "Custom")) { schedule ->
-                            FilterChip(scheduleFilter == schedule, { scheduleFilter = schedule }, label = { Text(schedule) }, colors = FilterChipDefaults.filterChipColors(labelColor = textColor, selectedLabelColor = Color.White, selectedContainerColor = MaterialTheme.colorScheme.secondary))
+                            FilterChip(
+                                selected = scheduleFilter == schedule, 
+                                onClick = { scheduleFilter = schedule }, 
+                                label = { Text(schedule.uppercase()) }, 
+                                shape = RoundedCornerShape(12.dp),
+                                colors = FilterChipDefaults.filterChipColors(labelColor = textColor.copy(alpha = 0.6f), selectedLabelColor = Color.White, selectedContainerColor = MaterialTheme.colorScheme.secondary)
+                            )
                         }
                     }
                 }
             },
-            floatingActionButton = { FloatingActionButton(onClick = onAddHabit, containerColor = MaterialTheme.colorScheme.primary) { Icon(Icons.Default.Add, "Add Habit") } },
+            floatingActionButton = { 
+                FloatingActionButton(
+                    onClick = onAddHabit, 
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = FloatingActionButtonDefaults.elevation(8.dp)
+                ) { Icon(Icons.Default.Add, "Add Habit", tint = Color.Black) } 
+            },
             containerColor = bgColor
         ) { padding ->
-            if (filtered.isEmpty()) { Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) { Text("No habits yet", style = MaterialTheme.typography.titleLarge, color = textColor); Button(onClick = onAddHabit) { Text("+ Add Habit") } } } }
-            else LazyColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { 
+            if (filtered.isEmpty()) { 
+                Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { 
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) { 
+                        Icon(Icons.Default.Inbox, null, modifier = Modifier.size(64.dp), tint = textColor.copy(alpha = 0.1f))
+                        Text("NO DATA MATCHES", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = textColor.copy(alpha = 0.3f)); 
+                        Button(onClick = onAddHabit, shape = RoundedCornerShape(12.dp)) { Text("INITIALIZE HABIT") } 
+                    } 
+                } 
+            }
+            else LazyColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) { 
                 items(filtered, key = { it.id }) { habit -> 
                     HabitRow(habit, state.categories, state.progress, onHabitClick, textColor) { 
                         if (habit.type == HabitType.MEASURABLE) measurableHabit = habit else viewModel.complete(habit) 
                     } 
                 } 
-                item { Spacer(Modifier.height(80.dp)) }
+                item { Spacer(Modifier.height(100.dp)) }
             }
         }
     }
@@ -121,82 +199,128 @@ fun HabitListScreen(onHabitClick: (Long) -> Unit, onAddHabit: () -> Unit, viewMo
     }
 }
 
-@Composable private fun PointsPill(points: Int) { Text("ELITE  $points", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, modifier = Modifier.background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(12.dp)).padding(horizontal = 10.dp, vertical = 6.dp)) }
+@Composable private fun PointsPill(points: Int) { 
+    Surface(
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f), 
+        shape = RoundedCornerShape(14.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+    ) {
+        Text(
+            "ELITE  $points", 
+            color = MaterialTheme.colorScheme.primary, 
+            fontWeight = FontWeight.Black, 
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            style = MaterialTheme.typography.labelMedium
+        ) 
+    }
+}
 
 @Composable private fun HabitRow(habit: HabitEntity, categories: List<CategoryEntity>, progress: List<HabitProgressEntity>, onHabitClick: (Long) -> Unit, textColor: Color, onAction: () -> Unit) {
     val category = categories.firstOrNull { it.id == habit.categoryId }
     val isSteps = habit.isStepsHabit()
     val categoryName = if (isSteps) "System" else (category?.name ?: "Personal")
-    val baseColor = if (isSteps) Color(HabitEntity.PLATINUM_COLOR) else Color(CategoryConstants.getColorForCategory(categoryName))
+    
+    // CRITICAL: Preserve colors
+    val baseColorInt = if (isSteps) HabitEntity.PLATINUM_COLOR else CategoryConstants.getColorForCategory(categoryName)
+    val baseColor = Color(baseColorInt)
+    
     val active = ScheduleEngine.isActiveOnDate(habit, LocalDate.now())
     val todayProgress = progress.firstOrNull { it.habitId == habit.id && it.date == todayTimestamp() }
     
     val isCompleted = todayProgress?.completed == true
     val isPartial = (todayProgress?.actual ?: 0.0) > 0.0 && !isCompleted
     
-    val buttonColor = when {
-        isSteps -> baseColor
-        isCompleted -> baseColor
-        isPartial -> baseColor.copy(alpha = 0.5f)
-        else -> if (isSystemInDarkTheme()) Color(0xFF333333) else MaterialTheme.colorScheme.surfaceVariant
-    }
-    val iconTint = if (isCompleted || isPartial || isSteps) Color.White else baseColor
+    val isDark = isSystemInDarkTheme()
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (isPressed) 0.98f else 1f, label = "scale")
 
-    val cardColor = if (isSteps) baseColor.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surface
-    val cardBorder = if (isSteps) BorderStroke(2.dp, baseColor) else null
+    val progressValue = remember(todayProgress?.actual, habit.target) {
+        if (habit.type == HabitType.MEASURABLE) {
+            ((todayProgress?.actual ?: 0.0) / habit.target.coerceAtLeast(1.0)).toFloat().coerceIn(0f, 1f)
+        } else {
+            if (isCompleted) 1f else 0f
+        }
+    }
+    val animatedProgress by animateFloatAsState(
+        targetValue = progressValue,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        label = "progress"
+    )
 
     Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .scale(scale)
+            .graphicsLayer {
+                shadowElevation = if (isSteps) 10f else 2f
+                spotShadowColor = baseColor
+            },
         onClick = { onHabitClick(habit.id) },
-        colors = CardDefaults.cardColors(containerColor = cardColor),
-        border = cardBorder
+        interactionSource = interactionSource,
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF161920) else Color.White),
+        border = BorderStroke(if (isSteps) 2.dp else 1.dp, if (isSteps) baseColor else baseColor.copy(alpha = 0.1f))
     ) { 
-        Column(Modifier.padding(16.dp)) { 
+        Column(Modifier.padding(18.dp)) { 
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { 
-                Surface(color = baseColor.copy(alpha = 0.18f), shape = RoundedCornerShape(12.dp), modifier = Modifier.size(48.dp)) { 
+                Surface(
+                    color = baseColor.copy(alpha = 0.12f), 
+                    shape = RoundedCornerShape(14.dp), 
+                    modifier = Modifier.size(52.dp),
+                    border = BorderStroke(1.dp, baseColor.copy(alpha = 0.2f))
+                ) { 
                     Box(contentAlignment = Alignment.Center) { 
                         Icon(
                             imageVector = if (isSteps) Icons.AutoMirrored.Filled.DirectionsRun else categoryIcon(CategoryConstants.getIconForCategory(categoryName)), 
                             contentDescription = null, 
-                            tint = if (isSteps) baseColor else baseColor
+                            tint = baseColor,
+                            modifier = Modifier.size(28.dp)
                         ) 
                     } 
                 }
-                Column(Modifier.weight(1f).padding(horizontal = 12.dp)) { 
+                Column(Modifier.weight(1f).padding(horizontal = 14.dp)) { 
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                        Text(habit.name, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f), color = textColor)
-                        if (!isSteps) Text("🔥 ${habit.currentStreak}", color = Color.Red, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                        Text(habit.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f), color = textColor)
+                        if (!isSteps) {
+                            Surface(color = Color(0xFFFF3131).copy(alpha = 0.1f), shape = CircleShape) {
+                                Text("🔥 ${habit.currentStreak}", modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = Color(0xFFFF3131), fontWeight = FontWeight.Black, style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
                     }
-                    Text(if (isSteps) "Automatic Step Tracker" else categoryName, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                    Text(if (isSteps) "NEURAL LINK" else categoryName.uppercase(), color = baseColor.copy(alpha = 0.7f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
                     
+                    Spacer(Modifier.height(8.dp))
                     if (isSteps) {
                         val steps = todayProgress?.actual?.toInt() ?: 0
                         val points = steps / 1000
-                        Spacer(Modifier.height(4.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("$steps", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = textColor)
-                            Text(" steps", style = MaterialTheme.typography.bodyMedium, color = textColor.copy(alpha = 0.7f))
-                            Spacer(Modifier.width(8.dp))
-                            Text("+$points pts", color = baseColor, fontWeight = FontWeight.Bold)
+                        Row(verticalAlignment = Alignment.Bottom) {
+                            Text("$steps", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black, color = textColor)
+                            Text(" STEPS", style = MaterialTheme.typography.labelSmall, color = textColor.copy(alpha = 0.5f), modifier = Modifier.padding(bottom = 4.dp, start = 4.dp))
+                            Spacer(Modifier.width(12.dp))
+                            Text("+$points PTS", color = CyberNeonGreen, fontWeight = FontWeight.Black, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(bottom = 4.dp))
                         }
                     } else {
-                        val progressValue = if (habit.type == HabitType.MEASURABLE) {
-                            ((todayProgress?.actual ?: 0.0) / habit.target.coerceAtLeast(1.0)).toFloat().coerceIn(0f, 1f)
-                        } else {
-                            if (isCompleted) 1f else 0f
+                        Box(Modifier.fillMaxWidth().height(8.dp).clip(CircleShape).background(baseColor.copy(alpha = 0.1f))) {
+                            Box(Modifier.fillMaxWidth(animatedProgress).fillMaxHeight().clip(CircleShape).background(
+                                Brush.horizontalGradient(listOf(baseColor.copy(alpha = 0.6f), baseColor))
+                            ))
                         }
-                        LinearProgressIndicator(
-                            progress = { progressValue }, 
-                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                            color = baseColor,
-                            trackColor = baseColor.copy(alpha = 0.2f)
-                        )
                     }
-                    if (!active && !isSteps) Text("Inactive today", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall) 
+                    if (!active && !isSteps) Text("INACTIVE CYCLE", color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) 
                 }
+                
+                val buttonColor = when {
+                    isCompleted -> baseColor
+                    isPartial -> baseColor.copy(alpha = 0.6f)
+                    else -> if (isDark) Color(0xFF252932) else Color(0xFFF0F2F5)
+                }
+
                 IconButton(
                     onClick = { if (!isSteps) onAction() }, 
                     enabled = (active && !isSteps) || isSteps, 
-                    modifier = Modifier.size(44.dp).background(if (isSteps) baseColor else if (active) buttonColor else MaterialTheme.colorScheme.surfaceVariant, CircleShape)
+                    modifier = Modifier.size(48.dp).background(if (isSteps) baseColor.copy(alpha = 0.1f) else if (active) buttonColor else textColor.copy(alpha = 0.05f), CircleShape)
+                        .border(1.dp, if (isSteps) baseColor else Color.Transparent, CircleShape)
                 ) { 
                     Icon(
                         imageVector = when {
@@ -206,7 +330,7 @@ fun HabitListScreen(onHabitClick: (Long) -> Unit, onAddHabit: () -> Unit, viewMo
                             else -> Icons.Default.Add
                         }, 
                         contentDescription = null, 
-                        tint = if (isSteps || active) iconTint else MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = if (isSteps || active && (isCompleted || isPartial)) Color.White else if (active) baseColor else textColor.copy(alpha = 0.2f)
                     ) 
                 } 
             }
@@ -215,18 +339,18 @@ fun HabitListScreen(onHabitClick: (Long) -> Unit, onAddHabit: () -> Unit, viewMo
     } 
 }
 
-@Composable private fun HistoryRow(habit: HabitEntity, progress: List<HabitProgressEntity>, categoryColor: Color) { 
+@Composable private fun HistoryRow(habit: HabitEntity, progress: List<HabitProgressEntity>, baseColor: Color) { 
     val today = LocalDate.now()
-    val textColor = if (isSystemInDarkTheme()) Color.White else MaterialTheme.colorScheme.onSurface
+    val textColor = MaterialTheme.colorScheme.onSurface
     
-    Spacer(Modifier.height(12.dp))
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text("Last 5 active:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
+    Spacer(Modifier.height(16.dp))
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text("LOG", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = textColor.copy(alpha = 0.3f))
         
         var activeDaysFound = 0
         var dayOffset = 1
         
-        while (activeDaysFound < 5 && dayOffset < 30) {
+        while (activeDaysFound < 6 && dayOffset < 30) {
             val date = today.minusDays(dayOffset.toLong())
             if (ScheduleEngine.isActiveOnDate(habit, date)) {
                 val timestamp = date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
@@ -235,56 +359,41 @@ fun HabitListScreen(onHabitClick: (Long) -> Unit, onAddHabit: () -> Unit, viewMo
                 val isRecordCompleted = record?.completed == true
                 val isRecordPartial = record != null && record.actual > 0 && !isRecordCompleted
                 
-                val dateStr = date.format(java.time.format.DateTimeFormatter.ofPattern("d/M"))
-                Surface(
-                    color = when {
-                        isRecordCompleted -> categoryColor.copy(alpha = 0.2f)
-                        isRecordPartial -> categoryColor.copy(alpha = 0.1f)
-                        record != null -> Color.Red.copy(alpha = 0.1f)
-                        else -> Color.Gray.copy(alpha = 0.1f)
-                    },
-                    shape = RoundedCornerShape(4.dp),
-                    modifier = Modifier.padding(horizontal = 2.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 3.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = dateStr,
-                            fontSize = 8.sp,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = textColor.copy(alpha = 0.6f)
-                        )
-                        if (habit.type == HabitType.MEASURABLE) {
-                            val valueText = if (habit.isStepsHabit()) {
-                                record?.actual?.toInt()?.toString() ?: "0"
-                            } else {
-                                record?.actual?.let { if(it == it.toInt().toDouble()) it.toInt().toString() else it.toString() } ?: "0"
+                Box(
+                    modifier = Modifier
+                        .size(width = 44.dp, height = 32.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(
+                            when {
+                                isRecordCompleted -> baseColor.copy(alpha = 0.25f)
+                                isRecordPartial -> baseColor.copy(alpha = 0.1f)
+                                record != null -> Color(0xFFFF3131).copy(alpha = 0.15f)
+                                else -> textColor.copy(alpha = 0.05f)
                             }
-                            Text(
-                                text = valueText,
-                                fontSize = 8.sp,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (record != null) categoryColor else textColor.copy(alpha = 0.4f),
-                                fontWeight = FontWeight.Bold
-                            )
-                        } else {
-                            Icon(
-                                imageVector = if (isRecordCompleted) Icons.Default.Check else Icons.Default.Close,
-                                contentDescription = null,
-                                modifier = Modifier.size(10.dp),
-                                tint = if (isRecordCompleted) categoryColor else if (record != null) Color.Red else textColor.copy(alpha = 0.4f)
-                            )
-                        }
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    val valueText = when {
+                        record == null -> "-"
+                        record.actual >= 1000 -> "${(record.actual / 1000).toInt()}k"
+                        record.actual == record.actual.toInt().toDouble() -> record.actual.toInt().toString()
+                        else -> String.format("%.1f", record.actual)
                     }
+                    Text(
+                        text = valueText,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Black,
+                        color = when {
+                            isRecordCompleted -> baseColor
+                            record != null && !isRecordCompleted -> Color(0xFFFF3131)
+                            else -> textColor.copy(alpha = 0.3f)
+                        }
+                    )
                 }
                 activeDaysFound++
             }
             dayOffset++
         }
-        if (activeDaysFound == 0) Text("No history", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
     }
 }
 

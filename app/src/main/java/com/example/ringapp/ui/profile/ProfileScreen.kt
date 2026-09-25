@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -23,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -31,6 +33,8 @@ import coil.compose.AsyncImage
 import com.example.ringapp.data.local.entities.*
 import com.example.ringapp.domain.usecase.*
 import com.example.ringapp.ui.AppViewModel
+import com.example.ringapp.ui.theme.CyberNeonGreen
+import com.example.ringapp.ui.theme.SpaceBlack
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.text.SimpleDateFormat
 import java.time.LocalDate
@@ -43,77 +47,173 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun ProfileScreen(appViewModel: AppViewModel, onEdit: () -> Unit, onAppearance: () -> Unit = {}, onPointHistory: () -> Unit = {}, onNotifications: () -> Unit = {}, onBackup: () -> Unit = {}, viewModel: ProfileViewModel = hiltViewModel()) {
-    val state by viewModel.state.collectAsStateWithLifecycle(); val profile = state.profile ?: return
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val profile = state.profile ?: return
     
-    val textColor = Color.White
-    val bgColor = Color.Black
+    val isDark = isSystemInDarkTheme()
+    val textColor = if (isDark) Color.White else MaterialTheme.colorScheme.onBackground
+    val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
 
     Surface(modifier = Modifier.fillMaxSize(), color = bgColor, contentColor = textColor) {
-        LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), contentPadding = PaddingValues(top = 40.dp, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
-            item { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { ProfileAvatar(profile); Column(Modifier.weight(1f).padding(horizontal = 14.dp)) { Text(profile.name.ifBlank { "Your name" }, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = textColor); Text("Level ${state.level}", color = textColor); Text("${state.points} Elite Points", color = MaterialTheme.colorScheme.primary) }; Button(onClick = onEdit) { Text("Edit Profile") } } }
+        LazyColumn(
+            Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 20.dp), 
+            contentPadding = PaddingValues(top = 24.dp, bottom = 32.dp), 
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
             item { 
-                Card { 
-                    Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { 
-                        Text("Level ${state.level}", style = MaterialTheme.typography.titleLarge)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { 
+                    ProfileAvatar(profile)
+                    Column(Modifier.weight(1f).padding(horizontal = 16.dp)) { 
+                        Text(profile.name.ifBlank { "NEURAL SUBJECT" }, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black, color = textColor, letterSpacing = 1.sp)
+                        Text("LEVEL ${state.level}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black, style = MaterialTheme.typography.labelMedium)
+                        Text("${state.points} ELITE POINTS", color = textColor.copy(alpha = 0.5f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) 
+                    }
+                    IconButton(onClick = onEdit, modifier = Modifier.background(MaterialTheme.colorScheme.primary, CircleShape)) { Icon(Icons.Default.Edit, "Edit", tint = SpaceBlack) } 
+                } 
+            }
+            
+            item { 
+                Card(
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+                    border = BorderStroke(1.dp, textColor.copy(alpha = 0.05f))
+                ) { 
+                    Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { 
+                        Text("SYNC PROGRESS", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = textColor.copy(alpha = 0.5f), letterSpacing = 2.sp)
                         val level = state.level
                         val currentLevelTotal = totalThreshold(level)
                         val prevLevelTotal = totalThreshold(level - 1)
                         val pointsInCurrentLevel = state.lifetimePoints - prevLevelTotal
-                        val pointsNeededForNext = currentLevelTotal - state.lifetimePoints
                         
                         val progress = if (currentLevelTotal > prevLevelTotal) {
                             (pointsInCurrentLevel.toFloat() / (currentLevelTotal - prevLevelTotal)).coerceIn(0f, 1f)
                         } else 1f
                         
-                        LinearProgressIndicator({ progress }, Modifier.fillMaxWidth())
-                        Text("${state.lifetimePoints} / $currentLevelTotal lifetime points", fontWeight = FontWeight.Bold)
-                        Text("$pointsNeededForNext points needed for Level ${level + 1}", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("Level depends on lifetime earned Elite Points and never decreases when current points are spent.", style = MaterialTheme.typography.bodySmall) 
+                        LinearProgressIndicator(
+                            progress = { progress }, 
+                            Modifier.fillMaxWidth().height(12.dp).clip(CircleShape),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                        )
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("${state.lifetimePoints} XP", fontWeight = FontWeight.Black, style = MaterialTheme.typography.bodyMedium)
+                            Text("NEXT: $currentLevelTotal XP", color = textColor.copy(alpha = 0.5f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        }
                     } 
                 } 
             }
-            item { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) { StatCard("Current Streak", state.currentStreak.toString(), Modifier.weight(1f)); StatCard("Best Streak", state.bestStreak.toString(), Modifier.weight(1f)) }; Spacer(Modifier.height(10.dp)); Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) { StatCard("Total Habits", state.totalHabits.toString(), Modifier.weight(1f)); StatCard("Completed Tasks", state.completedTasks.toString(), Modifier.weight(1f)) } }
-            item { Text("Achievements", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = textColor) }
+            
+            item { 
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) { 
+                    StatCard("STREAK", state.currentStreak.toString(), Modifier.weight(1f), isDark)
+                    StatCard("BEST", state.bestStreak.toString(), Modifier.weight(1f), isDark) 
+                }
+            }
+            
+            item { Text("ACHIEVEMENTS", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = textColor.copy(alpha = 0.5f), letterSpacing = 2.sp) }
+            
             items(state.achievements) { achievement ->
-                Card {
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF161920) else Color.White),
+                    border = BorderStroke(1.dp, textColor.copy(alpha = 0.05f))
+                ) {
                     ListItem(
-                        leadingContent = { Icon(if (achievement.unlocked) Icons.Default.Star else Icons.Default.Lock, null, tint = if (achievement.unlocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant) },
-                        headlineContent = { Text(achievement.description) },
-                        supportingContent = { Text(if (achievement.unlocked) "Unlocked" else "${achievement.currentProgress} / ${achievement.threshold}") }
+                        leadingContent = { 
+                            Surface(
+                                color = if (achievement.unlocked) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else textColor.copy(alpha = 0.05f),
+                                shape = CircleShape,
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        if (achievement.unlocked) Icons.Default.Star else Icons.Default.Lock, 
+                                        null, 
+                                        tint = if (achievement.unlocked) MaterialTheme.colorScheme.primary else textColor.copy(alpha = 0.2f),
+                                        modifier = Modifier.size(20.dp)
+                                    ) 
+                                }
+                            }
+                        },
+                        headlineContent = { Text(achievement.description.uppercase(), fontWeight = FontWeight.Black, style = MaterialTheme.typography.labelMedium, color = textColor) },
+                        supportingContent = { Text(if (achievement.unlocked) "ENCRYPTED & SYNCED" else "LOCKED: ${achievement.currentProgress} / ${achievement.threshold}", style = MaterialTheme.typography.labelSmall, color = textColor.copy(alpha = 0.5f)) },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                     )
                 }
             }
-            item { ActionButton("Elite Point History", Icons.Default.List, onPointHistory, textColor) }
-            item { Text("Settings", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = textColor) }
-            item { ActionButton("Appearance", Icons.Default.Settings, onAppearance, textColor) }
-            item { ActionButton("Notifications", Icons.Default.Notifications, onNotifications, textColor) }
-            item { ActionButton("Backup & Restore", Icons.Default.CloudUpload, onBackup, textColor) }
-            item { Text("Theme: ${appViewModel.state.collectAsStateWithLifecycle().value.theme}", color = textColor.copy(alpha = 0.6f)) }
-            item { Column(Modifier.fillMaxWidth().padding(vertical = 14.dp), horizontalAlignment = Alignment.CenterHorizontally) { Text("RING", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = textColor); Text("Offline Habit & Productivity Tracker", color = textColor.copy(alpha = 0.6f)); Text("Version 1.0", style = MaterialTheme.typography.labelSmall, color = textColor.copy(alpha = 0.4f)) } }
+            
+            item { Text("SYSTEM CONFIG", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = textColor.copy(alpha = 0.5f), letterSpacing = 2.sp) }
+            
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ActionButton("Visual Protocol", Icons.Default.Palette, onAppearance, textColor)
+                    ActionButton("Neural Alerts", Icons.Default.Notifications, onNotifications, textColor)
+                    ActionButton("Cloud Synchronization", Icons.Default.CloudUpload, onBackup, textColor)
+                    ActionButton("Transaction Logs", Icons.Default.History, onPointHistory, textColor)
+                }
+            }
+            
+            item { 
+                Column(Modifier.fillMaxWidth().padding(vertical = 32.dp), horizontalAlignment = Alignment.CenterHorizontally) { 
+                    Text("RING", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = textColor, letterSpacing = 4.sp)
+                    Text("NEURAL PRODUCTIVITY INTERFACE", color = textColor.copy(alpha = 0.4f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                } 
+            }
         }
     }
 }
 
 @Composable
-private fun ProfileAvatar(profile: ProfileEntity) { val uri = profile.photoUri?.let(Uri::parse); Surface(Modifier.size(92.dp).clip(CircleShape), color = Color(profile.avatarColor), border = androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary)) { if (uri != null) AsyncImage(model = uri, contentDescription = "Profile photo", modifier = Modifier.fillMaxSize(), onError = {}) else Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Person, "Default avatar", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(52.dp)) } } }
-@Composable private fun StatCard(label: String, value: String, modifier: Modifier) { Card(modifier) { Column(Modifier.padding(14.dp)) { Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant); Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) } } }
-@Composable private fun ActionButton(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit, textColor: Color) { OutlinedButton(onClick = onClick, Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) { Icon(icon, null, tint = textColor); Spacer(Modifier.width(10.dp)); Text(label, color = textColor) } }
-private fun calculateLevel(points: Int): Int { 
-    var level = 1
-    while (points >= totalThreshold(level) && level < 1000) level++
-    return level 
+private fun ProfileAvatar(profile: ProfileEntity) { 
+    val uri = profile.photoUri?.let(Uri::parse)
+    Surface(
+        Modifier.size(80.dp).clip(CircleShape), 
+        color = Color(profile.avatarColor), 
+        border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+    ) { 
+        if (uri != null) AsyncImage(model = uri, contentDescription = "Profile photo", modifier = Modifier.fillMaxSize(), onError = {}) 
+        else Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Person, null, tint = SpaceBlack, modifier = Modifier.size(40.dp)) } 
+    } 
 }
 
-private fun neededForLevel(level: Int): Int {
-    var needed = 100.0
-    repeat(level - 1) { needed *= 1.25 }
-    return needed.toInt()
+@Composable private fun StatCard(label: String, value: String, modifier: Modifier, isDark: Boolean) { 
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF161920) else Color.White),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+    ) { 
+        Column(Modifier.padding(16.dp)) { 
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f), fontWeight = FontWeight.Black); 
+            Text(value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black) 
+        } 
+    } 
+}
+
+@Composable private fun ActionButton(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit, textColor: Color) { 
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth().height(56.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        border = BorderStroke(1.dp, textColor.copy(alpha = 0.05f))
+    ) { 
+        Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) { 
+            Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(16.dp))
+            Text(label.uppercase(), color = textColor, fontWeight = FontWeight.Black, style = MaterialTheme.typography.labelMedium, letterSpacing = 1.sp) 
+            Spacer(Modifier.weight(1f))
+            Icon(Icons.Default.ChevronRight, null, tint = textColor.copy(alpha = 0.2f))
+        } 
+    } 
 }
 
 private fun totalThreshold(level: Int): Int {
     var total = 0
     for (i in 1..level) {
-        total += neededForLevel(i)
+        var needed = 100.0
+        repeat(i - 1) { needed *= 1.25 }
+        total += needed.toInt()
     }
     return total
 }
@@ -124,22 +224,22 @@ fun EditProfileScreen(onBack: () -> Unit, viewModel: ProfileViewModel = hiltView
     var name by remember(profile) { mutableStateOf(profile.name) }; var photoUri by remember(profile) { mutableStateOf(profile.photoUri) }; var dob by remember(profile) { mutableStateOf(profile.dateOfBirth) }; var gender by remember(profile) { mutableStateOf(profile.gender.orEmpty()) }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let { context.contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION); photoUri = it.toString() } }
     
-    val textColor = Color.White
-    val bgColor = Color.Black
+    val isDark = isSystemInDarkTheme()
+    val textColor = if (isDark) Color.White else MaterialTheme.colorScheme.onBackground
+    val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
 
     Surface(modifier = Modifier.fillMaxSize(), color = bgColor, contentColor = textColor) {
-        Column(Modifier.fillMaxSize().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Row(Modifier.fillMaxWidth().padding(top = 40.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { 
+        Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+            Row(Modifier.fillMaxWidth().padding(top = 24.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { 
                 IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back", tint = textColor) }
-                Text("Edit Profile", style = MaterialTheme.typography.headlineSmall, color = textColor)
-                TextButton(onClick = { if (name.isNotBlank()) { viewModel.save(profile.copy(name = name, photoUri = photoUri, dateOfBirth = dob, gender = gender.ifBlank { null })); onBack() } }) { Text("Save", color = MaterialTheme.colorScheme.primary) }
+                Text("PROFILE CONFIG", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = textColor, letterSpacing = 2.sp)
+                TextButton(onClick = { if (name.isNotBlank()) { viewModel.save(profile.copy(name = name, photoUri = photoUri, dateOfBirth = dob, gender = gender.ifBlank { null })); onBack() } }) { Text("SYNC", fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary) }
             }
-            Surface(Modifier.size(150.dp).align(Alignment.CenterHorizontally).clip(CircleShape), color = Color(profile.avatarColor), border = androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary)) { if (photoUri != null) AsyncImage(Uri.parse(photoUri), "Profile photo", Modifier.fillMaxSize()) else Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Person, "Default avatar", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(82.dp)) } }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) { Button(onClick = { picker.launch(arrayOf("image/*")) }, Modifier.weight(1f)) { Text("Change Photo") }; OutlinedButton(onClick = { photoUri = null }, Modifier.weight(1f), enabled = photoUri != null) { Text("Remove Photo", color = textColor) } }
-            OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth(), label = { Text("Name") }, singleLine = true, isError = name.isBlank(), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = textColor, unfocusedTextColor = textColor))
-            Text("Date of Birth", style = MaterialTheme.typography.titleMedium, color = textColor); OutlinedButton(onClick = { val now = Calendar.getInstance(); DatePickerDialog(context, { _, year, month, day -> dob = Calendar.getInstance().apply { set(year, month, day, 0, 0, 0) }.timeInMillis }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH)).show() }, Modifier.fillMaxWidth()) { Text(dob?.let { SimpleDateFormat("d MMMM yyyy", Locale.getDefault()).format(Date(it)) } ?: "Choose date", color = textColor) }
-            Text("Age: ${dob?.let(::calculateAge) ?: "Not set"}", color = textColor.copy(alpha = 0.6f))
-            Text("Gender", style = MaterialTheme.typography.titleMedium, color = textColor); Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) { listOf("Male", "Female").forEach { option -> FilterChip(gender == option, { gender = option }, label = { Text(option) }, colors = FilterChipDefaults.filterChipColors(labelColor = textColor, selectedLabelColor = Color.White, selectedContainerColor = MaterialTheme.colorScheme.primary)) } }
+            Surface(Modifier.size(120.dp).align(Alignment.CenterHorizontally).clip(CircleShape), color = Color(profile.avatarColor), border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)) { if (photoUri != null) AsyncImage(Uri.parse(photoUri), "Profile photo", Modifier.fillMaxSize()) else Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Person, null, tint = SpaceBlack, modifier = Modifier.size(60.dp)) } }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) { Button(onClick = { picker.launch(arrayOf("image/*")) }, Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) { Text("UPDATE") }; OutlinedButton(onClick = { photoUri = null }, Modifier.weight(1f), enabled = photoUri != null, shape = RoundedCornerShape(12.dp)) { Text("REMOVE", color = textColor) } }
+            OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth(), label = { Text("NAME") }, singleLine = true, shape = RoundedCornerShape(16.dp), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = textColor, unfocusedTextColor = textColor))
+            Text("DATA OF BIRTH", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = textColor.copy(alpha = 0.5f), letterSpacing = 2.sp); OutlinedButton(onClick = { val now = Calendar.getInstance(); DatePickerDialog(context, { _, year, month, day -> dob = Calendar.getInstance().apply { set(year, month, day, 0, 0, 0) }.timeInMillis }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH)).show() }, Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) { Text(dob?.let { SimpleDateFormat("d MMMM yyyy", Locale.getDefault()).format(Date(it)) } ?: "NOT SET", color = textColor) }
+            Text("GENDER", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = textColor.copy(alpha = 0.5f), letterSpacing = 2.sp); Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { listOf("Male", "Female", "Other").forEach { option -> FilterChip(gender == option, { gender = option }, label = { Text(option.uppercase()) }, shape = RoundedCornerShape(10.dp), colors = FilterChipDefaults.filterChipColors(labelColor = textColor.copy(alpha = 0.6f), selectedLabelColor = Color.White, selectedContainerColor = MaterialTheme.colorScheme.primary)) } }
             Spacer(Modifier.height(64.dp))
         }
     }
@@ -147,24 +247,28 @@ fun EditProfileScreen(onBack: () -> Unit, viewModel: ProfileViewModel = hiltView
 
 @Composable fun PointHistoryScreen(onBack: () -> Unit, viewModel: ProfileViewModel = hiltViewModel()) { 
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val textColor = Color.White
-    val bgColor = Color.Black
+    val isDark = isSystemInDarkTheme()
+    val textColor = if (isDark) Color.White else MaterialTheme.colorScheme.onBackground
+    val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
 
     Surface(modifier = Modifier.fillMaxSize(), color = bgColor, contentColor = textColor) {
-        LazyColumn(Modifier.fillMaxSize().padding(horizontal = 20.dp), contentPadding = PaddingValues(top = 40.dp, bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) { 
+        LazyColumn(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 20.dp), contentPadding = PaddingValues(top = 24.dp, bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) { 
             item { 
                 Row(verticalAlignment = Alignment.CenterVertically) { 
                     IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back", tint = textColor) }
-                    Text("Elite Point History", style = MaterialTheme.typography.headlineSmall, color = textColor) 
+                    Text("TRANSACTION LOGS", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black, color = textColor, letterSpacing = 2.sp) 
                 }
-                Text("Current balance: ${state.points}  •  Lifetime earned: ${state.lifetimePoints}", color = textColor.copy(alpha = 0.6f)) 
             }
             items(state.transactions) { transaction -> 
-                Card(colors = CardDefaults.cardColors(containerColor = if (isSystemInDarkTheme()) Color(0xFF1E1E1E) else MaterialTheme.colorScheme.surfaceVariant)) {
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF161920) else Color.White),
+                    border = BorderStroke(1.dp, textColor.copy(alpha = 0.05f))
+                ) {
                     ListItem(
-                        headlineContent = { Text(transaction.description, color = textColor) }, 
-                        supportingContent = { Text(SimpleDateFormat("d MMM yyyy, HH:mm", Locale.getDefault()).format(Date(transaction.timestamp)), color = textColor.copy(alpha = 0.5f)) }, 
-                        trailingContent = { Text(if (transaction.amount >= 0) "+${transaction.amount}" else transaction.amount.toString(), color = if (transaction.amount >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error) },
+                        headlineContent = { Text(transaction.description.uppercase(), color = textColor, fontWeight = FontWeight.Black, style = MaterialTheme.typography.labelMedium) }, 
+                        supportingContent = { Text(SimpleDateFormat("d MMM yyyy, HH:mm", Locale.getDefault()).format(Date(transaction.timestamp)), color = textColor.copy(alpha = 0.5f), style = MaterialTheme.typography.labelSmall) }, 
+                        trailingContent = { Text(if (transaction.amount >= 0) "+${transaction.amount}" else transaction.amount.toString(), color = if (transaction.amount >= 0) CyberNeonGreen else Color.Red, fontWeight = FontWeight.Black) },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                     )
                 }
@@ -174,19 +278,24 @@ fun EditProfileScreen(onBack: () -> Unit, viewModel: ProfileViewModel = hiltView
 }
 
 @Composable fun ProfileInfoScreen(title: String, description: String, onBack: () -> Unit) { 
-    val textColor = Color.White
-    val bgColor = Color.Black
+    val isDark = isSystemInDarkTheme()
+    val textColor = if (isDark) Color.White else MaterialTheme.colorScheme.onBackground
+    val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
 
     Surface(modifier = Modifier.fillMaxSize(), color = bgColor, contentColor = textColor) {
-        Column(Modifier.fillMaxSize().padding(20.dp)) { 
-            Spacer(Modifier.height(20.dp))
+        Column(Modifier.fillMaxSize().statusBarsPadding().padding(20.dp)) { 
             Row(verticalAlignment = Alignment.CenterVertically) { 
                 IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back", tint = textColor) }
-                Text(title, style = MaterialTheme.typography.headlineSmall, color = textColor) 
+                Text(title.uppercase(), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black, color = textColor, letterSpacing = 2.sp) 
             }
-            Spacer(Modifier.height(16.dp))
-            Card { Text(description, Modifier.padding(20.dp)) }
+            Spacer(Modifier.height(24.dp))
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF161920) else Color.White),
+                border = BorderStroke(1.dp, textColor.copy(alpha = 0.05f))
+            ) { 
+                Text(description, Modifier.padding(20.dp), color = textColor.copy(alpha = 0.8f), style = MaterialTheme.typography.bodyLarge) 
+            }
         } 
     }
 }
-private fun calculateAge(timestamp: Long): Int { val birth = java.time.Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDate(); return Period.between(birth, LocalDate.now()).years }

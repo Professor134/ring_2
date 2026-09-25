@@ -122,7 +122,7 @@ class HabitRepository @Inject constructor(
 
         val todayCal = java.util.Calendar.getInstance()
         val todayStr = sdf.format(todayCal.time)
-        
+
         var calculatedCurrentStreak = 0
         val checkCal = java.util.Calendar.getInstance()
         if (completedDatesStr.contains(todayStr)) {
@@ -144,11 +144,11 @@ class HabitRepository @Inject constructor(
         var calculatedBestStreak = 0
         var currentRun = 0
         var lastCal: java.util.Calendar? = null
-        
+
         for (ts in sortedTimestamps) {
             val currentCal = java.util.Calendar.getInstance()
             currentCal.timeInMillis = ts
-            
+
             if (lastCal == null) {
                 currentRun = 1
             } else {

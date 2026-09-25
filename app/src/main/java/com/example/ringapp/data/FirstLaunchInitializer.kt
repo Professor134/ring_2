@@ -2,6 +2,7 @@ package com.example.ringapp.data
 
 import androidx.room.withTransaction
 import com.example.ringapp.data.db.AppDatabase
+import com.example.ringapp.data.local.entities.CategoryConstants
 import com.example.ringapp.data.local.entities.CategoryEntity
 import com.example.ringapp.data.local.entities.PointTransactionEntity
 import com.example.ringapp.data.local.entities.ProfileEntity
@@ -46,14 +47,8 @@ class FirstLaunchInitializer @Inject constructor(
             )
             database.appSettingsDao().upsert(AppSettingsEntity(onboardingCompleted = false, updatedAt = now))
             database.categoryDao().insertAll(
-                listOf(
-                    Triple("Health", 0xFF2E7D32.toInt(), "fitness"),
-                    Triple("Learning", 0xFF1565C0.toInt(), "school"),
-                    Triple("Personal", 0xFFC62828.toInt(), "self"),
-                    Triple("Work", 0xFFFBC02D.toInt(), "work"),
-                    Triple("Habits", 0xFF6A1B9A.toInt(), "flag")
-                ).map { (name, color, icon) ->
-                    CategoryEntity(name = name, color = color, icon = icon, createdAt = now, updatedAt = now)
+                CategoryConstants.ALL_CATEGORIES.map { cat ->
+                    CategoryEntity(name = cat.name, color = cat.color, icon = cat.icon, createdAt = now, updatedAt = now)
                 }
             )
             // Add Default Habit: Steps

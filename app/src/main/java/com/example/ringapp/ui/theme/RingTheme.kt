@@ -8,35 +8,36 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 private val RingDarkColors = darkColorScheme(
-    primary = Color(0xFF00E676),
-    onPrimary = Color(0xFF00391B),
-    primaryContainer = Color(0xFF006B32),
-    onPrimaryContainer = Color(0xFF8AFFB5),
-    secondary = Color(0xFF4FC3F7),
-    tertiary = Color(0xFFFFD54F),
-    error = Color(0xFFFF5252),
-    background = Color(0xFF090D0B),
+    primary = CyberNeonGreen,
+    onPrimary = SpaceBlack,
+    primaryContainer = Color(0xFF003D1A),
+    onPrimaryContainer = CyberNeonGreen,
+    secondary = CyberNeonPurple,
+    onSecondary = Color.White,
+    tertiary = CyberNeonBlue,
+    error = RingError,
+    background = MidnightNavy,
     onBackground = Color.White,
-    surface = Color(0xFF111814),
+    surface = CardBackground,
     onSurface = Color.White,
-    surfaceVariant = Color(0xFF18231D),
-    onSurfaceVariant = Color(0xFFB8C2BC)
+    surfaceVariant = Color(0xFF1E222D),
+    onSurfaceVariant = Color(0xFFB0B3C1)
 )
 
 private val RingLightColors = lightColorScheme(
-    primary = Color(0xFF00A84F),
+    primary = Color(0xFF008C3A),
     onPrimary = Color.White,
-    primaryContainer = Color(0xFF8AFFB5),
-    onPrimaryContainer = Color(0xFF00391B),
-    secondary = Color(0xFF0288D1),
-    tertiary = Color(0xFFF4B400),
-    error = Color(0xFFD32F2F),
-    background = Color(0xFFF5F8F6),
-    onBackground = Color(0xFF101512),
+    primaryContainer = Color(0xFFD0FFD9),
+    onPrimaryContainer = Color(0xFF00210B),
+    secondary = Color(0xFF6A0091),
+    tertiary = Color(0xFF006875),
+    error = Color(0xFFBA1A1A),
+    background = Color(0xFFF0F5F2),
+    onBackground = Color(0xFF191C1E),
     surface = Color.White,
-    onSurface = Color(0xFF101512),
-    surfaceVariant = Color(0xFFE8F1EB),
-    onSurfaceVariant = Color(0xFF5D6861)
+    onSurface = Color(0xFF191C1E),
+    surfaceVariant = Color(0xFFDEE5DD),
+    onSurfaceVariant = Color(0xFF424942)
 )
 
 @Composable
