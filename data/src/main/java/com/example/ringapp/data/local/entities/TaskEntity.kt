@@ -33,6 +33,7 @@ data class TaskEntity(
     val reminderEnabled: Boolean = false,
     val reminderTime: Long? = null,
     val parentTaskId: Long? = null,
+    val subtasks: List<SubtaskItem>? = null,
     val createdAt: Long,
     val updatedAt: Long,
     val deletedAt: Long? = null

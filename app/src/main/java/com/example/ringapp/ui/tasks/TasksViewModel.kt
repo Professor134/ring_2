@@ -21,9 +21,19 @@ class TasksViewModel @Inject constructor(
     private val completeTask: CompleteTaskUseCase,
     private val deleteTask: DeleteTaskUseCase
 ) : ViewModel() {
-    val state: StateFlow<TasksUiState> = combine(observeTasks(), observeProgress()) { tasks, progress -> TasksUiState(tasks, progress?.currentPoints ?: 0, false) }
+    private val _userError = MutableStateFlow<String?>(null)
+
+    val state: StateFlow<TasksUiState> = combine(observeTasks(), observeProgress(), _userError) { tasks, progress, err -> TasksUiState(tasks, progress?.currentPoints ?: 0, false, err) }
         .catch { emit(TasksUiState(loading = false, error = it.message ?: "Unable to load tasks")) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TasksUiState())
-    fun toggle(task: TaskEntity) = viewModelScope.launch { completeTask(task) }
+
+    fun toggle(task: TaskEntity) = viewModelScope.launch {
+        try {
+            _userError.value = null
+            completeTask(task)
+        } catch (e: Exception) {
+            _userError.value = e.message ?: "Unable to complete task"
+        }
+    }
     fun delete(task: TaskEntity) = viewModelScope.launch { deleteTask(task.id) }
 }

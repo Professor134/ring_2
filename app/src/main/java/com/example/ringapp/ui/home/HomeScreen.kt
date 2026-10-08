@@ -55,6 +55,7 @@ fun HomeScreen(
     onHabitClick: (Long) -> Unit = {},
     onAddHabit: () -> Unit = {},
     onAddTask: () -> Unit = {},
+    onTaskClick: (Long) -> Unit = {},
     onSeeAllHabits: () -> Unit = {},
     onSeeAllTasks: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
@@ -67,15 +68,15 @@ fun HomeScreen(
     val textColor = MaterialTheme.colorScheme.onBackground
 
     if (state.isLoading) { 
-        Box(Modifier.fillMaxSize().background(bgColor), contentAlignment = Alignment.Center) { 
+        Box(Modifier.fillMaxSize().background(bgColor), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }; return 
     }
     
     val error = state.errorMessage
     if (error != null) { 
-        Box(Modifier.fillMaxSize().background(bgColor), contentAlignment = Alignment.Center) { 
-            Text(error, color = MaterialTheme.colorScheme.error) 
+        Box(Modifier.fillMaxSize().background(bgColor), contentAlignment = Alignment.Center) {
+            Text(error, color = MaterialTheme.colorScheme.error)
         }; return 
     }
 
@@ -98,8 +99,8 @@ fun HomeScreen(
                 Modifier
                     .fillMaxSize()
                     .statusBarsPadding()
-                    .padding(horizontal = 16.dp), 
-                contentPadding = PaddingValues(top = 24.dp, bottom = 100.dp), 
+                    .padding(horizontal = 16.dp),
+                contentPadding = PaddingValues(top = 24.dp, bottom = 100.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
@@ -189,7 +190,7 @@ fun HomeScreen(
                 }
                 item { SectionHeader("TASKS", onSeeAllTasks, textColor) }
                 if (state.tasks.isEmpty()) item { EmptyState("ALL CLEAR", "No pending tasks for today.", null, textColor) }
-                else items(state.tasks, key = { "task_${it.id}" }) { task -> HomeTaskCard(task, textColor) { viewModel.onEvent(HomeEvent.ToggleTask(task)) } }
+                else items(state.tasks, key = { "task_${it.id}" }) { task -> HomeTaskCard(task, textColor, onToggle = { viewModel.onEvent(HomeEvent.ToggleTask(task)) }, onClick = { onTaskClick(task.id) }) }
             }
         }
     }
@@ -232,7 +233,6 @@ fun HomeScreen(
     val isSteps = habit.isStepsHabit()
     val categoryName = if (isSteps) "System" else (category?.name ?: "Personal")
     
-    // CRITICAL: Preserve habit colors from logic
     val baseColorInt = if (isSteps) HabitEntity.PLATINUM_COLOR else CategoryConstants.getColorForCategory(categoryName)
     val baseColor = Color(baseColorInt)
     
@@ -343,7 +343,6 @@ fun HomeScreen(
                 } 
             }
             
-            // History
             Spacer(Modifier.height(16.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text("LOG", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = textColor.copy(alpha = 0.3f))
@@ -420,7 +419,7 @@ private fun categoryIcon(iconName: String): ImageVector = when (iconName.lowerca
     else -> Icons.Default.Flag 
 }
 
-@Composable private fun HomeTaskCard(task: TaskEntity, textColor: Color, onToggle: () -> Unit) { 
+@Composable private fun HomeTaskCard(task: TaskEntity, textColor: Color, onToggle: () -> Unit, onClick: () -> Unit) { 
     val priorityColor = when (task.priority) {
         TaskPriority.HIGH -> Color(0xFFFF3131)
         TaskPriority.MEDIUM -> Color(0xFFFFD600)
@@ -429,6 +428,7 @@ private fun categoryIcon(iconName: String): ImageVector = when (iconName.lowerca
     val isDark = isSystemInDarkTheme()
     
     Card(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF161920) else Color.White),
         border = BorderStroke(1.dp, textColor.copy(alpha = 0.05f))

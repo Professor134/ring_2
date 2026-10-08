@@ -38,8 +38,12 @@ class HabitRepository @Inject constructor(
         check(!original.isStepsHabit()) { "The Steps habit cannot be edited" }
         val now = System.currentTimeMillis()
         if (original.target != habit.target) {
-            check((progressDao.getCurrent()?.currentPoints ?: 0) >= 10) { "Not enough Elite Points to change the target" }
-            pointRepository.record(TransactionType.CHANGE_TARGET, -10, "habit-target-${habit.id}-${habit.target}", "Habit target changed", habitId = habit.id, timestamp = now)
+            if (habit.target > original.target) {
+                // If new target is greater than old, no point reduction
+            } else {
+                check((progressDao.getCurrent()?.currentPoints ?: 0) >= 10) { "Not enough Elite Points to change the target" }
+                pointRepository.record(TransactionType.CHANGE_TARGET, -10, "habit-target-${habit.id}-${habit.target}-$now", "Habit target changed", habitId = habit.id, timestamp = now)
+            }
         }
         dao.update(habit.copy(updatedAt = now))
     }
@@ -71,6 +75,18 @@ class HabitRepository @Inject constructor(
         )
         dao.upsertProgress(progress)
         
+        val allProgress = dao.getProgressForHabit(habit.id)
+        val calculatedCurrentStreak = com.example.ringapp.data.engine.StreakEngine.calculateCurrentStreak(allProgress)
+        val calculatedBestStreak = com.example.ringapp.data.engine.StreakEngine.calculateBestStreak(allProgress)
+
+        val updatedHabit = habit.copy(
+            currentStreak = calculatedCurrentStreak,
+            bestStreak = maxOf(habit.bestStreak, calculatedBestStreak),
+            totalCompletions = allProgress.count { it.completed },
+            updatedAt = now
+        )
+        dao.update(updatedHabit)
+
         // Points: 1 point per 1000 steps
         val currentPointsToAward = steps / 1000
         val dateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
@@ -116,55 +132,8 @@ class HabitRepository @Inject constructor(
         }
 
         val allProgress = dao.getProgressForHabit(habit.id)
-        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
-        sdf.timeZone = java.util.TimeZone.getDefault()
-        val completedDatesStr = allProgress.filter { it.completed }.map { sdf.format(java.util.Date(it.date)) }.toSet()
-
-        val todayCal = java.util.Calendar.getInstance()
-        val todayStr = sdf.format(todayCal.time)
-
-        var calculatedCurrentStreak = 0
-        val checkCal = java.util.Calendar.getInstance()
-        if (completedDatesStr.contains(todayStr)) {
-            checkCal.time = todayCal.time
-            while (completedDatesStr.contains(sdf.format(checkCal.time))) {
-                calculatedCurrentStreak++
-                checkCal.add(java.util.Calendar.DAY_OF_YEAR, -1)
-            }
-        } else {
-            checkCal.time = todayCal.time
-            checkCal.add(java.util.Calendar.DAY_OF_YEAR, -1)
-            while (completedDatesStr.contains(sdf.format(checkCal.time))) {
-                calculatedCurrentStreak++
-                checkCal.add(java.util.Calendar.DAY_OF_YEAR, -1)
-            }
-        }
-
-        val sortedTimestamps = allProgress.filter { it.completed }.map { it.date }.distinct().sorted()
-        var calculatedBestStreak = 0
-        var currentRun = 0
-        var lastCal: java.util.Calendar? = null
-
-        for (ts in sortedTimestamps) {
-            val currentCal = java.util.Calendar.getInstance()
-            currentCal.timeInMillis = ts
-
-            if (lastCal == null) {
-                currentRun = 1
-            } else {
-                val prevCal = java.util.Calendar.getInstance()
-                prevCal.time = lastCal.time
-                prevCal.add(java.util.Calendar.DAY_OF_YEAR, 1)
-                if (sdf.format(currentCal.time) == sdf.format(prevCal.time)) {
-                    currentRun++
-                } else if (sdf.format(currentCal.time) != sdf.format(lastCal.time)) {
-                    currentRun = 1
-                }
-            }
-            calculatedBestStreak = maxOf(calculatedBestStreak, currentRun)
-            lastCal = currentCal
-        }
-        calculatedBestStreak = maxOf(calculatedBestStreak, calculatedCurrentStreak)
+        val calculatedCurrentStreak = com.example.ringapp.data.engine.StreakEngine.calculateCurrentStreak(allProgress)
+        val calculatedBestStreak = com.example.ringapp.data.engine.StreakEngine.calculateBestStreak(allProgress)
 
         val updatedHabit = habit.copy(
             currentStreak = calculatedCurrentStreak,
@@ -193,7 +162,6 @@ class HabitRepository @Inject constructor(
         
         val allHabits = dao.observeActive().first()
         
-        // Remove specific old default habits
         val defaultNames = listOf("Drink Water", "Morning Exercise", "Read 10 Pages", "Meditate", "Morning Walk")
         allHabits.filter { active ->
             defaultNames.any { it.equals(active.name, ignoreCase = true) }
@@ -211,7 +179,6 @@ class HabitRepository @Inject constructor(
             cal.set(java.util.Calendar.MILLISECOND, 0)
             val today = cal.timeInMillis
             
-            // Create a "System" category for internal use
             val systemCategoryId = database.categoryDao().insert(
                 com.example.ringapp.data.local.entities.CategoryEntity(
                     name = "System", 
@@ -240,11 +207,37 @@ class HabitRepository @Inject constructor(
         }
     }
 
-    suspend fun recordProgress(progress: HabitProgressEntity) = dao.upsertProgress(progress)
+    suspend fun recordProgress(progress: HabitProgressEntity) = database.withTransaction {
+        dao.upsertProgress(progress)
+        val habit = dao.observeById(progress.habitId).first() ?: return@withTransaction
+        val allProgress = dao.getProgressForHabit(habit.id)
+        val calculatedCurrentStreak = com.example.ringapp.data.engine.StreakEngine.calculateCurrentStreak(allProgress)
+        val calculatedBestStreak = com.example.ringapp.data.engine.StreakEngine.calculateBestStreak(allProgress)
+
+        val updatedHabit = habit.copy(
+            currentStreak = calculatedCurrentStreak,
+            bestStreak = maxOf(habit.bestStreak, calculatedBestStreak),
+            totalCompletions = allProgress.count { it.completed },
+            updatedAt = progress.updatedAt
+        )
+        dao.update(updatedHabit)
+    }
+
     suspend fun complete(habit: HabitEntity, progress: HabitProgressEntity) = database.withTransaction {
         if (dao.progressForDate(habit.id, progress.date) != null) return@withTransaction false
-        dao.update(habit)
         dao.upsertProgress(progress)
+        val allProgress = dao.getProgressForHabit(habit.id)
+        val calculatedCurrentStreak = com.example.ringapp.data.engine.StreakEngine.calculateCurrentStreak(allProgress)
+        val calculatedBestStreak = com.example.ringapp.data.engine.StreakEngine.calculateBestStreak(allProgress)
+
+        val updatedHabit = habit.copy(
+            currentStreak = calculatedCurrentStreak,
+            bestStreak = maxOf(habit.bestStreak, calculatedBestStreak),
+            totalCompletions = allProgress.count { it.completed },
+            updatedAt = progress.updatedAt
+        )
+        dao.update(updatedHabit)
+
         val now = progress.updatedAt
         val amount = 4
         pointRepository.record(TransactionType.HABIT_COMPLETE, amount, "habit-complete-${habit.id}-${progress.date}-$now", "Habit completed", habitId = habit.id, timestamp = now)
@@ -253,7 +246,7 @@ class HabitRepository @Inject constructor(
     suspend fun delete(habitId: Long, deletedAt: Long) = database.withTransaction {
         val habit = dao.observeById(habitId).first() ?: return@withTransaction
         check(!habit.isStepsHabit()) { "The Steps habit cannot be deleted" }
-        pointRepository.record(TransactionType.HABIT_DELETE, -50, "habit-delete-$habitId-$deletedAt", "Habit deleted", habitId = habitId, timestamp = deletedAt)
+        pointRepository.record(TransactionType.HABIT_DELETE, -30, "habit-delete-$habitId-$deletedAt", "Habit deleted", habitId = habitId, timestamp = deletedAt)
         dao.softDelete(habitId, deletedAt)
     }
 }

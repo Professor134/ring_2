@@ -32,6 +32,7 @@ import com.example.ringapp.ui.habits.HabitListScreen
 import com.example.ringapp.ui.habits.AddHabitScreen
 import com.example.ringapp.ui.tasks.TasksScreen
 import com.example.ringapp.ui.tasks.AddTaskScreen
+import com.example.ringapp.ui.tasks.TaskDetailScreen
 import com.example.ringapp.ui.analytics.MainAnalyticsScreen
 import com.example.ringapp.ui.profile.ProfileScreen
 import com.example.ringapp.ui.profile.EditProfileScreen
@@ -74,6 +75,12 @@ fun AppNavGraph(viewModel: AppViewModel = hiltViewModel()) {
         }
         composable(Screen.AddTask) { AddTaskScreen(onSaved = { navController.popBackStack() }, onBack = { navController.popBackStack() }) }
         composable(Screen.EditTask, arguments = listOf(navArgument("taskId") { type = NavType.LongType })) { entry -> AddTaskScreen(taskId = entry.arguments?.getLong("taskId"), onSaved = { navController.popBackStack() }, onBack = { navController.popBackStack() }) }
+        composable(Screen.TaskDetail, arguments = listOf(navArgument("taskId") { type = NavType.LongType })) {
+            TaskDetailScreen(
+                onBack = { navController.popBackStack() },
+                onEdit = { navController.navigate(Screen.editTask(it)) }
+            )
+        }
         composable(Screen.EditProfile) { EditProfileScreen(onBack = { navController.popBackStack() }) }
         composable(Screen.Appearance) { AppearanceScreen(viewModel) }
         composable(Screen.PointHistory) { PointHistoryScreen(onBack = { navController.popBackStack() }) }
@@ -88,13 +95,17 @@ fun AppNavGraph(viewModel: AppViewModel = hiltViewModel()) {
                             onHabitClick = { navController.navigate(Screen.habitAnalytics(it)) },
                             onAddHabit = { navController.navigate(Screen.AddHabit) }
                         )
-                        NavigationDestination.TASKS -> TasksScreen(onAddTask = { navController.navigate(Screen.AddTask) }, onTaskClick = { navController.navigate(Screen.editTask(it)) })
+                        NavigationDestination.TASKS -> TasksScreen(
+                            onAddTask = { navController.navigate(Screen.AddTask) },
+                            onTaskClick = { navController.navigate(Screen.taskDetail(it)) }
+                        )
                         NavigationDestination.INSIGHTS -> MainAnalyticsScreen(onPersonal = { navController.navigate(Screen.PersonalAnalytics) })
                         NavigationDestination.PROFILE -> ProfileScreen(viewModel, onEdit = { navController.navigate(Screen.EditProfile) }, onAppearance = { navController.navigate(Screen.Appearance) }, onPointHistory = { navController.navigate(Screen.PointHistory) }, onNotifications = { navController.navigate(Screen.Notifications) }, onBackup = { navController.navigate(Screen.Backup) })
                         else -> HomeScreen(
                             onHabitClick = { navController.navigate(Screen.habitAnalytics(it)) },
                             onAddHabit = { navController.navigate(Screen.AddHabit) },
                             onAddTask = { navController.navigate(Screen.AddTask) },
+                            onTaskClick = { navController.navigate(Screen.taskDetail(it)) },
                             onSeeAllHabits = { navController.navigate(NavigationDestination.HABITS.route) },
                             onSeeAllTasks = { navController.navigate(NavigationDestination.TASKS.route) }
                         )

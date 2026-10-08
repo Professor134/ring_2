@@ -73,4 +73,25 @@ object ScheduleEngine {
         }
         return count
     }
+
+    fun getNextOccurrence(schedule: HabitScheduleEntity, from: LocalDate): LocalDate {
+        var check = from.plusDays(1)
+        while (!isActiveOnDate(schedule, check)) {
+            check = check.plusDays(1)
+        }
+        return check
+    }
+
+    fun getNextActiveDate(task: com.example.ringapp.data.local.entities.TaskEntity, from: LocalDate = LocalDate.now()): LocalDate {
+        var check = from.plusDays(1)
+        while (!isActiveOnDate(task, check)) {
+            check = check.plusDays(1)
+        }
+        return check
+    }
+
+    fun getNextActiveDueDate(task: com.example.ringapp.data.local.entities.TaskEntity, from: LocalDate = LocalDate.now()): Long {
+        val nextDate = getNextActiveDate(task, from)
+        return nextDate.atTime(20, 0).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+    }
 }

@@ -15,5 +15,5 @@ class ScheduleEngineTest {
         assertFalse(ScheduleEngine.isActiveOnDate(weekly, LocalDate.of(2026, 9, 8)))
     }
 
-    @Test fun nextOccurrenceFindsFollowingConfiguredDay() = assertTrue(ScheduleEngine.getNextOccurrence(weekly, LocalDate.of(2026, 9, 7)) == LocalDate.of(2026, 9, 9))
+    @Test fun nextOccurrenceFindsFollowingConfiguredDay() = assertTrue(ScheduleEngine. getNextOccurrence(weekly, LocalDate.of(2026, 9, 7)) == LocalDate.of(2026, 9, 9))
 }

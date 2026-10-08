@@ -257,6 +257,87 @@ public class PointTransactionDao_Impl(
     })
   }
 
+  public override fun observeForTask(taskId: Long): Flow<List<PointTransactionEntity>> {
+    val _sql: String = "SELECT * FROM point_transaction WHERE taskId = ? ORDER BY timestamp DESC"
+    val _statement: RoomSQLiteQuery = acquire(_sql, 1)
+    var _argIndex: Int = 1
+    _statement.bindLong(_argIndex, taskId)
+    return CoroutinesRoom.createFlow(__db, false, arrayOf("point_transaction"), object :
+        Callable<List<PointTransactionEntity>> {
+      public override fun call(): List<PointTransactionEntity> {
+        val _cursor: Cursor = query(__db, _statement, false, null)
+        try {
+          val _cursorIndexOfId: Int = getColumnIndexOrThrow(_cursor, "id")
+          val _cursorIndexOfAmount: Int = getColumnIndexOrThrow(_cursor, "amount")
+          val _cursorIndexOfType: Int = getColumnIndexOrThrow(_cursor, "type")
+          val _cursorIndexOfDescription: Int = getColumnIndexOrThrow(_cursor, "description")
+          val _cursorIndexOfHabitId: Int = getColumnIndexOrThrow(_cursor, "habitId")
+          val _cursorIndexOfTaskId: Int = getColumnIndexOrThrow(_cursor, "taskId")
+          val _cursorIndexOfCycleId: Int = getColumnIndexOrThrow(_cursor, "cycleId")
+          val _cursorIndexOfUniqueReference: Int = getColumnIndexOrThrow(_cursor, "uniqueReference")
+          val _cursorIndexOfTimestamp: Int = getColumnIndexOrThrow(_cursor, "timestamp")
+          val _cursorIndexOfDeviceId: Int = getColumnIndexOrThrow(_cursor, "deviceId")
+          val _cursorIndexOfCreatedAt: Int = getColumnIndexOrThrow(_cursor, "createdAt")
+          val _result: MutableList<PointTransactionEntity> =
+              ArrayList<PointTransactionEntity>(_cursor.getCount())
+          while (_cursor.moveToNext()) {
+            val _item: PointTransactionEntity
+            val _tmpId: Long
+            _tmpId = _cursor.getLong(_cursorIndexOfId)
+            val _tmpAmount: Int
+            _tmpAmount = _cursor.getInt(_cursorIndexOfAmount)
+            val _tmpType: TransactionType
+            val _tmp: String
+            _tmp = _cursor.getString(_cursorIndexOfType)
+            _tmpType = __converters.stringToTransactionType(_tmp)
+            val _tmpDescription: String
+            _tmpDescription = _cursor.getString(_cursorIndexOfDescription)
+            val _tmpHabitId: Long?
+            if (_cursor.isNull(_cursorIndexOfHabitId)) {
+              _tmpHabitId = null
+            } else {
+              _tmpHabitId = _cursor.getLong(_cursorIndexOfHabitId)
+            }
+            val _tmpTaskId: Long?
+            if (_cursor.isNull(_cursorIndexOfTaskId)) {
+              _tmpTaskId = null
+            } else {
+              _tmpTaskId = _cursor.getLong(_cursorIndexOfTaskId)
+            }
+            val _tmpCycleId: Long?
+            if (_cursor.isNull(_cursorIndexOfCycleId)) {
+              _tmpCycleId = null
+            } else {
+              _tmpCycleId = _cursor.getLong(_cursorIndexOfCycleId)
+            }
+            val _tmpUniqueReference: String
+            _tmpUniqueReference = _cursor.getString(_cursorIndexOfUniqueReference)
+            val _tmpTimestamp: Long
+            _tmpTimestamp = _cursor.getLong(_cursorIndexOfTimestamp)
+            val _tmpDeviceId: String?
+            if (_cursor.isNull(_cursorIndexOfDeviceId)) {
+              _tmpDeviceId = null
+            } else {
+              _tmpDeviceId = _cursor.getString(_cursorIndexOfDeviceId)
+            }
+            val _tmpCreatedAt: Long
+            _tmpCreatedAt = _cursor.getLong(_cursorIndexOfCreatedAt)
+            _item =
+                PointTransactionEntity(_tmpId,_tmpAmount,_tmpType,_tmpDescription,_tmpHabitId,_tmpTaskId,_tmpCycleId,_tmpUniqueReference,_tmpTimestamp,_tmpDeviceId,_tmpCreatedAt)
+            _result.add(_item)
+          }
+          return _result
+        } finally {
+          _cursor.close()
+        }
+      }
+
+      protected fun finalize() {
+        _statement.release()
+      }
+    })
+  }
+
   public override fun observeAll(): Flow<List<PointTransactionEntity>> {
     val _sql: String = "SELECT * FROM point_transaction ORDER BY timestamp DESC"
     val _statement: RoomSQLiteQuery = acquire(_sql, 0)

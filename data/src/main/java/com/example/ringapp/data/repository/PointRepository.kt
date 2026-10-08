@@ -26,30 +26,42 @@ class PointRepository @Inject constructor(
         if (pointDao.findByReference(reference) != null) return@withTransaction false
         val current = progressDao.getCurrent() ?: return@withTransaction false
         check(amount >= 0 || current.currentPoints >= -amount) { "Not enough Elite Points." }
-        val inserted = pointDao.insert(PointTransactionEntity(amount = amount, type = type, description = description, habitId = habitId, taskId = taskId, uniqueReference = reference, timestamp = timestamp, createdAt = timestamp))
+        
+        val lifetimeToAdd = amount.coerceAtLeast(0)
+        val newLifetime = current.lifetimePoints + lifetimeToAdd
+        val oldLevel = current.level
+        val newLevel = calculateLevel(newLifetime)
+        
+        var totalPointsDelta = amount
+        var finalLifetime = newLifetime
+        
+        if (newLevel > oldLevel) {
+            val levelDiff = newLevel - oldLevel
+            val rewardPoints = levelDiff * 15
+            totalPointsDelta += rewardPoints
+            finalLifetime += rewardPoints
+        }
+
+        val inserted = pointDao.insert(PointTransactionEntity(amount = totalPointsDelta, type = type, description = description, habitId = habitId, taskId = taskId, uniqueReference = reference, timestamp = timestamp, createdAt = timestamp))
         if (inserted == -1L) return@withTransaction false
-        val lifetime = current.lifetimePoints + amount.coerceAtLeast(0)
-        progressDao.insert(current.copy(currentPoints = (current.currentPoints + amount).coerceAtLeast(0), lifetimePoints = lifetime, level = calculateLevel(lifetime), updatedAt = timestamp))
+        
+        progressDao.insert(current.copy(currentPoints = (current.currentPoints + totalPointsDelta).coerceAtLeast(0), lifetimePoints = finalLifetime, level = newLevel, updatedAt = timestamp))
         true
     }
 
     fun calculateLevel(lifetimeEarned: Int): Int {
         var level = 1
-        while (lifetimeEarned >= totalThreshold(level) && level < 1000) level++
+        while (threshold(level + 1) <= lifetimeEarned && level < 1000) level++
         return level
     }
 
-    private fun neededForLevel(level: Int): Int {
-        var needed = 100.0
-        repeat(level - 1) { needed *= 1.25 }
-        return needed.toInt()
-    }
-
-    private fun totalThreshold(level: Int): Int {
-        var total = 0
-        for (i in 1..level) {
-            total += neededForLevel(i)
+    private fun threshold(level: Int): Long {
+        var total = 0.0
+        var currentNeeded = 100.0
+        for (i in 1 until level) {
+            total += currentNeeded
+            currentNeeded *= 1.25
         }
-        return total
+        return total.toLong()
     }
 }

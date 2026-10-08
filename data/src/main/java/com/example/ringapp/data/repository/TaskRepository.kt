@@ -7,6 +7,7 @@ import com.example.ringapp.data.local.entities.UserProgressEntity
 import com.example.ringapp.data.db.AppDatabase
 import androidx.room.withTransaction
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 class TaskRepository @Inject constructor(
@@ -26,8 +27,11 @@ class TaskRepository @Inject constructor(
     }
     suspend fun update(task: TaskEntity) = dao.update(task)
     suspend fun delete(taskId: Long, deletedAt: Long) = database.withTransaction {
+        val task = dao.observeById(taskId).first() ?: return@withTransaction
         dao.softDelete(taskId, deletedAt)
-        pointRepository.record(com.example.ringapp.data.local.entities.TransactionType.TASK_DELETE, -5, "task-delete-$taskId", "Task deleted", taskId = taskId)
+        if (!task.completed) {
+            pointRepository.record(com.example.ringapp.data.local.entities.TransactionType.TASK_DELETE, -5, "task-delete-$taskId", "Task deleted", taskId = taskId)
+        }
     }
     suspend fun activeReminders(): List<TaskEntity> = dao.activeReminders()
     suspend fun awardTaskPoints(taskId: Long, timestamp: Long): Boolean {

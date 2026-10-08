@@ -8,10 +8,12 @@ import com.example.ringapp.data.local.entities.HabitType
 import com.example.ringapp.data.local.entities.NotificationType
 import com.example.ringapp.data.local.entities.RepeatType
 import com.example.ringapp.data.local.entities.ScheduleType
+import com.example.ringapp.data.local.entities.SubtaskItem
 import com.example.ringapp.data.local.entities.TaskPriority
 import com.example.ringapp.data.local.entities.ThemeMode
 import com.example.ringapp.data.local.entities.TransactionType
 import org.json.JSONArray
+import org.json.JSONObject
 
 class Converters {
     @TypeConverter
@@ -20,6 +22,37 @@ class Converters {
     @TypeConverter
     fun toIntList(value: String?): List<Int>? = value?.let { json ->
         JSONArray(json).let { array -> List(array.length()) { index -> array.getInt(index) } }
+    }
+
+    @TypeConverter
+    fun fromSubtaskList(value: List<SubtaskItem>?): String? = value?.let { list ->
+        val arr = JSONArray()
+        list.forEach { item ->
+            val obj = JSONObject().apply {
+                put("id", item.id)
+                put("title", item.title)
+                put("completed", item.completed)
+            }
+            arr.put(obj)
+        }
+        arr.toString()
+    }
+
+    @TypeConverter
+    fun toSubtaskList(value: String?): List<SubtaskItem>? = value?.let { json ->
+        try {
+            val arr = JSONArray(json)
+            List(arr.length()) { i ->
+                val obj = arr.getJSONObject(i)
+                SubtaskItem(
+                    id = obj.optString("id", java.util.UUID.randomUUID().toString()),
+                    title = obj.getString("title"),
+                    completed = obj.getBoolean("completed")
+                )
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
     @TypeConverter fun habitTypeToString(value: HabitType): String = value.name
@@ -42,5 +75,4 @@ class Converters {
     @TypeConverter fun stringToBackupType(value: String): BackupType = BackupType.valueOf(value)
     @TypeConverter fun backupStatusToString(value: BackupStatus): String = value.name
     @TypeConverter fun stringToBackupStatus(value: String): BackupStatus = BackupStatus.valueOf(value)
-
 }

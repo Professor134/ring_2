@@ -18,6 +18,9 @@ interface PointTransactionDao {
     @Query("SELECT * FROM point_transaction WHERE habitId = :habitId ORDER BY timestamp DESC")
     fun observeForHabit(habitId: Long): Flow<List<PointTransactionEntity>>
 
+    @Query("SELECT * FROM point_transaction WHERE taskId = :taskId ORDER BY timestamp DESC")
+    fun observeForTask(taskId: Long): Flow<List<PointTransactionEntity>>
+
     @Query("SELECT * FROM point_transaction ORDER BY timestamp DESC")
     fun observeAll(): Flow<List<PointTransactionEntity>>
 }

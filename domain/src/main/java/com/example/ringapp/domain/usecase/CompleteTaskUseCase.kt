@@ -2,6 +2,11 @@ package com.example.ringapp.domain.usecase
 
 import com.example.ringapp.data.repository.TaskRepository
 import com.example.ringapp.data.local.entities.TaskEntity
+import com.example.ringapp.data.local.entities.RepeatType
+import com.example.ringapp.domain.engine.ScheduleEngine
+import java.time.LocalDate
+import java.time.Instant
+import java.time.ZoneId
 import javax.inject.Inject
 
 class CompleteTaskUseCase @Inject constructor(
@@ -14,24 +19,31 @@ class CompleteTaskUseCase @Inject constructor(
             repository.revokeTaskPoints(task.id, now)
             return
         }
-        repository.update(task.copy(completed = true, completedAt = now, updatedAt = now))
-        repository.awardTaskPoints(task.id, now)
-        if (task.repeatType != com.example.ringapp.data.local.entities.RepeatType.NONE) {
-            repository.create(task.copy(id = 0, parentTaskId = task.id, dueDate = nextDate(task.dueDate, task.repeatType, task.repeatInterval), completed = false, completedAt = null, createdAt = now, updatedAt = now))
-        }
-    }
 
-    private fun nextDate(date: Long?, repeat: com.example.ringapp.data.local.entities.RepeatType, interval: Int): Long? {
-        val current = java.time.Instant.ofEpochMilli(date ?: System.currentTimeMillis())
-            .atZone(java.time.ZoneId.systemDefault()).toLocalDate()
-        val next = when (repeat) {
-            com.example.ringapp.data.local.entities.RepeatType.DAILY -> current.plusDays(1)
-            com.example.ringapp.data.local.entities.RepeatType.WEEKLY -> current.plusWeeks(1)
-            com.example.ringapp.data.local.entities.RepeatType.MONTHLY -> current.plusMonths(1)
-            com.example.ringapp.data.local.entities.RepeatType.YEARLY -> current.plusYears(1)
-            com.example.ringapp.data.local.entities.RepeatType.CUSTOM -> current.plusDays(interval.coerceAtLeast(1).toLong())
-            else -> current
+        val subtasks = task.subtasks
+        if (!subtasks.isNullOrEmpty() && subtasks.any { !it.completed }) {
+            throw IllegalStateException("Please complete all subtasks before completing the task.")
         }
-        return next.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+
+        repository.awardTaskPoints(task.id, now)
+
+        if (task.repeatType != RepeatType.NONE) {
+            val currentDueDate = task.dueDate?.let { Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate() } ?: LocalDate.now()
+            val baseDate = if (currentDueDate.isAfter(LocalDate.now())) currentDueDate else LocalDate.now()
+            val nextDueDate = ScheduleEngine.getNextActiveDueDate(task, baseDate)
+            val resetSubtasks = subtasks?.map { it.copy(completed = false) }
+            repository.update(
+                task.copy(
+                    dueDate = nextDueDate,
+                    dueTime = nextDueDate,
+                    completed = false,
+                    completedAt = null,
+                    subtasks = resetSubtasks,
+                    updatedAt = now
+                )
+            )
+        } else {
+            repository.update(task.copy(completed = true, completedAt = now, updatedAt = now))
+        }
     }
 }

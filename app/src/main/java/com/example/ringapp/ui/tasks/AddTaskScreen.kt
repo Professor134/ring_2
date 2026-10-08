@@ -12,7 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -51,7 +51,7 @@ class AddTaskViewModel @Inject constructor(
             val saved = if (existing == null) {
                 val current = (points.value ?: observeProgress().first())?.currentPoints ?: 0
                 if (current < 1) throw IllegalStateException("Not enough Elite Points.")
-                task.copy(id = createTask(task.title, task.description.orEmpty(), task.priority, task.dueDate, task.dueTime, task.repeatType, task.reminderEnabled, task.repeatInterval, task.repeatDaysOfWeek, task.repeatDayOfMonth, task.repeatMonth))
+                task.copy(id = createTask(task.title, task.description.orEmpty(), task.priority, task.dueDate, task.dueTime, task.repeatType, task.reminderEnabled, task.repeatInterval, task.repeatDaysOfWeek, task.repeatDayOfMonth, task.repeatMonth, task.subtasks))
             } else {
                 updateTask(task.copy(id = existing.id))
                 task.copy(id = existing.id)
@@ -66,11 +66,21 @@ class AddTaskViewModel @Inject constructor(
 @Composable
 fun AddTaskScreen(taskId: Long? = null, onSaved: () -> Unit, onBack: () -> Unit, viewModel: AddTaskViewModel = hiltViewModel()) {
     val tasks by viewModel.tasks.collectAsStateWithLifecycle(); val existing = tasks.firstOrNull { it.id == taskId }; val context = LocalContext.current; val editing = taskId != null
-    var title by remember(existing) { mutableStateOf(existing?.title.orEmpty()) }; var description by remember(existing) { mutableStateOf(existing?.description.orEmpty()) }; var priority by remember(existing) { mutableStateOf(existing?.priority ?: TaskPriority.MEDIUM) }; var repeat by remember(existing) { mutableStateOf(existing?.repeatType ?: RepeatType.NONE) }; var repeatInterval by remember(existing) { mutableStateOf((existing?.repeatInterval ?: 1).toString()) }
+    var title by remember(existing) { mutableStateOf(existing?.title.orEmpty()) }
+    var description by remember(existing) { mutableStateOf(existing?.description.orEmpty()) }
+    var priority by remember(existing) { mutableStateOf(existing?.priority ?: TaskPriority.MEDIUM) }
+    var repeat by remember(existing) { mutableStateOf(existing?.repeatType ?: RepeatType.NONE) }
+    var repeatInterval by remember(existing) { mutableStateOf((existing?.repeatInterval ?: 1).toString()) }
     var repeatDaysOfWeek by remember(existing) { mutableStateOf(existing?.repeatDaysOfWeek?.split(",")?.filter { it.isNotBlank() }?.map { it.toInt() } ?: emptyList<Int>()) }
     var repeatDayOfMonth by remember(existing) { mutableStateOf(existing?.repeatDayOfMonth ?: 1) }
     var repeatMonth by remember(existing) { mutableStateOf(existing?.repeatMonth ?: 1) }
-    var reminder by remember(existing) { mutableStateOf(existing?.reminderEnabled ?: false) }; var dueDate by remember(existing) { mutableStateOf(existing?.dueDate) }; var dueTime by remember(existing) { mutableStateOf(existing?.dueTime) }; var error by remember { mutableStateOf<String?>(null) }; var confirmDelete by remember { mutableStateOf(false) }
+    var subtasks by remember(existing) { mutableStateOf(existing?.subtasks ?: emptyList()) }
+    var newSubtaskTitle by remember { mutableStateOf("") }
+    var reminder by remember(existing) { mutableStateOf(existing?.reminderEnabled ?: false) }
+    var dueDate by remember(existing) { mutableStateOf(existing?.dueDate) }
+    var dueTime by remember(existing) { mutableStateOf(existing?.dueTime) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var confirmDelete by remember { mutableStateOf(false) }
     
     val isDark = isSystemInDarkTheme()
     val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
@@ -80,7 +90,7 @@ fun AddTaskScreen(taskId: Long? = null, onSaved: () -> Unit, onBack: () -> Unit,
     Surface(modifier = Modifier.fillMaxSize(), color = bgColor, contentColor = textColor) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(Modifier.fillMaxWidth().padding(top = 48.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back", tint = textColor) }
+                IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = textColor) }
                 Text(if (editing) "Edit Task" else "Add Task", style = MaterialTheme.typography.headlineSmall, color = textColor)
                 TextButton(onClick = {
                     if (title.isBlank()) error = "Task title is required"
@@ -99,6 +109,7 @@ fun AddTaskScreen(taskId: Long? = null, onSaved: () -> Unit, onBack: () -> Unit,
                             repeatMonth = if (repeat == RepeatType.YEARLY) repeatMonth else null,
                             reminderEnabled = reminder,
                             reminderTime = if (reminder) reminderTime(dueDate, dueTime) else null,
+                            subtasks = subtasks.ifEmpty { null },
                             completed = existing?.completed ?: false,
                             completedAt = existing?.completedAt,
                             createdAt = existing?.createdAt ?: System.currentTimeMillis(),
@@ -176,8 +187,15 @@ fun AddTaskScreen(taskId: Long? = null, onSaved: () -> Unit, onBack: () -> Unit,
                     RepeatType.WEEKLY -> {
                         Text("Days of week", style = MaterialTheme.typography.labelMedium, color = textColor)
                         FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat").forEachIndexed { index, day ->
-                                val dayNum = index + 1
+                            listOf(
+                                "Mon" to 1,
+                                "Tue" to 2,
+                                "Wed" to 3,
+                                "Thu" to 4,
+                                "Fri" to 5,
+                                "Sat" to 6,
+                                "Sun" to 7
+                            ).forEach { (day, dayNum) ->
                                 val isSelected = repeatDaysOfWeek.contains(dayNum)
                                 FilterChip(
                                     selected = isSelected,
@@ -234,6 +252,43 @@ fun AddTaskScreen(taskId: Long? = null, onSaved: () -> Unit, onBack: () -> Unit,
                     else -> {}
                 }
             }
+
+            FormSection("Subtasks & Checklist") {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = newSubtaskTitle,
+                        onValueChange = { newSubtaskTitle = it },
+                        modifier = Modifier.weight(1f),
+                        label = { Text("Add subtask") },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = textColor, unfocusedTextColor = textColor)
+                    )
+                    Button(onClick = {
+                        if (newSubtaskTitle.isNotBlank()) {
+                            subtasks = subtasks + SubtaskItem(title = newSubtaskTitle.trim())
+                            newSubtaskTitle = ""
+                        }
+                    }) {
+                        Text("Add")
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                subtasks.forEachIndexed { index, subtask ->
+                    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                            Checkbox(checked = subtask.completed, onCheckedChange = { checked ->
+                                subtasks = subtasks.mapIndexed { idx, item -> if (idx == index) item.copy(completed = checked) else item }
+                            })
+                            Spacer(Modifier.width(8.dp))
+                            Text(subtask.title, color = textColor)
+                        }
+                        IconButton(onClick = { subtasks = subtasks.filterIndexed { idx, _ -> idx != index } }) {
+                            Icon(Icons.Default.Delete, "Remove", tint = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
+            }
+
             if (!editing) Text("Create Task (Costs 1 Point)", color = Color.Red, modifier = Modifier.align(Alignment.CenterHorizontally), fontWeight = FontWeight.Bold)
             if (editing && existing != null) {
                 Button(onClick = { confirmDelete = true }, Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Color.Red), shape = RoundedCornerShape(12.dp)) {

@@ -9,6 +9,7 @@ object Screen {
     const val EditHabit = "habit/edit/{habitId}"
     const val AddTask = "task/add"
     const val EditTask = "task/edit/{taskId}"
+    const val TaskDetail = "taskDetail/{taskId}"
     const val EditProfile = "profile/edit"
     const val Appearance = "profile/appearance"
     const val PointHistory = "profile/points"
@@ -20,4 +21,5 @@ object Screen {
     fun habitAnalytics(habitId: Long) = "habitAnalytics/$habitId"
     fun editHabit(habitId: Long) = "habit/edit/$habitId"
     fun editTask(taskId: Long) = "task/edit/$taskId"
+    fun taskDetail(taskId: Long) = "taskDetail/$taskId"
 }
