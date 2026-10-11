@@ -1,3 +1,9 @@
+// -----------------------------------------------------------------------------
+// Project: Ring 2
+// File: app\src\main\java\com\example\ringapp\ui\habits\HabitListScreen.kt
+// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
+// -----------------------------------------------------------------------------
+
 package com.example.ringapp.ui.habits
 
 import androidx.compose.animation.*
@@ -46,6 +52,8 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 @HiltViewModel
+// Handles the habit list view model logic for this component without modifying runtime behavior.
+// Represents the habit list view model structure used by the application.
 class HabitListViewModel @Inject constructor(
     observeHabits: ObserveHabitsUseCase,
     observeCategories: ObserveCategoriesUseCase,
@@ -62,13 +70,19 @@ class HabitListViewModel @Inject constructor(
         HabitListState(sortedHabits, categories, progress, userProgress?.currentPoints ?: 0) 
     }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HabitListState())
+// Manages the complete flow without changing runtime behavior.
     fun complete(habit: HabitEntity) = viewModelScope.launch { toggleHabit(habit) }
+// Manages the record flow without changing runtime behavior.
     fun record(habit: HabitEntity, value: Double, note: String?) = viewModelScope.launch { recordProgress(habit, todayTimestamp(), value, note) }
 }
 
+// Handles the habit list state logic for this component without modifying runtime behavior.
+// Represents the habit list state structure used by the application.
 data class HabitListState(val habits: List<HabitEntity> = emptyList(), val categories: List<CategoryEntity> = emptyList(), val progress: List<HabitProgressEntity> = emptyList(), val points: Int = 0)
 
 @Composable
+// Handles the habit list screen logic for this component without modifying runtime behavior.
+// Manages the habit list screen flow without changing runtime behavior.
 fun HabitListScreen(onHabitClick: (Long) -> Unit, onAddHabit: () -> Unit, viewModel: HabitListViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var query by remember { mutableStateOf("") }
@@ -399,6 +413,8 @@ fun HabitListScreen(onHabitClick: (Long) -> Unit, onAddHabit: () -> Unit, viewMo
 
 @Composable private fun ProgressDialog(habit: HabitEntity, progress: HabitProgressEntity?, onDismiss: () -> Unit, onSave: (Double, String?) -> Unit) { var value by remember(progress) { mutableStateOf((progress?.actual ?: 0.0).toString()) }; var note by remember(progress) { mutableStateOf(progress?.note.orEmpty()) }; AlertDialog(onDismissRequest = onDismiss, title = { Text("Today's Progress") }, text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { Text("Target: ${habit.target} ${habit.unit.orEmpty()}"); OutlinedTextField(value, { value = it.filter { c -> c.isDigit() || c == '.' } }, label = { Text("Value") }, singleLine = true); OutlinedTextField(note, { note = it }, label = { Text("Add Note (optional)") }) } }, confirmButton = { TextButton(onClick = { onSave(value.toDoubleOrNull() ?: 0.0, note.ifBlank { null }) }) { Text("Save") } }, dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }) }
 
+// Handles the schedule label logic for this component without modifying runtime behavior.
+// Manages the schedule label flow without changing runtime behavior.
 private fun scheduleLabel(habit: HabitEntity): String = when (habit.scheduleType) { 
     ScheduleType.ODD_DAYS -> "Odd days"
     ScheduleType.EVEN_DAYS -> "Even days"
@@ -408,5 +424,8 @@ private fun scheduleLabel(habit: HabitEntity): String = when (habit.scheduleType
     ScheduleType.CUSTOM -> "Custom"
     else -> "Daily" 
 }
+// Handles the category icon logic for this component without modifying runtime behavior.
+// Manages the category icon flow without changing runtime behavior.
 private fun categoryIcon(iconName: String?): ImageVector = when (iconName?.lowercase()) { "gym" -> Icons.Default.FitnessCenter; "fitness" -> Icons.Default.FitnessCenter; "finance" -> Icons.Default.Payments; "payments" -> Icons.Default.Payments; "study" -> Icons.Default.School; "school" -> Icons.Default.School; "work" -> Icons.Default.Work; "sleep" -> Icons.Default.Bedtime; "bedtime" -> Icons.Default.Bedtime; "yoga" -> Icons.Default.SelfImprovement; "self" -> Icons.Default.SelfImprovement; "personal" -> Icons.Default.Person; "person" -> Icons.Default.Person; "book" -> Icons.AutoMirrored.Filled.MenuBook; else -> Icons.Default.Flag }
+// Manages the today timestamp flow without changing runtime behavior.
 private fun todayTimestamp(): Long = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()

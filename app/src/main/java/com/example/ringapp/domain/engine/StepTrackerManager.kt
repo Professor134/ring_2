@@ -1,3 +1,9 @@
+// -----------------------------------------------------------------------------
+// Project: Ring 2
+// File: app\src\main\java\com\example\ringapp\domain\engine\StepTrackerManager.kt
+// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
+// -----------------------------------------------------------------------------
+
 package com.example.ringapp.domain.engine
 
 import android.content.Context
@@ -21,6 +27,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
+// Handles the step tracker manager logic for this component without modifying runtime behavior.
+// Represents the step tracker manager structure used by the application.
 class StepTrackerManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val habitRepository: HabitRepository,
@@ -36,6 +44,7 @@ class StepTrackerManager @Inject constructor(
     private var shakeThreshold = 12f
     private var lastStepTime = 0L
 
+// Manages the start tracking flow without changing runtime behavior.
     fun startTracking() {
         try {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
@@ -63,6 +72,7 @@ class StepTrackerManager @Inject constructor(
         }
     }
 
+// Manages the stop tracking flow without changing runtime behavior.
     fun stopTracking() {
         try {
             sensorManager.unregisterListener(this)
@@ -97,6 +107,7 @@ class StepTrackerManager @Inject constructor(
         }
     }
 
+// Manages the increment step manually flow without changing runtime behavior.
     private fun incrementStepManually() {
         scope.launch {
             try {
@@ -112,6 +123,7 @@ class StepTrackerManager @Inject constructor(
         }
     }
 
+// Manages the update steps flow without changing runtime behavior.
     private fun updateSteps(totalStepsSinceReboot: Int) {
         scope.launch {
             try {
@@ -141,5 +153,6 @@ class StepTrackerManager @Inject constructor(
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
     
+// Manages the today timestamp flow without changing runtime behavior.
     private fun todayTimestamp(): Long = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
 }

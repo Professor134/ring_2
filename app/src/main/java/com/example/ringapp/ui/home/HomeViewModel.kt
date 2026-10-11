@@ -1,3 +1,9 @@
+// -----------------------------------------------------------------------------
+// Project: Ring 2
+// File: app\src\main\java\com\example\ringapp\ui\home\HomeViewModel.kt
+// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
+// -----------------------------------------------------------------------------
+
 package com.example.ringapp.ui.home
 
 import androidx.lifecycle.ViewModel
@@ -30,6 +36,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 @HiltViewModel
+// Handles the home view model logic for this component without modifying runtime behavior.
+// Represents the home view model structure used by the application.
 class HomeViewModel @Inject constructor(
     observeHabits: ObserveHabitsUseCase,
     observeProfile: ObserveProfileUseCase,
@@ -99,6 +107,7 @@ class HomeViewModel @Inject constructor(
     }.catch { emit(HomeUiState(isLoading = false, errorMessage = it.message ?: "Unable to load your day")) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
+// Manages the on event flow without changing runtime behavior.
     fun onEvent(event: HomeEvent) {
         when (event) {
             is HomeEvent.CompleteHabit -> viewModelScope.launch { toggleHabit(event.habit) }
@@ -108,6 +117,7 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+// Manages the greeting flow without changing runtime behavior.
     private fun greeting(): String = when (java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)) {
         in 5..11 -> "Good Morning,"
         in 12..17 -> "Good Afternoon,"
@@ -115,8 +125,11 @@ class HomeViewModel @Inject constructor(
     }
 }
 
+// Handles the chart point logic for this component without modifying runtime behavior.
+// Represents the chart point structure used by the application.
 data class ChartPoint(val label: String, val score: Int)
 
+// Represents the home ui state structure used by the application.
 data class HomeUiState(
     val habits: List<HabitEntity> = emptyList(),
     val tasks: List<TaskEntity> = emptyList(),
@@ -132,9 +145,14 @@ data class HomeUiState(
     val errorMessage: String? = null
 )
 
+// Handles the home event logic for this component without modifying runtime behavior.
+// Represents the home event structure used by the application.
 sealed interface HomeEvent {
+// Represents the complete habit structure used by the application.
     data class CompleteHabit(val habit: HabitEntity) : HomeEvent
+// Represents the record progress structure used by the application.
     data class RecordProgress(val habit: HabitEntity, val date: Long, val value: Double, val note: String?) : HomeEvent
+// Represents the toggle task structure used by the application.
     data class ToggleTask(val task: TaskEntity) : HomeEvent
     data object AddHabit : HomeEvent
     data object AddTask : HomeEvent

@@ -1,9 +1,17 @@
+// -----------------------------------------------------------------------------
+// Project: Ring 2
+// File: data\src\main\java\com\example\ringapp\data\local\entities\ProfileEntity.kt
+// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
+// -----------------------------------------------------------------------------
+
 package com.example.ringapp.data.local.entities
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "profile")
+// Handles the profile entity logic for this component without modifying runtime behavior.
+// Represents the profile entity structure used by the application.
 data class ProfileEntity(
     @PrimaryKey val userId: Int = 1,
     val name: String,

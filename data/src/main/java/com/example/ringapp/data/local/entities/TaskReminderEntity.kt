@@ -1,3 +1,9 @@
+// -----------------------------------------------------------------------------
+// Project: Ring 2
+// File: data\src\main\java\com\example\ringapp\data\local\entities\TaskReminderEntity.kt
+// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
+// -----------------------------------------------------------------------------
+
 package com.example.ringapp.data.local.entities
 
 import androidx.room.Entity
@@ -10,6 +16,8 @@ import androidx.room.PrimaryKey
     foreignKeys = [ForeignKey(entity = TaskEntity::class, parentColumns = ["id"], childColumns = ["taskId"], onDelete = ForeignKey.CASCADE)],
     indices = [Index("taskId"), Index("triggerAt")]
 )
+// Handles the task reminder entity logic for this component without modifying runtime behavior.
+// Represents the task reminder entity structure used by the application.
 data class TaskReminderEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val taskId: Long,

@@ -1,3 +1,9 @@
+// -----------------------------------------------------------------------------
+// Project: Ring 2
+// File: app\src\main\java\com\example\ringapp\ui\analytics\AnalyticsScreens.kt
+// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
+// -----------------------------------------------------------------------------
+
 package com.example.ringapp.ui.analytics
 
 import androidx.compose.animation.*
@@ -44,9 +50,13 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 private val dateFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.getDefault())
+// Handles the day start logic for this component without modifying runtime behavior.
+// Manages the day start flow without changing runtime behavior.
 private fun dayStart(date: LocalDate) = date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
 @Composable
+// Handles the main analytics screen logic for this component without modifying runtime behavior.
+// Manages the main analytics screen flow without changing runtime behavior.
 fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var range by remember { mutableStateOf("Days") }
@@ -260,7 +270,9 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
         }
     }
 
+// Manages the personal analytics screen flow without changing runtime behavior.
     @Composable
+// Manages the personal analytics screen flow without changing runtime behavior.
     fun PersonalAnalyticsScreen(
         onBack: () -> Unit = {},
         onEdit: (Long) -> Unit = {},
@@ -282,6 +294,7 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
         val isSteps = habit.isStepsHabit()
         val today = LocalDate.now()
 
+// Represents the period point structure used by the application.
         data class PeriodPoint(
             val label: String,
             val actual: Double,
@@ -654,7 +667,9 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
             dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } })
     }
 
+// Manages the targets flow without changing runtime behavior.
     @Composable
+// Manages the targets flow without changing runtime behavior.
     private fun Targets(
         habit: HabitEntity,
         progress: List<HabitProgressEntity>,
@@ -667,6 +682,7 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
         val monthStart = today.withDayOfMonth(1)
         val yearStart = today.withDayOfYear(1)
 
+// Manages the calculate progress flow without changing runtime behavior.
         fun calculateProgress(start: LocalDate, end: LocalDate): Pair<Double, Double> {
             var completed = 0.0
             var targetTotal = 0.0
@@ -721,7 +737,9 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
         }
     }
 
+// Manages the target row flow without changing runtime behavior.
     @Composable
+// Manages the target row flow without changing runtime behavior.
     private fun TargetRow(
         label: String,
         completed: Double,
@@ -757,7 +775,9 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
         }
     }
 
+// Manages the habit calendar flow without changing runtime behavior.
     @Composable
+// Manages the habit calendar flow without changing runtime behavior.
     private fun HabitCalendar(
         habit: HabitEntity,
         progress: List<HabitProgressEntity>,
@@ -862,7 +882,9 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
         }
     }
 
+// Manages the point summary flow without changing runtime behavior.
     @Composable
+// Manages the point summary flow without changing runtime behavior.
     private fun PointSummary(transactions: List<PointTransactionEntity>, textColor: Color) {
         val earned = transactions.filter { it.amount > 0 }.sumOf { it.amount };
         val lost = transactions.filter { it.amount < 0 }.sumOf { it.amount }; Column(
@@ -889,7 +911,9 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
         }
     }
 
+// Manages the time filters flow without changing runtime behavior.
     @Composable
+// Manages the time filters flow without changing runtime behavior.
     private fun TimeFilters(current: String, onChange: (String) -> Unit) {
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
             listOf(
@@ -913,7 +937,9 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
         }
     }
 
+// Manages the metric flow without changing runtime behavior.
     @Composable
+// Manages the metric flow without changing runtime behavior.
     private fun Metric(label: String, value: String, modifier: Modifier, textColor: Color) {
         Card(
             modifier = modifier,
@@ -942,6 +968,7 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
         }
     }
 
+// Represents the line point structure used by the application.
     data class LinePoint(
         val label: String,
         val score: Int,
@@ -952,7 +979,9 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
         val isActive: Boolean = true
     )
 
+// Manages the analytics line chart flow without changing runtime behavior.
     @Composable
+// Manages the analytics line chart flow without changing runtime behavior.
     private fun AnalyticsLineChart(
         points: List<LinePoint>,
         modifier: Modifier,
@@ -1033,7 +1062,9 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
         }
     }
 
+// Manages the category chart flow without changing runtime behavior.
     @Composable
+// Manages the category chart flow without changing runtime behavior.
     private fun CategoryChart(
         state: AnalyticsUiState,
         selected: Long?,
@@ -1092,7 +1123,9 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
         }
     }
 
+// Manages the task summary flow without changing runtime behavior.
     @Composable
+// Manages the task summary flow without changing runtime behavior.
     private fun TaskSummary(tasks: List<TaskEntity>, textColor: Color) {
         val completed = tasks.count { it.completed }
         Card(

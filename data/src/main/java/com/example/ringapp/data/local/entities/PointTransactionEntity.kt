@@ -1,3 +1,9 @@
+// -----------------------------------------------------------------------------
+// Project: Ring 2
+// File: data\src\main\java\com\example\ringapp\data\local\entities\PointTransactionEntity.kt
+// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
+// -----------------------------------------------------------------------------
+
 package com.example.ringapp.data.local.entities
 
 import androidx.room.Entity
@@ -14,6 +20,8 @@ import androidx.room.PrimaryKey
     ],
     indices = [Index("habitId"), Index("taskId"), Index("cycleId"), Index(value = ["uniqueReference"], unique = true)]
 )
+// Handles the point transaction entity logic for this component without modifying runtime behavior.
+// Represents the point transaction entity structure used by the application.
 data class PointTransactionEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val amount: Int,

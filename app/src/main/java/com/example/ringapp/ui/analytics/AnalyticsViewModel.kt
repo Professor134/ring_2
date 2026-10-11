@@ -1,3 +1,9 @@
+// -----------------------------------------------------------------------------
+// Project: Ring 2
+// File: app\src\main\java\com\example\ringapp\ui\analytics\AnalyticsViewModel.kt
+// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
+// -----------------------------------------------------------------------------
+
 package com.example.ringapp.ui.analytics
 
 import androidx.lifecycle.SavedStateHandle
@@ -12,14 +18,22 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
+// Handles the start of day logic for this component without modifying runtime behavior.
+// Manages the start of day flow without changing runtime behavior.
 private fun startOfDay(date: LocalDate): Long = date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
+// Represents the analytics point structure used by the application.
 data class AnalyticsPoint(val date: LocalDate, val score: Int, val actual: Double = 0.0, val target: Double = 0.0, val completed: Boolean = false)
+// Handles the analytics ui state logic for this component without modifying runtime behavior.
+// Represents the analytics ui state structure used by the application.
 data class AnalyticsUiState(val habits: List<HabitEntity> = emptyList(), val tasks: List<TaskEntity> = emptyList(), val categories: List<CategoryEntity> = emptyList(), val progress: List<HabitProgressEntity> = emptyList(), val points: Int = 0, val bestStreak: Int = 0, val loading: Boolean = true, val error: String? = null)
 
+// Represents the personal analytics state structure used by the application.
 data class PersonalAnalyticsState(val habit: HabitEntity? = null, val category: CategoryEntity? = null, val progress: List<HabitProgressEntity> = emptyList(), val transactions: List<PointTransactionEntity> = emptyList(), val points: Int = 0, val habitPoints: Int = 0, val loading: Boolean = true, val error: String? = null)
 
 @HiltViewModel
+// Handles the analytics view model logic for this component without modifying runtime behavior.
+// Represents the analytics view model structure used by the application.
 class AnalyticsViewModel @Inject constructor(
     observeHabits: ObserveHabitsUseCase,
     observeTasks: ObserveTasksUseCase,
@@ -35,6 +49,8 @@ class AnalyticsViewModel @Inject constructor(
 }
 
 @HiltViewModel
+// Handles the personal analytics view model logic for this component without modifying runtime behavior.
+// Represents the personal analytics view model structure used by the application.
 class PersonalAnalyticsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     observeDetail: ObserveHabitDetailUseCase,
@@ -64,9 +80,12 @@ class PersonalAnalyticsViewModel @Inject constructor(
         .catch { emit(PersonalAnalyticsState(loading = false, error = it.message ?: "Unable to load habit analytics")) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PersonalAnalyticsState())
 
+// Manages the delete flow without changing runtime behavior.
     fun delete() = viewModelScope.launch { deleteHabit(habitId) }
 }
 
+// Handles the aggregate daily logic for this component without modifying runtime behavior.
+// Manages the aggregate daily flow without changing runtime behavior.
 fun aggregateDaily(habits: List<HabitEntity>, progress: List<HabitProgressEntity>, date: LocalDate): AnalyticsPoint? {
     val active = habits.filter { com.example.ringapp.domain.engine.ScheduleEngine.isActiveOnDate(it, date) }
     if (active.isEmpty()) return null

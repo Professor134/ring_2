@@ -1,3 +1,9 @@
+// -----------------------------------------------------------------------------
+// Project: Ring 2
+// File: app\src\main\java\com\example\ringapp\data\FirstLaunchInitializer.kt
+// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
+// -----------------------------------------------------------------------------
+
 package com.example.ringapp.data
 
 import androidx.room.withTransaction
@@ -17,6 +23,8 @@ import javax.inject.Singleton
 import kotlinx.coroutines.flow.first
 
 @Singleton
+// Handles the first launch initializer logic for this component without modifying runtime behavior.
+// Represents the first launch initializer structure used by the application.
 class FirstLaunchInitializer @Inject constructor(
     private val database: AppDatabase,
     private val preferences: PreferencesDataStore
@@ -101,6 +109,8 @@ class FirstLaunchInitializer @Inject constructor(
     }
 }
 
+// Handles the initialization state logic for this component without modifying runtime behavior.
+// Represents the initialization state structure used by the application.
 enum class InitializationState(val value: String) {
     NOT_STARTED("NOT_STARTED"),
     IN_PROGRESS("IN_PROGRESS"),

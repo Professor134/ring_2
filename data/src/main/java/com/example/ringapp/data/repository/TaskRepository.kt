@@ -1,3 +1,9 @@
+// -----------------------------------------------------------------------------
+// Project: Ring 2
+// File: data\src\main\java\com\example\ringapp\data\repository\TaskRepository.kt
+// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
+// -----------------------------------------------------------------------------
+
 package com.example.ringapp.data.repository
 
 import com.example.ringapp.data.local.dao.TaskDao
@@ -10,6 +16,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
+// Handles the task repository logic for this component without modifying runtime behavior.
+// Represents the task repository structure used by the application.
 class TaskRepository @Inject constructor(
     private val dao: TaskDao,
     private val pointDao: com.example.ringapp.data.local.dao.PointTransactionDao,
@@ -17,8 +25,11 @@ class TaskRepository @Inject constructor(
     private val database: AppDatabase,
     private val pointRepository: PointRepository
 ) {
+// Manages the observe active flow without changing runtime behavior.
     fun observeActive(): Flow<List<TaskEntity>> = dao.observeActive()
+// Manages the observe by id flow without changing runtime behavior.
     fun observeById(taskId: Long): Flow<TaskEntity?> = dao.observeById(taskId)
+// Manages the observe today flow without changing runtime behavior.
     fun observeToday(start: Long, end: Long): Flow<List<TaskEntity>> = dao.observeToday(start, end)
     suspend fun create(task: TaskEntity): Long = database.withTransaction {
         val taskId = dao.insert(task)
