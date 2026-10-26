@@ -1,9 +1,3 @@
-// -----------------------------------------------------------------------------
-// Project: Ring 2
-// File: data\src\main\java\com\example\ringapp\data\local\entities\StreakMilestoneEntity.kt
-// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
-// -----------------------------------------------------------------------------
-
 package com.example.ringapp.data.local.entities
 
 import androidx.room.Entity
@@ -23,8 +17,6 @@ import androidx.room.PrimaryKey
         Index(value = ["habitId", "cycleId", "milestoneLength"], unique = true)
     ]
 )
-// Handles the streak milestone entity logic for this component without modifying runtime behavior.
-// Represents the streak milestone entity structure used by the application.
 data class StreakMilestoneEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val habitId: Long,

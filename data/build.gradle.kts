@@ -1,9 +1,3 @@
-// -----------------------------------------------------------------------------
-// Project: Ring 2
-// File: data\build.gradle.kts
-// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
-// -----------------------------------------------------------------------------
-
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)

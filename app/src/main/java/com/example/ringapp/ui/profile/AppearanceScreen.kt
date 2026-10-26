@@ -1,9 +1,3 @@
-// -----------------------------------------------------------------------------
-// Project: Ring 2
-// File: app\src\main\java\com\example\ringapp\ui\profile\AppearanceScreen.kt
-// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
-// -----------------------------------------------------------------------------
-
 package com.example.ringapp.ui.profile
 
 import androidx.compose.animation.*
@@ -33,8 +27,6 @@ import com.example.ringapp.ui.theme.CyberNeonGreen
 import com.example.ringapp.ui.theme.SpaceBlack
 
 @Composable
-// Handles the appearance screen logic for this component without modifying runtime behavior.
-// Manages the appearance screen flow without changing runtime behavior.
 fun AppearanceScreen(viewModel: AppViewModel) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     
@@ -99,8 +91,6 @@ fun AppearanceScreen(viewModel: AppViewModel) {
 }
 
 @Composable
-// Handles the theme toggle button logic for this component without modifying runtime behavior.
-// Manages the theme toggle button flow without changing runtime behavior.
 fun ThemeToggleButton(selected: Boolean, label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
     val backgroundColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
     val contentColor = if (selected) SpaceBlack else MaterialTheme.colorScheme.onSurface

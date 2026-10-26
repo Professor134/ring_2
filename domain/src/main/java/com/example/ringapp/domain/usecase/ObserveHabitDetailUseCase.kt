@@ -1,9 +1,3 @@
-// -----------------------------------------------------------------------------
-// Project: Ring 2
-// File: domain\src\main\java\com\example\ringapp\domain\usecase\ObserveHabitDetailUseCase.kt
-// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
-// -----------------------------------------------------------------------------
-
 package com.example.ringapp.domain.usecase
 
 import com.example.ringapp.data.local.entities.HabitEntity
@@ -14,11 +8,8 @@ import kotlinx.coroutines.flow.combine
 import java.util.Calendar
 import javax.inject.Inject
 
-// Handles the habit detail data logic for this component without modifying runtime behavior.
-// Represents the habit detail data structure used by the application.
 data class HabitDetailData(val habit: HabitEntity, val progress: List<HabitProgressEntity>)
 
-// Represents the observe habit detail use case structure used by the application.
 class ObserveHabitDetailUseCase @Inject constructor(private val repository: HabitRepository) {
     operator fun invoke(habitId: Long, rangeDays: Int): Flow<HabitDetailData?> {
         val end = startOfDay(System.currentTimeMillis())
@@ -28,7 +19,6 @@ class ObserveHabitDetailUseCase @Inject constructor(private val repository: Habi
         }
     }
 
-// Manages the start of day flow without changing runtime behavior.
     private fun startOfDay(timestamp: Long): Long = Calendar.getInstance().apply {
         timeInMillis = timestamp
         set(Calendar.HOUR_OF_DAY, 0)

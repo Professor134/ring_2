@@ -1,9 +1,3 @@
-// -----------------------------------------------------------------------------
-// Project: Ring 2
-// File: app\src\main\java\com\example\ringapp\ui\habits\AddHabitScreen.kt
-// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
-// -----------------------------------------------------------------------------
-
 package com.example.ringapp.ui.habits
 
 import android.app.DatePickerDialog
@@ -41,8 +35,6 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 @HiltViewModel
-// Handles the add habit view model logic for this component without modifying runtime behavior.
-// Represents the add habit view model structure used by the application.
 class AddHabitViewModel @Inject constructor(
     observeHabits: ObserveHabitsUseCase,
     observeCategories: ObserveCategoriesUseCase,
@@ -52,7 +44,6 @@ class AddHabitViewModel @Inject constructor(
 ) : ViewModel() {
     val habits = observeHabits().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val categories = observeCategories().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-// Manages the save flow without changing runtime behavior.
     fun save(habit: HabitEntity?, fields: HabitFields, onSaved: () -> Unit, onError: (String) -> Unit) = viewModelScope.launch {
         try {
             if (habit == null) createHabit(fields.name, fields.description, fields.categoryId, fields.type, fields.target, fields.unit, fields.schedule, fields.days, fields.startDate)
@@ -60,22 +51,17 @@ class AddHabitViewModel @Inject constructor(
             onSaved()
         } catch (error: Exception) { onError(error.message ?: "Unable to save habit") }
     }
-// Manages the delete flow without changing runtime behavior.
     fun delete(habitId: Long, onDeleted: () -> Unit) = viewModelScope.launch { deleteHabit(habitId); onDeleted() }
 }
 
-// Handles the habit fields logic for this component without modifying runtime behavior.
-// Represents the habit fields structure used by the application.
 data class HabitFields(val name: String, val description: String, val categoryId: Long?, val type: HabitType, val target: Double, val unit: String, val schedule: ScheduleType, val days: List<Int>, val startDate: Long, val color: Int)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-// Handles the add habit screen logic for this component without modifying runtime behavior.
-// Manages the add habit screen flow without changing runtime behavior.
 fun AddHabitScreen(habitId: Long? = null, onSaved: () -> Unit, onBack: () -> Unit, viewModel: AddHabitViewModel = hiltViewModel()) {
     val habits by viewModel.habits.collectAsStateWithLifecycle(); val categories by viewModel.categories.collectAsStateWithLifecycle(); val existing = habits.firstOrNull { it.id == habitId }; val context = LocalContext.current
     val isSteps = existing?.isStepsHabit() ?: false
-    var name by remember(existing) { mutableStateOf(existing?.name.orEmpty()) }; var description by remember(existing) { mutableStateOf(existing?.description.orEmpty()) }; var type by remember(existing) { mutableStateOf(existing?.type ?: HabitType.YES_NO) }; var target by remember(existing) { mutableStateOf((existing?.target ?: 1.0).toString()) }; var unit by remember(existing) { mutableStateOf(existing?.unit ?: "Reps") }; var schedule by remember(existing) { mutableStateOf(existing?.scheduleType ?: ScheduleType.DAILY) }; var days by remember(existing) { mutableStateOf(existing?.scheduleDays ?: emptyList()) }; var startDate by remember(existing) { mutableStateOf(existing?.startDate ?: todayTimestamp()) }; var categoryId by remember(existing, categories) { mutableStateOf(existing?.categoryId ?: categories.filter { it.name.lowercase() != "habits" }.firstOrNull()?.id ?: 0L) }; var error by remember { mutableStateOf<String?>(null) }; var confirmDelete by remember { mutableStateOf(false) }
+    var name by remember(existing) { mutableStateOf(existing?.name.orEmpty()) }; var description by remember(existing) { mutableStateOf(existing?.description.orEmpty()) }; var type by remember(existing) { mutableStateOf(existing?.type ?: HabitType.YES_NO) }; var target by remember(existing) { mutableStateOf((existing?.target ?: 1.0).toString()) }; var unit by remember(existing) { mutableStateOf(existing?.unit ?: "Pages") }; var schedule by remember(existing) { mutableStateOf(existing?.scheduleType ?: ScheduleType.DAILY) }; var days by remember(existing) { mutableStateOf(existing?.scheduleDays ?: emptyList()) }; var startDate by remember(existing) { mutableStateOf(existing?.startDate ?: todayTimestamp()) }; var categoryId by remember(existing, categories) { mutableStateOf(existing?.categoryId ?: categories.filter { it.name.lowercase() != "habits" }.firstOrNull()?.id ?: 0L) }; var error by remember { mutableStateOf<String?>(null) }; var confirmDelete by remember { mutableStateOf(false) }
     
     val category = categories.firstOrNull { it.id == categoryId }; val categoryName = if (isSteps) "System" else (category?.name ?: "Personal"); val color = if (isSteps) HabitEntity.PLATINUM_COLOR else CategoryConstants.getColorForCategory(categoryName); val editing = habitId != null; val targetValid = type == HabitType.YES_NO || (target.toDoubleOrNull() ?: 0.0) > 0.0; val scheduleValid = schedule != ScheduleType.WEEKLY || days.isNotEmpty(); val canSave = !isSteps && name.isNotBlank() && targetValid && scheduleValid
     
@@ -204,10 +190,7 @@ fun AddHabitScreen(habitId: Long? = null, onSaved: () -> Unit, onBack: () -> Uni
 }
 
 @Composable private fun FormSection(title: String, content: @Composable () -> Unit) { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold); content() } }
-// Handles the schedule label logic for this component without modifying runtime behavior.
-// Manages the schedule label flow without changing runtime behavior.
 private fun scheduleLabel(type: ScheduleType) = when (type) { ScheduleType.ODD_DAYS -> "Odd Days"; ScheduleType.EVEN_DAYS -> "Even Days"; ScheduleType.WEEKLY -> "Weekly"; ScheduleType.CUSTOM -> "Custom"; else -> "Daily" }
-// Manages the icon for flow without changing runtime behavior.
 private fun iconFor(value: String): ImageVector = when (value) {
     "fitness" -> Icons.Default.FitnessCenter
     "school" -> Icons.Default.School
@@ -219,6 +202,4 @@ private fun iconFor(value: String): ImageVector = when (value) {
     "person" -> Icons.Default.Person
     else -> Icons.Default.Flag
 }
-// Handles the today timestamp logic for this component without modifying runtime behavior.
-// Manages the today timestamp flow without changing runtime behavior.
 private fun todayTimestamp() = Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }.timeInMillis

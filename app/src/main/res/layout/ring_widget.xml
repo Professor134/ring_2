@@ -1,9 +1,3 @@
-<!-- ----------------------------------------------------------------------------- -->
-<!-- Project: Ring 2 -->
-<!-- File: app\src\main\res\layout\ring_widget.xml -->
-<!-- Purpose: This resource file is documented for clarity without changing behavior. -->
-<!-- ----------------------------------------------------------------------------- -->
-
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"

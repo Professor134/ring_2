@@ -1,9 +1,3 @@
-// -----------------------------------------------------------------------------
-// Project: Ring 2
-// File: domain\src\main\java\com\example\ringapp\domain\engine\ScheduleEngine.kt
-// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
-// -----------------------------------------------------------------------------
-
 package com.example.ringapp.domain.engine
 
 import com.example.ringapp.data.local.entities.HabitScheduleEntity
@@ -11,10 +5,7 @@ import com.example.ringapp.data.local.entities.HabitEntity
 import com.example.ringapp.data.local.entities.ScheduleType
 import java.time.LocalDate
 
-// Handles the schedule engine logic for this component without modifying runtime behavior.
-// Represents the schedule engine structure used by the application.
 object ScheduleEngine {
-// Manages the is active on date flow without changing runtime behavior.
     fun isActiveOnDate(habit: HabitEntity, date: LocalDate): Boolean {
         val start = java.time.Instant.ofEpochMilli(habit.startDate).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
         if (date.isBefore(start) || habit.deletedAt != null) return false
@@ -29,7 +20,6 @@ object ScheduleEngine {
         }
     }
 
-// Manages the is active on date flow without changing runtime behavior.
     fun isActiveOnDate(schedule: HabitScheduleEntity, date: LocalDate): Boolean {
         if (!schedule.isActive) return false
         return when (schedule.scheduleType) {
@@ -43,7 +33,6 @@ object ScheduleEngine {
         }
     }
 
-// Manages the is active on date flow without changing runtime behavior.
     fun isActiveOnDate(task: com.example.ringapp.data.local.entities.TaskEntity, date: LocalDate): Boolean {
         if (task.deletedAt != null) return false
         val start = java.time.Instant.ofEpochMilli(task.createdAt).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
@@ -75,7 +64,6 @@ object ScheduleEngine {
         }
     }
 
-// Manages the count active days flow without changing runtime behavior.
     fun countActiveDays(habit: HabitEntity, start: LocalDate, end: LocalDate): Int {
         var count = 0
         var current = start
@@ -86,7 +74,6 @@ object ScheduleEngine {
         return count
     }
 
-// Manages the get next occurrence flow without changing runtime behavior.
     fun getNextOccurrence(schedule: HabitScheduleEntity, from: LocalDate): LocalDate {
         var check = from.plusDays(1)
         while (!isActiveOnDate(schedule, check)) {
@@ -95,7 +82,6 @@ object ScheduleEngine {
         return check
     }
 
-// Manages the get next active date flow without changing runtime behavior.
     fun getNextActiveDate(task: com.example.ringapp.data.local.entities.TaskEntity, from: LocalDate = LocalDate.now()): LocalDate {
         var check = from.plusDays(1)
         while (!isActiveOnDate(task, check)) {
@@ -104,7 +90,6 @@ object ScheduleEngine {
         return check
     }
 
-// Manages the get next active due date flow without changing runtime behavior.
     fun getNextActiveDueDate(task: com.example.ringapp.data.local.entities.TaskEntity, from: LocalDate = LocalDate.now()): Long {
         val nextDate = getNextActiveDate(task, from)
         return nextDate.atTime(20, 0).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()

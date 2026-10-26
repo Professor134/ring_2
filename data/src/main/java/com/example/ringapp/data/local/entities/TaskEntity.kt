@@ -1,9 +1,3 @@
-// -----------------------------------------------------------------------------
-// Project: Ring 2
-// File: data\src\main\java\com\example\ringapp\data\local\entities\TaskEntity.kt
-// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
-// -----------------------------------------------------------------------------
-
 package com.example.ringapp.data.local.entities
 
 import androidx.room.Entity
@@ -21,8 +15,6 @@ import androidx.room.PrimaryKey
     )],
     indices = [Index("parentTaskId")]
 )
-// Handles the task entity logic for this component without modifying runtime behavior.
-// Represents the task entity structure used by the application.
 data class TaskEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val title: String,

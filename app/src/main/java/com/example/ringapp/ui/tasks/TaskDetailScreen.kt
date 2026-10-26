@@ -1,9 +1,3 @@
-// -----------------------------------------------------------------------------
-// Project: Ring 2
-// File: app\src\main\java\com\example\ringapp\ui\tasks\TaskDetailScreen.kt
-// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
-// -----------------------------------------------------------------------------
-
 package com.example.ringapp.ui.tasks
 
 import androidx.compose.foundation.background
@@ -52,8 +46,6 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 
 @HiltViewModel
-// Handles the task detail view model logic for this component without modifying runtime behavior.
-// Represents the task detail view model structure used by the application.
 class TaskDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     observeTask: ObserveTaskUseCase,
@@ -73,7 +65,6 @@ class TaskDetailViewModel @Inject constructor(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
-// Manages the toggle task flow without changing runtime behavior.
     fun toggleTask(task: TaskEntity) = viewModelScope.launch {
         try {
             _errorMessage.value = null
@@ -83,13 +74,11 @@ class TaskDetailViewModel @Inject constructor(
         }
     }
     
-// Manages the toggle subtask flow without changing runtime behavior.
     fun toggleSubtask(task: TaskEntity, subtaskId: String) = viewModelScope.launch {
         val updatedSubtasks = task.subtasks?.map { if (it.id == subtaskId) it.copy(completed = !it.completed) else it }
         updateTask(task.copy(subtasks = updatedSubtasks, updatedAt = System.currentTimeMillis()))
     }
 
-// Manages the delete flow without changing runtime behavior.
     fun delete(taskId: Long, onDeleted: () -> Unit) = viewModelScope.launch {
         deleteTask(taskId)
         onDeleted()
@@ -98,8 +87,6 @@ class TaskDetailViewModel @Inject constructor(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-// Handles the task detail screen logic for this component without modifying runtime behavior.
-// Manages the task detail screen flow without changing runtime behavior.
 fun TaskDetailScreen(onBack: () -> Unit, onEdit: (Long) -> Unit, viewModel: TaskDetailViewModel = hiltViewModel()) {
     val task by viewModel.task.collectAsStateWithLifecycle()
     val transactions by viewModel.transactions.collectAsStateWithLifecycle()
@@ -218,8 +205,6 @@ fun TaskDetailScreen(onBack: () -> Unit, onEdit: (Long) -> Unit, viewModel: Task
 }
 
 @Composable
-// Handles the task calendar logic for this component without modifying runtime behavior.
-// Manages the task calendar flow without changing runtime behavior.
 private fun TaskCalendar(
     task: TaskEntity,
     transactions: List<PointTransactionEntity>,

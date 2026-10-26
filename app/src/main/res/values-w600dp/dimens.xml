@@ -1,9 +1,3 @@
-<!-- ----------------------------------------------------------------------------- -->
-<!-- Project: Ring 2 -->
-<!-- File: app\src\main\res\values-w600dp\dimens.xml -->
-<!-- Purpose: This resource file is documented for clarity without changing behavior. -->
-<!-- ----------------------------------------------------------------------------- -->
-
 <resources>
     <dimen name="fab_margin">48dp</dimen>
 </resources>

@@ -1,9 +1,3 @@
-// -----------------------------------------------------------------------------
-// Project: Ring 2
-// File: data\src\main\java\com\example\ringapp\data\local\entities\HabitEntity.kt
-// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
-// -----------------------------------------------------------------------------
-
 package com.example.ringapp.data.local.entities
 
 import androidx.room.Entity
@@ -21,8 +15,6 @@ import androidx.room.PrimaryKey
     )],
     indices = [Index("categoryId")]
 )
-// Handles the habit entity logic for this component without modifying runtime behavior.
-// Represents the habit entity structure used by the application.
 data class HabitEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
@@ -48,6 +40,5 @@ data class HabitEntity(
         const val PLATINUM_COLOR = 0xFFE5E4E2.toInt()
     }
     
-// Manages the is steps habit flow without changing runtime behavior.
     fun isStepsHabit() = id == STEPS_HABIT_ID || name == STEPS_HABIT_NAME
 }

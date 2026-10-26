@@ -1,9 +1,3 @@
-// -----------------------------------------------------------------------------
-// Project: Ring 2
-// File: app\src\main\java\com\example\ringapp\MainActivity.kt
-// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
-// -----------------------------------------------------------------------------
-
 package com.example.ringapp
 
 import android.Manifest
@@ -28,8 +22,6 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
-// Handles the main activity logic for this component without modifying runtime behavior.
-// Represents the main activity structure used by the application.
 class MainActivity : ComponentActivity() {
     @Inject lateinit var stepTrackerManager: StepTrackerManager
     @Inject lateinit var habitRepository: HabitRepository
@@ -56,7 +48,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-// Manages the check permissions flow without changing runtime behavior.
     private fun checkPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACTIVITY_RECOGNITION) != PackageManager.PERMISSION_GRANTED) {

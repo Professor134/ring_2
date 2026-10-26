@@ -1,9 +1,3 @@
-// -----------------------------------------------------------------------------
-// Project: Ring 2
-// File: app\src\main\java\com\example\ringapp\ui\habits\HabitDetailScreen.kt
-// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
-// -----------------------------------------------------------------------------
-
 package com.example.ringapp.ui.habits
 
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -50,8 +44,6 @@ import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 
 @Composable
-// Handles the habit detail screen logic for this component without modifying runtime behavior.
-// Manages the habit detail screen flow without changing runtime behavior.
 fun HabitDetailScreen(onBack: () -> Unit, onEdit: (Long) -> Unit = {}, viewModel: HabitDetailViewModel = hiltViewModel()) {
     val data by viewModel.state.collectAsStateWithLifecycle()
     val range by viewModel.selectedRange.collectAsStateWithLifecycle()
@@ -60,8 +52,6 @@ fun HabitDetailScreen(onBack: () -> Unit, onEdit: (Long) -> Unit = {}, viewModel
 }
 
 @Composable
-// Handles the habit detail content logic for this component without modifying runtime behavior.
-// Manages the habit detail content flow without changing runtime behavior.
 private fun HabitDetailContent(
     data: HabitDetailData,
     range: Int,
@@ -151,15 +141,11 @@ private fun HabitDetailContent(
 }
 
 @Composable
-// Handles the stat card logic for this component without modifying runtime behavior.
-// Manages the stat card flow without changing runtime behavior.
 private fun StatCard(label: String, value: String, modifier: Modifier = Modifier, textColor: Color) {
     Card(modifier) { Column(Modifier.padding(14.dp)) { Text(label, color = textColor.copy(alpha = 0.6f)); Text(value, style = MaterialTheme.typography.titleLarge, color = textColor) } }
 }
 
 @Composable
-// Handles the progress chart logic for this component without modifying runtime behavior.
-// Manages the progress chart flow without changing runtime behavior.
 private fun ProgressChart(data: HabitDetailData, modifier: Modifier = Modifier) {
     val values = data.progress.map { it.percentage.coerceIn(0, 100).toDouble() }.ifEmpty { listOf(0.0) }
     val modelProducer = remember { CartesianChartModelProducer() }

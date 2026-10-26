@@ -1,9 +1,3 @@
-<!-- ----------------------------------------------------------------------------- -->
-<!-- Project: Ring 2 -->
-<!-- File: app\src\main\AndroidManifest.xml -->
-<!-- Purpose: This resource file is documented for clarity without changing behavior. -->
-<!-- ----------------------------------------------------------------------------- -->
-
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">

@@ -1,9 +1,3 @@
-// -----------------------------------------------------------------------------
-// Project: Ring 2
-// File: data\src\main\java\com\example\ringapp\data\local\entities\StreakCycleEntity.kt
-// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
-// -----------------------------------------------------------------------------
-
 package com.example.ringapp.data.local.entities
 
 import androidx.room.Entity
@@ -21,8 +15,6 @@ import androidx.room.PrimaryKey
     )],
     indices = [Index("habitId")]
 )
-// Handles the streak cycle entity logic for this component without modifying runtime behavior.
-// Represents the streak cycle entity structure used by the application.
 data class StreakCycleEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val habitId: Long,

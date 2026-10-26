@@ -1,9 +1,3 @@
-// -----------------------------------------------------------------------------
-// Project: Ring 2
-// File: data\src\main\java\com\example\ringapp\data\db\Migrations.kt
-// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
-// -----------------------------------------------------------------------------
-
 package com.example.ringapp.data.db
 
 import androidx.room.migration.Migration
@@ -59,8 +53,6 @@ val MIGRATION_7_8 = object : Migration(7, 8) {
     }
 }
 
-// Handles the create 5 tables logic for this component without modifying runtime behavior.
-// Manages the create v5 tables flow without changing runtime behavior.
 private fun createV5Tables(db: SupportSQLiteDatabase) {
     db.execSQL("CREATE TABLE IF NOT EXISTS category (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name TEXT NOT NULL, color INTEGER NOT NULL, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL, deletedAt INTEGER)")
     db.execSQL("CREATE TABLE IF NOT EXISTS habit (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name TEXT NOT NULL, description TEXT, categoryId INTEGER NOT NULL, type TEXT NOT NULL, target INTEGER NOT NULL, unit TEXT, scheduleType TEXT NOT NULL, scheduleDays TEXT, startDate INTEGER NOT NULL, currentStreak INTEGER NOT NULL, bestStreak INTEGER NOT NULL, totalCompletions INTEGER NOT NULL, color INTEGER NOT NULL, deletedAt INTEGER, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL, FOREIGN KEY(categoryId) REFERENCES category(id) ON UPDATE NO ACTION ON DELETE RESTRICT)")
@@ -88,8 +80,6 @@ private fun createV5Tables(db: SupportSQLiteDatabase) {
     db.execSQL("CREATE TABLE IF NOT EXISTS backup_metadata (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, timestamp INTEGER NOT NULL, type TEXT NOT NULL, status TEXT NOT NULL, filePath TEXT, sizeBytes INTEGER, errorMessage TEXT, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL)")
 }
 
-// Handles the copy legacy rows logic for this component without modifying runtime behavior.
-// Manages the copy legacy rows flow without changing runtime behavior.
 private fun copyLegacyRows(db: SupportSQLiteDatabase) {
     if (tableExists(db, "categories")) {
         db.execSQL("INSERT OR IGNORE INTO category(id, name, color, createdAt, updatedAt) SELECT id, name, color, 0, 0 FROM categories")
@@ -111,16 +101,12 @@ private fun copyLegacyRows(db: SupportSQLiteDatabase) {
     }
 }
 
-// Handles the rename legacy table logic for this component without modifying runtime behavior.
-// Manages the rename legacy table flow without changing runtime behavior.
 private fun renameLegacyTable(db: SupportSQLiteDatabase, tableName: String) {
     if (tableExists(db, tableName)) {
         db.execSQL("ALTER TABLE $tableName RENAME TO legacy_$tableName")
     }
 }
 
-// Handles the table exists logic for this component without modifying runtime behavior.
-// Manages the table exists flow without changing runtime behavior.
 private fun tableExists(db: SupportSQLiteDatabase, tableName: String): Boolean = db.query(
     "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
     arrayOf(tableName)

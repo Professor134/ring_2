@@ -1,9 +1,3 @@
-// -----------------------------------------------------------------------------
-// Project: Ring 2
-// File: data\src\main\java\com\example\ringapp\data\repository\CategoryRepository.kt
-// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
-// -----------------------------------------------------------------------------
-
 package com.example.ringapp.data.repository
 
 import com.example.ringapp.data.local.dao.CategoryDao
@@ -18,13 +12,10 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-// Handles the category repository logic for this component without modifying runtime behavior.
-// Represents the category repository structure used by the application.
 class CategoryRepository @Inject constructor(private val dao: CategoryDao) {
     private val scope = CoroutineScope(Dispatchers.IO)
     private var seedingTriggered = false
 
-// Manages the observe all flow without changing runtime behavior.
     fun observeAll(): Flow<List<CategoryEntity>> = dao.observeAll().map { categories ->
         val existingNames = categories.map { it.name.lowercase() }
         val missing = CategoryConstants.ALL_CATEGORIES.filter { it.name.lowercase() !in existingNames }
@@ -39,7 +30,6 @@ class CategoryRepository @Inject constructor(private val dao: CategoryDao) {
         }
     }
 
-// Manages the seed missing categories flow without changing runtime behavior.
     private fun seedMissingCategories(missing: List<CategoryConstants.FixedCategory>) {
         scope.launch {
             val now = System.currentTimeMillis()

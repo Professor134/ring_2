@@ -1,9 +1,3 @@
-// -----------------------------------------------------------------------------
-// Project: Ring 2
-// File: app\src\main\java\com\example\ringapp\ui\home\HomeScreen.kt
-// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
-// -----------------------------------------------------------------------------
-
 package com.example.ringapp.ui.home
 
 import androidx.compose.animation.*
@@ -57,8 +51,6 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
-// Handles the home screen logic for this component without modifying runtime behavior.
-// Manages the home screen flow without changing runtime behavior.
 fun HomeScreen(
     onHabitClick: (Long) -> Unit = {},
     onAddHabit: () -> Unit = {},
@@ -409,8 +401,6 @@ fun HomeScreen(
 }
 
 @Composable private fun IconContainer(iconName: String, color: Color) { Surface(color = color.copy(alpha = 0.18f), shape = RoundedCornerShape(12.dp), modifier = Modifier.size(48.dp)) { Box(contentAlignment = Alignment.Center) { Icon(categoryIcon(iconName), null, tint = color) } } }
-// Handles the category icon logic for this component without modifying runtime behavior.
-// Manages the category icon flow without changing runtime behavior.
 private fun categoryIcon(iconName: String): ImageVector = when (iconName.lowercase()) { 
     "gym" -> Icons.Default.FitnessCenter
     "fitness" -> Icons.Default.FitnessCenter
@@ -461,6 +451,4 @@ private fun categoryIcon(iconName: String): ImageVector = when (iconName.lowerca
 
 @Composable private fun ProgressDialog(habit: HabitEntity, progress: HabitProgressEntity?, onDismiss: () -> Unit, onSave: (Double, String?) -> Unit) { var value by remember(progress) { mutableStateOf((progress?.actual ?: 0.0).toString()) }; var note by remember(progress) { mutableStateOf(progress?.note.orEmpty()) }; AlertDialog(onDismissRequest = onDismiss, title = { Text("Today's Progress") }, text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { Text("Target: ${habit.target} ${habit.unit.orEmpty()}"); OutlinedTextField(value, { value = it.filter { c -> c.isDigit() || c == '.' } }, label = { Text("Value") }, singleLine = true); OutlinedTextField(note, { note = it }, label = { Text("Add Note (optional)") }) } }, confirmButton = { TextButton(onClick = { onSave(value.toDoubleOrNull() ?: 0.0, note.ifBlank { null }) }) { Text("Save") } }, dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }) }
 
-// Handles the today timestamp logic for this component without modifying runtime behavior.
-// Manages the today timestamp flow without changing runtime behavior.
 private fun todayTimestamp(): Long = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()

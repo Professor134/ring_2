@@ -1,9 +1,3 @@
-// -----------------------------------------------------------------------------
-// Project: Ring 2
-// File: data\src\main\java\com\example\ringapp\data\engine\StreakEngine.kt
-// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
-// -----------------------------------------------------------------------------
-
 package com.example.ringapp.data.engine
 
 import com.example.ringapp.data.local.entities.HabitProgressEntity
@@ -13,17 +7,13 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
-// Handles the streak engine logic for this component without modifying runtime behavior.
-// Represents the streak engine structure used by the application.
 object StreakEngine {
-// Manages the format date flow without changing runtime behavior.
     private fun formatDate(dateMillis: Long): String {
         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
         sdf.timeZone = TimeZone.getDefault()
         return sdf.format(Date(dateMillis))
     }
 
-// Manages the day before flow without changing runtime behavior.
     private fun dayBefore(dateStr: String): String {
         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
         sdf.timeZone = TimeZone.getDefault()
@@ -34,7 +24,6 @@ object StreakEngine {
         return sdf.format(cal.time)
     }
 
-// Manages the day after flow without changing runtime behavior.
     private fun dayAfter(dateStr: String): String {
         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
         sdf.timeZone = TimeZone.getDefault()
@@ -45,7 +34,6 @@ object StreakEngine {
         return sdf.format(cal.time)
     }
 
-// Manages the calculate current streak flow without changing runtime behavior.
     fun calculateCurrentStreak(progress: List<HabitProgressEntity>): Int {
         if (progress.isEmpty()) return 0
 
@@ -105,7 +93,6 @@ object StreakEngine {
         return streak
     }
 
-// Manages the calculate best streak flow without changing runtime behavior.
     fun calculateBestStreak(progress: List<HabitProgressEntity>): Int {
         if (progress.isEmpty()) return 0
 

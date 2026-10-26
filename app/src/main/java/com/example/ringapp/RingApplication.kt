@@ -1,9 +1,3 @@
-// -----------------------------------------------------------------------------
-// Project: Ring 2
-// File: app\src\main\java\com\example\ringapp\RingApplication.kt
-// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
-// -----------------------------------------------------------------------------
-
 package com.example.ringapp
 
 import android.app.Application
@@ -20,8 +14,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 @HiltAndroidApp
-// Handles the ring application logic for this component without modifying runtime behavior.
-// Represents the ring application structure used by the application.
 class RingApplication : Application(), Configuration.Provider {
 	@Inject
 	lateinit var preferences: PreferencesDataStore

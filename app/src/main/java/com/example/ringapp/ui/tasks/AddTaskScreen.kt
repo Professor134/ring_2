@@ -1,9 +1,3 @@
-// -----------------------------------------------------------------------------
-// Project: Ring 2
-// File: app\src\main\java\com\example\ringapp\ui\tasks\AddTaskScreen.kt
-// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
-// -----------------------------------------------------------------------------
-
 package com.example.ringapp.ui.tasks
 
 import android.Manifest
@@ -43,8 +37,6 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 @HiltViewModel
-// Handles the add task view model logic for this component without modifying runtime behavior.
-// Represents the add task view model structure used by the application.
 class AddTaskViewModel @Inject constructor(
     private val observeTasks: ObserveTasksUseCase,
     private val observeProgress: ObserveUserProgressUseCase,
@@ -54,7 +46,6 @@ class AddTaskViewModel @Inject constructor(
 ) : ViewModel() {
     val tasks = observeTasks().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val points = observeProgress().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
-// Manages the save flow without changing runtime behavior.
     fun save(existing: TaskEntity?, task: TaskEntity, onSaved: (TaskEntity) -> Unit, onError: (String) -> Unit) = viewModelScope.launch {
         try {
             val saved = if (existing == null) {
@@ -68,14 +59,11 @@ class AddTaskViewModel @Inject constructor(
             onSaved(saved)
         } catch (e: Exception) { onError(e.message ?: "Unable to save task") }
     }
-// Manages the delete flow without changing runtime behavior.
     fun delete(task: TaskEntity, onDeleted: () -> Unit) = viewModelScope.launch { deleteTask(task.id); onDeleted() }
 }
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
-// Handles the add task screen logic for this component without modifying runtime behavior.
-// Manages the add task screen flow without changing runtime behavior.
 fun AddTaskScreen(taskId: Long? = null, onSaved: () -> Unit, onBack: () -> Unit, viewModel: AddTaskViewModel = hiltViewModel()) {
     val tasks by viewModel.tasks.collectAsStateWithLifecycle(); val existing = tasks.firstOrNull { it.id == taskId }; val context = LocalContext.current; val editing = taskId != null
     var title by remember(existing) { mutableStateOf(existing?.title.orEmpty()) }
@@ -316,13 +304,7 @@ fun AddTaskScreen(taskId: Long? = null, onSaved: () -> Unit, onBack: () -> Unit,
 }
 
 @Composable private fun FormSection(title: String, content: @Composable () -> Unit) { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold); content() } }
-// Handles the month name logic for this component without modifying runtime behavior.
-// Manages the month name flow without changing runtime behavior.
 private fun monthName(month: Int): String = java.time.Month.of(month).name.lowercase().replaceFirstChar { it.uppercase() }
-// Manages the reminder time flow without changing runtime behavior.
 private fun reminderTime(date: Long?, time: Long?): Long? { if (date == null || time == null) return null; return Calendar.getInstance().apply { timeInMillis = date; val source = Calendar.getInstance().apply { timeInMillis = time }; set(Calendar.HOUR_OF_DAY, source.get(Calendar.HOUR_OF_DAY)); set(Calendar.MINUTE, source.get(Calendar.MINUTE)); set(Calendar.SECOND, 0) }.timeInMillis }
-// Manages the schedule reminder flow without changing runtime behavior.
 private fun scheduleReminder(context: Context, task: TaskEntity) { val trigger = task.reminderTime ?: return; val manager = context.getSystemService(AlarmManager::class.java); val intent = Intent(context, ReminderAlarmReceiver::class.java).putExtra("taskId", task.id).putExtra("title", task.title); val pending = PendingIntent.getBroadcast(context, task.id.toInt(), intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE); manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, trigger, pending) }
-// Handles the cancel reminder logic for this component without modifying runtime behavior.
-// Manages the cancel reminder flow without changing runtime behavior.
 private fun cancelReminder(context: Context, taskId: Long) { val manager = context.getSystemService(AlarmManager::class.java); val pending = PendingIntent.getBroadcast(context, taskId.toInt(), Intent(context, ReminderAlarmReceiver::class.java), PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE); pending?.let { manager.cancel(it); it.cancel() } }

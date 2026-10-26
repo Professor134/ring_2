@@ -1,9 +1,3 @@
-// -----------------------------------------------------------------------------
-// Project: Ring 2
-// File: app\src\main\java\com\example\ringapp\ui\onboarding\OnboardingScreen.kt
-// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
-// -----------------------------------------------------------------------------
-
 package com.example.ringapp.ui.onboarding
 
 import androidx.compose.foundation.layout.Arrangement
@@ -32,8 +26,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 
 @Composable
-// Handles the onboarding screen logic for this component without modifying runtime behavior.
-// Manages the onboarding screen flow without changing runtime behavior.
 fun OnboardingScreen(onComplete: () -> Unit) {
     var step by remember { mutableIntStateOf(0) }
     var name by remember { mutableStateOf("") }

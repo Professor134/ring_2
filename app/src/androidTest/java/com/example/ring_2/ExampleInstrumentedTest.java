@@ -1,9 +1,3 @@
-// -----------------------------------------------------------------------------
-// Project: Ring 2
-// File: app\src\androidTest\java\com\example\ring_2\ExampleInstrumentedTest.java
-// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
-// -----------------------------------------------------------------------------
-
 package com.example.ring_2;
 
 import android.content.Context;
@@ -22,8 +16,6 @@ import static org.junit.Assert.*;
  * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
  */
 @RunWith(AndroidJUnit4.class)
-// Handles the example instrumented test logic for this component without modifying runtime behavior.
-// Represents the example instrumented test structure used by the application.
 public class ExampleInstrumentedTest {
     @Test
     public void useAppContext() {

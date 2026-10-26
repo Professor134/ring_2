@@ -1,9 +1,3 @@
-// -----------------------------------------------------------------------------
-// Project: Ring 2
-// File: app\src\main\java\com\example\ringapp\di\DataModule.kt
-// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
-// -----------------------------------------------------------------------------
-
 package com.example.ringapp.di
 
 import android.content.Context
@@ -30,13 +24,9 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-// Handles the data module logic for this component without modifying runtime behavior.
-// Represents the data module structure used by the application.
 object DataModule {
     @Provides
-// Manages the provide database flow without changing runtime behavior.
     @Singleton
-// Manages the provide database flow without changing runtime behavior.
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, "ring_database")
             .addMigrations(com.example.ringapp.data.db.MIGRATION_4_5, com.example.ringapp.data.db.MIGRATION_5_6, com.example.ringapp.data.db.MIGRATION_6_7)
