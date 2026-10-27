@@ -1,3 +1,9 @@
+// -----------------------------------------------------------------------------
+// Project: Ring 2
+// File: data\src\main\java\com\example\ringapp\data\db\AppDatabase.kt
+// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
+// -----------------------------------------------------------------------------
+
 package com.example.ringapp.data.db
 
 import android.content.Context
@@ -77,6 +83,7 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var instance: AppDatabase? = null
 
+// Manages the get database flow without changing runtime behavior.
         fun getDatabase(context: Context): AppDatabase = instance ?: synchronized(this) {
             instance ?: Room.databaseBuilder(
                 context.applicationContext,

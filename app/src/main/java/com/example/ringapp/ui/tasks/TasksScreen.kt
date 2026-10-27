@@ -1,3 +1,9 @@
+// -----------------------------------------------------------------------------
+// Project: Ring 2
+// File: app\src\main\java\com\example\ringapp\ui\tasks\TasksScreen.kt
+// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
+// -----------------------------------------------------------------------------
+
 package com.example.ringapp.ui.tasks
 
 import androidx.compose.animation.*
@@ -29,6 +35,8 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
+// Handles the tasks screen logic for this component without modifying runtime behavior.
+// Manages the tasks screen flow without changing runtime behavior.
 fun TasksScreen(onAddTask: () -> Unit, onTaskClick: (Long) -> Unit, viewModel: TasksViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var filter by remember { mutableStateOf("All") }
@@ -138,5 +146,8 @@ fun TasksScreen(onAddTask: () -> Unit, onTaskClick: (Long) -> Unit, viewModel: T
         }
     }
 }
+// Handles the priority color logic for this component without modifying runtime behavior.
+// Manages the priority color flow without changing runtime behavior.
 private fun priorityColor(priority: TaskPriority) = when (priority) { TaskPriority.HIGH -> Color(0xFFFF3131); TaskPriority.MEDIUM -> Color(0xFFFFD600); TaskPriority.LOW -> CyberNeonGreen }
+// Manages the start of day flow without changing runtime behavior.
 private fun startOfDay(time: Long): Long = Calendar.getInstance().apply { timeInMillis = time; set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }.timeInMillis

@@ -1,3 +1,9 @@
+// -----------------------------------------------------------------------------
+// Project: Ring 2
+// File: data\src\main\java\com\example\ringapp\data\repository\HabitRepository.kt
+// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
+// -----------------------------------------------------------------------------
+
 package com.example.ringapp.data.repository
 
 import com.example.ringapp.data.local.dao.HabitDao
@@ -13,6 +19,8 @@ import com.example.ringapp.data.local.dao.UserProgressDao
 import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 
+// Handles the habit repository logic for this component without modifying runtime behavior.
+// Represents the habit repository structure used by the application.
 class HabitRepository @Inject constructor(
     private val dao: HabitDao,
     private val pointDao: PointTransactionDao,
@@ -20,11 +28,17 @@ class HabitRepository @Inject constructor(
     private val database: AppDatabase,
     private val pointRepository: PointRepository
 ) {
+// Manages the observe active flow without changing runtime behavior.
     fun observeActive(): Flow<List<HabitEntity>> = dao.observeActive()
+// Manages the observe by id flow without changing runtime behavior.
     fun observeById(habitId: Long): Flow<HabitEntity?> = dao.observeById(habitId)
+// Manages the observe progress flow without changing runtime behavior.
     fun observeProgress(habitId: Long, from: Long, to: Long): Flow<List<HabitProgressEntity>> = dao.observeProgress(habitId, from, to)
+// Manages the observe progress for date flow without changing runtime behavior.
     fun observeProgressForDate(date: Long): Flow<List<HabitProgressEntity>> = dao.observeProgressForDate(date)
+// Manages the observe progress range flow without changing runtime behavior.
     fun observeProgressRange(from: Long, to: Long): Flow<List<HabitProgressEntity>> = dao.observeProgressRange(from, to)
+// Manages the observe transactions flow without changing runtime behavior.
     fun observeTransactions(habitId: Long): Flow<List<PointTransactionEntity>> = pointDao.observeForHabit(habitId)
     suspend fun create(habit: HabitEntity): Long = database.withTransaction {
         val current = progressDao.getCurrent()

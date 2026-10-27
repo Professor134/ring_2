@@ -1,3 +1,9 @@
+// -----------------------------------------------------------------------------
+// Project: Ring 2
+// File: app\src\main\java\com\example\ringapp\ui\profile\ProfileScreen.kt
+// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
+// -----------------------------------------------------------------------------
+
 package com.example.ringapp.ui.profile
 
 import android.app.DatePickerDialog
@@ -46,6 +52,8 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 @Composable
+// Handles the profile screen logic for this component without modifying runtime behavior.
+// Manages the profile screen flow without changing runtime behavior.
 fun ProfileScreen(appViewModel: AppViewModel, onEdit: () -> Unit, onAppearance: () -> Unit = {}, onPointHistory: () -> Unit = {}, onNotifications: () -> Unit = {}, onBackup: () -> Unit = {}, viewModel: ProfileViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val profile = state.profile ?: return
@@ -164,6 +172,8 @@ fun ProfileScreen(appViewModel: AppViewModel, onEdit: () -> Unit, onAppearance: 
 }
 
 @Composable
+// Handles the profile avatar logic for this component without modifying runtime behavior.
+// Manages the profile avatar flow without changing runtime behavior.
 private fun ProfileAvatar(profile: ProfileEntity) { 
     val uri = profile.photoUri?.let(Uri::parse)
     Surface(
@@ -208,6 +218,8 @@ private fun ProfileAvatar(profile: ProfileEntity) {
     } 
 }
 
+// Handles the total threshold logic for this component without modifying runtime behavior.
+// Manages the total threshold flow without changing runtime behavior.
 private fun totalThreshold(level: Int): Int {
     var total = 0
     for (i in 1..level) {
@@ -219,6 +231,8 @@ private fun totalThreshold(level: Int): Int {
 }
 
 @Composable
+// Handles the edit profile screen logic for this component without modifying runtime behavior.
+// Manages the edit profile screen flow without changing runtime behavior.
 fun EditProfileScreen(onBack: () -> Unit, viewModel: ProfileViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle(); val profile = state.profile ?: return; val context = LocalContext.current
     var name by remember(profile) { mutableStateOf(profile.name) }; var photoUri by remember(profile) { mutableStateOf(profile.photoUri) }; var dob by remember(profile) { mutableStateOf(profile.dateOfBirth) }; var gender by remember(profile) { mutableStateOf(profile.gender.orEmpty()) }

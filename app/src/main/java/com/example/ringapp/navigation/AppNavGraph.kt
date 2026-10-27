@@ -1,3 +1,9 @@
+// -----------------------------------------------------------------------------
+// Project: Ring 2
+// File: app\src\main\java\com\example\ringapp\navigation\AppNavGraph.kt
+// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
+// -----------------------------------------------------------------------------
+
 package com.example.ringapp.navigation
 
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -42,6 +48,8 @@ import com.example.ringapp.ui.profile.ProfileInfoScreen
 import com.example.ringapp.ui.analytics.PersonalAnalyticsScreen
 
 @Composable
+// Handles the app nav graph logic for this component without modifying runtime behavior.
+// Manages the app nav graph flow without changing runtime behavior.
 fun AppNavGraph(viewModel: AppViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val navController = rememberNavController()
@@ -117,6 +125,8 @@ fun AppNavGraph(viewModel: AppViewModel = hiltViewModel()) {
 }
 
 @Composable
+// Handles the splash route logic for this component without modifying runtime behavior.
+// Manages the splash route flow without changing runtime behavior.
 private fun SplashRoute(initializationState: String, onReady: () -> Unit) {
     LaunchedEffect(initializationState) {
         if (initializationState == "COMPLETE") onReady()
@@ -124,6 +134,8 @@ private fun SplashRoute(initializationState: String, onReady: () -> Unit) {
 }
 
 @Composable
+// Handles the adaptive navigation scaffold logic for this component without modifying runtime behavior.
+// Manages the adaptive navigation scaffold flow without changing runtime behavior.
 private fun AdaptiveNavigationScaffold(
     navController: NavHostController,
     selectedDestination: NavigationDestination,
@@ -166,6 +178,8 @@ private fun AdaptiveNavigationScaffold(
     }
 }
 
+// Handles the nav host controller logic for this component without modifying runtime behavior.
+// Manages the nav host controller flow without changing runtime behavior.
 private fun NavHostController.navigateTo(destination: NavigationDestination) {
     navigate(destination.route) {
         popUpTo(NavigationDestination.HOME.route) { saveState = true }

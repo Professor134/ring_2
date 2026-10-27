@@ -1,3 +1,9 @@
+// -----------------------------------------------------------------------------
+// Project: Ring 2
+// File: app\src\main\java\com\example\ringapp\work\MotivationWorker.kt
+// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
+// -----------------------------------------------------------------------------
+
 package com.example.ringapp.work
 
 import android.app.NotificationChannel
@@ -9,6 +15,8 @@ import androidx.work.WorkerParameters
 import com.example.ringapp.R
 import kotlin.random.Random
 
+// Handles the motivation worker logic for this component without modifying runtime behavior.
+// Represents the motivation worker structure used by the application.
 class MotivationWorker(context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
     override suspend fun doWork(): Result {
         val quotes = listOf(

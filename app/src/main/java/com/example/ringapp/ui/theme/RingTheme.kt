@@ -1,3 +1,9 @@
+// -----------------------------------------------------------------------------
+// Project: Ring 2
+// File: app\src\main\java\com\example\ringapp\ui\theme\RingTheme.kt
+// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
+// -----------------------------------------------------------------------------
+
 package com.example.ringapp.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -41,6 +47,8 @@ private val RingLightColors = lightColorScheme(
 )
 
 @Composable
+// Handles the ring theme logic for this component without modifying runtime behavior.
+// Manages the ring theme flow without changing runtime behavior.
 fun RingTheme(theme: String, content: @Composable () -> Unit) {
     val dark = when (theme) {
         "DARK" -> true

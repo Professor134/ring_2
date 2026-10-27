@@ -1,3 +1,9 @@
+// -----------------------------------------------------------------------------
+// Project: Ring 2
+// File: app\src\main\java\com\example\ringapp\data\PreferencesDataStore.kt
+// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
+// -----------------------------------------------------------------------------
+
 package com.example.ringapp.data
 
 import android.content.Context
@@ -13,6 +19,8 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 
 @Singleton
+// Handles the preferences data store logic for this component without modifying runtime behavior.
+// Represents the preferences data store structure used by the application.
 class PreferencesDataStore @Inject constructor(
     @ApplicationContext context: Context
 ) {

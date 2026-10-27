@@ -1,3 +1,9 @@
+// -----------------------------------------------------------------------------
+// Project: Ring 2
+// File: data\src\main\java\com\example\ringapp\data\db\Converters.kt
+// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
+// -----------------------------------------------------------------------------
+
 package com.example.ringapp.data.db
 
 import androidx.room.TypeConverter
@@ -15,16 +21,24 @@ import com.example.ringapp.data.local.entities.TransactionType
 import org.json.JSONArray
 import org.json.JSONObject
 
+// Handles the converters logic for this component without modifying runtime behavior.
+// Represents the converters structure used by the application.
 class Converters {
+// Manages the from int list flow without changing runtime behavior.
     @TypeConverter
+// Manages the from int list flow without changing runtime behavior.
     fun fromIntList(value: List<Int>?): String? = value?.let { JSONArray(it).toString() }
 
+// Manages the to int list flow without changing runtime behavior.
     @TypeConverter
+// Manages the to int list flow without changing runtime behavior.
     fun toIntList(value: String?): List<Int>? = value?.let { json ->
         JSONArray(json).let { array -> List(array.length()) { index -> array.getInt(index) } }
     }
 
+// Manages the from subtask list flow without changing runtime behavior.
     @TypeConverter
+// Manages the from subtask list flow without changing runtime behavior.
     fun fromSubtaskList(value: List<SubtaskItem>?): String? = value?.let { list ->
         val arr = JSONArray()
         list.forEach { item ->
@@ -38,7 +52,9 @@ class Converters {
         arr.toString()
     }
 
+// Manages the to subtask list flow without changing runtime behavior.
     @TypeConverter
+// Manages the to subtask list flow without changing runtime behavior.
     fun toSubtaskList(value: String?): List<SubtaskItem>? = value?.let { json ->
         try {
             val arr = JSONArray(json)
