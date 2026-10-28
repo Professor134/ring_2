@@ -1,26 +1,36 @@
 // -----------------------------------------------------------------------------
 // Project: Ring 2
 // File: data\src\main\java\com\example\ringapp\data\repository\HabitRepository.kt
-// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
+// Purpose: Handles habit creation, progress updates, streak calculations, and points rules.
 // -----------------------------------------------------------------------------
 
 package com.example.ringapp.data.repository
 
-import com.example.ringapp.data.local.dao.HabitDao
-import com.example.ringapp.data.local.entities.HabitEntity
-import com.example.ringapp.data.local.entities.HabitProgressEntity
-import kotlinx.coroutines.flow.Flow
-import com.example.ringapp.data.db.AppDatabase
 import androidx.room.withTransaction
-import com.example.ringapp.data.local.entities.PointTransactionEntity
-import com.example.ringapp.data.local.entities.TransactionType
+import com.example.ringapp.data.db.AppDatabase
+import com.example.ringapp.data.engine.StreakEngine
+import com.example.ringapp.data.local.dao.HabitDao
 import com.example.ringapp.data.local.dao.PointTransactionDao
 import com.example.ringapp.data.local.dao.UserProgressDao
+import com.example.ringapp.data.local.entities.CategoryEntity
+import com.example.ringapp.data.local.entities.HabitEntity
+import com.example.ringapp.data.local.entities.HabitProgressEntity
+import com.example.ringapp.data.local.entities.HabitType
+import com.example.ringapp.data.local.entities.PointTransactionEntity
+import com.example.ringapp.data.local.entities.ScheduleType
+import com.example.ringapp.data.local.entities.TransactionType
+import com.example.ringapp.data.local.entities.UserProgressEntity
+import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 
-// Handles the habit repository logic for this component without modifying runtime behavior.
-// Represents the habit repository structure used by the application.
 class HabitRepository @Inject constructor(
     private val dao: HabitDao,
     private val pointDao: PointTransactionDao,
@@ -28,35 +38,39 @@ class HabitRepository @Inject constructor(
     private val database: AppDatabase,
     private val pointRepository: PointRepository
 ) {
-// Manages the observe active flow without changing runtime behavior.
     fun observeActive(): Flow<List<HabitEntity>> = dao.observeActive()
-// Manages the observe by id flow without changing runtime behavior.
     fun observeById(habitId: Long): Flow<HabitEntity?> = dao.observeById(habitId)
-// Manages the observe progress flow without changing runtime behavior.
     fun observeProgress(habitId: Long, from: Long, to: Long): Flow<List<HabitProgressEntity>> = dao.observeProgress(habitId, from, to)
-// Manages the observe progress for date flow without changing runtime behavior.
     fun observeProgressForDate(date: Long): Flow<List<HabitProgressEntity>> = dao.observeProgressForDate(date)
-// Manages the observe progress range flow without changing runtime behavior.
     fun observeProgressRange(from: Long, to: Long): Flow<List<HabitProgressEntity>> = dao.observeProgressRange(from, to)
-// Manages the observe transactions flow without changing runtime behavior.
     fun observeTransactions(habitId: Long): Flow<List<PointTransactionEntity>> = pointDao.observeForHabit(habitId)
+
     suspend fun create(habit: HabitEntity): Long = database.withTransaction {
-        val current = progressDao.getCurrent()
-        check((current?.currentPoints ?: 0) >= 25) { "Not enough Elite Points to create a habit" }
         val habitId = dao.insert(habit)
-        pointRepository.record(TransactionType.HABIT_CREATE, -25, "habit-create-$habitId", "Habit created", habitId = habitId)
+        pointRepository.record(
+            type = TransactionType.HABIT_CREATE,
+            amount = -25,
+            reference = "habit-create-$habitId",
+            description = "Created habit: ${habit.name}",
+            habitId = habitId
+        )
         habitId
     }
+
     suspend fun update(habit: HabitEntity) = database.withTransaction {
         val original = dao.observeById(habit.id).first() ?: return@withTransaction
         check(!original.isStepsHabit()) { "The Steps habit cannot be edited" }
         val now = System.currentTimeMillis()
         if (original.target != habit.target) {
-            if (habit.target > original.target) {
-                // If new target is greater than old, no point reduction
-            } else {
-                check((progressDao.getCurrent()?.currentPoints ?: 0) >= 10) { "Not enough Elite Points to change the target" }
-                pointRepository.record(TransactionType.CHANGE_TARGET, -10, "habit-target-${habit.id}-${habit.target}-$now", "Habit target changed", habitId = habit.id, timestamp = now)
+            if (habit.target < original.target) {
+                pointRepository.record(
+                    type = TransactionType.CHANGE_TARGET,
+                    amount = -10,
+                    reference = "habit-target-${habit.id}-${habit.target}-$now",
+                    description = "Lowered habit target for ${habit.name}",
+                    habitId = habit.id,
+                    timestamp = now
+                )
             }
         }
         dao.update(habit.copy(updatedAt = now))
@@ -66,20 +80,20 @@ class HabitRepository @Inject constructor(
 
     suspend fun recordSteps(steps: Int) = database.withTransaction {
         val habit = dao.observeActive().first().find { it.isStepsHabit() } ?: return@withTransaction
-        val cal = java.util.Calendar.getInstance()
-        cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
-        cal.set(java.util.Calendar.MINUTE, 0)
-        cal.set(java.util.Calendar.SECOND, 0)
-        cal.set(java.util.Calendar.MILLISECOND, 0)
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
         val date = cal.timeInMillis
         val now = System.currentTimeMillis()
         val existing = dao.progressForDate(habit.id, date)
-        
+
         val progress = HabitProgressEntity(
             id = existing?.id ?: 0,
             habitId = habit.id,
             date = date,
-            target = 10000.0, 
+            target = 10000.0,
             actual = steps.toDouble(),
             percentage = (steps * 100 / 10000).coerceIn(0, 100),
             completed = steps >= 10000,
@@ -88,10 +102,10 @@ class HabitRepository @Inject constructor(
             updatedAt = now
         )
         dao.upsertProgress(progress)
-        
+
         val allProgress = dao.getProgressForHabit(habit.id)
-        val calculatedCurrentStreak = com.example.ringapp.data.engine.StreakEngine.calculateCurrentStreak(allProgress)
-        val calculatedBestStreak = com.example.ringapp.data.engine.StreakEngine.calculateBestStreak(allProgress)
+        val calculatedCurrentStreak = StreakEngine.calculateCurrentStreak(allProgress)
+        val calculatedBestStreak = StreakEngine.calculateBestStreak(allProgress)
 
         val updatedHabit = habit.copy(
             currentStreak = calculatedCurrentStreak,
@@ -101,16 +115,19 @@ class HabitRepository @Inject constructor(
         )
         dao.update(updatedHabit)
 
-        // Points: 1 point per 1000 steps
-        val currentPointsToAward = steps / 1000
-        val dateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
-        for (i in 1..currentPointsToAward) {
+        // Step reward: 1 point per 1,000 steps multiplied by streak (minimum effective streak of 1)
+        val effectiveStreak = if (updatedHabit.currentStreak > 0) updatedHabit.currentStreak else 1
+        val pointsPerBucket = 1 * effectiveStreak
+        val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(date))
+        val completedBuckets = steps / 1000
+
+        for (i in 1..completedBuckets) {
             pointRepository.record(
-                TransactionType.HABIT_COMPLETE, 
-                1, 
-                "steps-$dateStr-bucket-$i", 
-                "Walked ${i * 1000} steps", 
-                habitId = habit.id, 
+                type = TransactionType.HABIT_COMPLETE,
+                amount = pointsPerBucket,
+                reference = "steps-$dateStr-bucket-$i",
+                description = "Walked ${i * 1000} steps (streak: $effectiveStreak)",
+                habitId = habit.id,
                 timestamp = now
             )
         }
@@ -121,6 +138,8 @@ class HabitRepository @Inject constructor(
         val now = System.currentTimeMillis()
         val existing = dao.progressForDate(habit.id, date)
         val completed = actual >= habit.target
+        val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(date))
+
         val progress = HabitProgressEntity(
             id = existing?.id ?: 0,
             habitId = habit.id,
@@ -134,20 +153,10 @@ class HabitRepository @Inject constructor(
             updatedAt = now
         )
         dao.upsertProgress(progress)
-        
-        if (completed && existing?.completed != true) {
-            val amount = 4
-            pointRepository.record(TransactionType.HABIT_COMPLETE, amount, "habit-complete-${habit.id}-$date-$now", "Habit completed", habitId = habit.id, timestamp = now)
-        } else if (!completed && existing?.completed == true) {
-            val amount = -4
-            pointRepository.record(TransactionType.HABIT_UNCOMPLETE, amount, "habit-uncomplete-${habit.id}-$date-$now", "Habit completion reverted", habitId = habit.id, timestamp = now)
-        } else if (!completed && existing == null) {
-            pointRepository.record(TransactionType.MISSED_TARGET, -5, "habit-missed-${habit.id}-$date", "Habit target missed", habitId = habit.id, timestamp = now)
-        }
 
         val allProgress = dao.getProgressForHabit(habit.id)
-        val calculatedCurrentStreak = com.example.ringapp.data.engine.StreakEngine.calculateCurrentStreak(allProgress)
-        val calculatedBestStreak = com.example.ringapp.data.engine.StreakEngine.calculateBestStreak(allProgress)
+        val calculatedCurrentStreak = StreakEngine.calculateCurrentStreak(allProgress)
+        val calculatedBestStreak = StreakEngine.calculateBestStreak(allProgress)
 
         val updatedHabit = habit.copy(
             currentStreak = calculatedCurrentStreak,
@@ -156,6 +165,113 @@ class HabitRepository @Inject constructor(
             updatedAt = now
         )
         dao.update(updatedHabit)
+
+        val effectiveStreak = updatedHabit.currentStreak
+        val prevCompleted = existing?.completed == true
+        val prevPartial = existing != null && existing.actual > 0.0 && !prevCompleted
+
+        if (habit.type == HabitType.YES_NO) {
+            if (completed && !prevCompleted) {
+                pointRepository.record(
+                    type = TransactionType.HABIT_COMPLETE,
+                    amount = 3,
+                    reference = "habit-complete-${habit.id}-$dateStr-$now",
+                    description = "Completed habit: ${habit.name}",
+                    habitId = habit.id,
+                    timestamp = now
+                )
+            } else if (!completed && prevCompleted) {
+                pointRepository.record(
+                    type = TransactionType.HABIT_UNCOMPLETE,
+                    amount = -3,
+                    reference = "habit-uncomplete-${habit.id}-$dateStr-$now",
+                    description = "Reverted completion for ${habit.name}",
+                    habitId = habit.id,
+                    timestamp = now
+                )
+            }
+        } else {
+            // Measurable Habit Points & Reconciliation
+            val fullReward = if (effectiveStreak > 0) Math.round((1.5 * effectiveStreak) + 3).toInt() else 3
+            val firstIncompleteReward = if (effectiveStreak > 0) (2 * effectiveStreak) + 3 else 3
+
+            // 1. First-recorded-incomplete reward (granted once per habit-day)
+            if (actual > 0.0 && actual < habit.target) {
+                pointRepository.record(
+                    type = TransactionType.HABIT_COMPLETE,
+                    amount = firstIncompleteReward,
+                    reference = "habit-first-incomplete-${habit.id}-$dateStr",
+                    description = "First recorded incomplete progress",
+                    habitId = habit.id,
+                    timestamp = now
+                )
+            }
+
+            // 2. Partial vs Full Completion Reward Reconciliation
+            if (completed) {
+                if (prevPartial) {
+                    // Reverse partial completion reward
+                    pointRepository.record(
+                        type = TransactionType.HABIT_UNCOMPLETE,
+                        amount = -1,
+                        reference = "reversal-habit-partial-${habit.id}-$dateStr-$now",
+                        description = "Replaced partial progress reward",
+                        habitId = habit.id,
+                        timestamp = now
+                    )
+                }
+                // Award full completion reward
+                pointRepository.record(
+                    type = TransactionType.HABIT_COMPLETE,
+                    amount = fullReward,
+                    reference = "habit-complete-${habit.id}-$dateStr-$now",
+                    description = "Completed measurable habit: ${habit.name}",
+                    habitId = habit.id,
+                    timestamp = now
+                )
+            } else if (actual > 0.0) { // Partial completion state
+                if (prevCompleted) {
+                    // Reverse full completion reward
+                    pointRepository.record(
+                        type = TransactionType.HABIT_UNCOMPLETE,
+                        amount = -fullReward,
+                        reference = "reversal-habit-complete-${habit.id}-$dateStr-$now",
+                        description = "Reverted full completion reward",
+                        habitId = habit.id,
+                        timestamp = now
+                    )
+                }
+                // Award partial completion reward (1 pt)
+                pointRepository.record(
+                    type = TransactionType.HABIT_COMPLETE,
+                    amount = 1,
+                    reference = "habit-partial-${habit.id}-$dateStr-$now",
+                    description = "Partial progress recorded",
+                    habitId = habit.id,
+                    timestamp = now
+                )
+            } else { // Zero progress state
+                if (prevCompleted) {
+                    pointRepository.record(
+                        type = TransactionType.HABIT_UNCOMPLETE,
+                        amount = -fullReward,
+                        reference = "reversal-habit-complete-${habit.id}-$dateStr-$now",
+                        description = "Reverted full completion reward",
+                        habitId = habit.id,
+                        timestamp = now
+                    )
+                } else if (prevPartial) {
+                    pointRepository.record(
+                        type = TransactionType.HABIT_UNCOMPLETE,
+                        amount = -1,
+                        reference = "reversal-habit-partial-${habit.id}-$dateStr-$now",
+                        description = "Reverted partial progress reward",
+                        habitId = habit.id,
+                        timestamp = now
+                    )
+                }
+            }
+        }
     }
 
     suspend fun toggleHabit(habit: HabitEntity, date: Long) = database.withTransaction {
@@ -167,38 +283,71 @@ class HabitRepository @Inject constructor(
         }
     }
 
+    suspend fun processSkippedDayPenalties() = database.withTransaction {
+        val stepHabit = dao.observeActive().first().find { it.isStepsHabit() } ?: return@withTransaction
+        val today = LocalDate.now()
+        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.US)
+
+        // Check past 30 days up to yesterday
+        for (i in 1..30) {
+            val pastDate = today.minusDays(i.toLong())
+            val pastDateStr = pastDate.format(formatter)
+            val pastDateMillis = pastDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+
+            val progress = dao.progressForDate(stepHabit.id, pastDateMillis)
+            if (progress == null || progress.actual < 1000.0) {
+                pointRepository.record(
+                    type = TransactionType.MISSED_TARGET,
+                    amount = -10,
+                    reference = "steps-skipped-penalty-$pastDateStr",
+                    description = "Skipped step tracking goal on $pastDateStr",
+                    habitId = stepHabit.id,
+                    timestamp = System.currentTimeMillis()
+                )
+            }
+        }
+    }
+
     suspend fun seedDefaults() = database.withTransaction {
         val currentProgress = progressDao.getCurrent()
         if (currentProgress == null) {
-            progressDao.insert(com.example.ringapp.data.local.entities.UserProgressEntity(currentPoints = 500, lifetimePoints = 500, level = 1, createdAt = System.currentTimeMillis(), updatedAt = System.currentTimeMillis()))
+            progressDao.insert(
+                UserProgressEntity(
+                    currentPoints = 500,
+                    lifetimePoints = 500,
+                    level = 1,
+                    createdAt = System.currentTimeMillis(),
+                    updatedAt = System.currentTimeMillis()
+                )
+            )
             pointRepository.record(TransactionType.STARTING_POINTS, 500, "initial-points", "Welcome bonus points")
         }
-        
+
         val allHabits = dao.observeActive().first()
-        
+
         val defaultNames = listOf("Drink Water", "Morning Exercise", "Read 10 Pages", "Meditate", "Morning Walk")
         allHabits.filter { active ->
             defaultNames.any { it.equals(active.name, ignoreCase = true) }
-        }.forEach { 
-            dao.softDelete(it.id, System.currentTimeMillis()) 
+        }.forEach {
+            dao.softDelete(it.id, System.currentTimeMillis())
         }
 
         val stepsExists = allHabits.any { it.isStepsHabit() }
         if (!stepsExists) {
             val now = System.currentTimeMillis()
-            val cal = java.util.Calendar.getInstance()
-            cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
-            cal.set(java.util.Calendar.MINUTE, 0)
-            cal.set(java.util.Calendar.SECOND, 0)
-            cal.set(java.util.Calendar.MILLISECOND, 0)
+            val cal = Calendar.getInstance()
+            cal.set(Calendar.HOUR_OF_DAY, 0)
+            cal.set(Calendar.MINUTE, 0)
+            cal.set(Calendar.SECOND, 0)
+            cal.set(Calendar.MILLISECOND, 0)
             val today = cal.timeInMillis
-            
+
             val systemCategoryId = database.categoryDao().insert(
-                com.example.ringapp.data.local.entities.CategoryEntity(
-                    name = "System", 
-                    color = 0xFFE5E4E2.toInt(), 
-                    icon = "directions_run", 
-                    createdAt = now, 
+                CategoryEntity(
+                    name = "System",
+                    color = 0xFFE5E4E2.toInt(),
+                    icon = "directions_run",
+                    createdAt = now,
                     updatedAt = now
                 )
             )
@@ -208,10 +357,10 @@ class HabitRepository @Inject constructor(
                     id = HabitEntity.STEPS_HABIT_ID,
                     name = HabitEntity.STEPS_HABIT_NAME,
                     categoryId = systemCategoryId,
-                    type = com.example.ringapp.data.local.entities.HabitType.MEASURABLE,
-                    target = 0.0, 
+                    type = HabitType.MEASURABLE,
+                    target = 0.0,
                     unit = "Steps",
-                    scheduleType = com.example.ringapp.data.local.entities.ScheduleType.DAILY,
+                    scheduleType = ScheduleType.DAILY,
                     startDate = today,
                     color = HabitEntity.PLATINUM_COLOR,
                     createdAt = now,
@@ -221,46 +370,17 @@ class HabitRepository @Inject constructor(
         }
     }
 
-    suspend fun recordProgress(progress: HabitProgressEntity) = database.withTransaction {
-        dao.upsertProgress(progress)
-        val habit = dao.observeById(progress.habitId).first() ?: return@withTransaction
-        val allProgress = dao.getProgressForHabit(habit.id)
-        val calculatedCurrentStreak = com.example.ringapp.data.engine.StreakEngine.calculateCurrentStreak(allProgress)
-        val calculatedBestStreak = com.example.ringapp.data.engine.StreakEngine.calculateBestStreak(allProgress)
-
-        val updatedHabit = habit.copy(
-            currentStreak = calculatedCurrentStreak,
-            bestStreak = maxOf(habit.bestStreak, calculatedBestStreak),
-            totalCompletions = allProgress.count { it.completed },
-            updatedAt = progress.updatedAt
-        )
-        dao.update(updatedHabit)
-    }
-
-    suspend fun complete(habit: HabitEntity, progress: HabitProgressEntity) = database.withTransaction {
-        if (dao.progressForDate(habit.id, progress.date) != null) return@withTransaction false
-        dao.upsertProgress(progress)
-        val allProgress = dao.getProgressForHabit(habit.id)
-        val calculatedCurrentStreak = com.example.ringapp.data.engine.StreakEngine.calculateCurrentStreak(allProgress)
-        val calculatedBestStreak = com.example.ringapp.data.engine.StreakEngine.calculateBestStreak(allProgress)
-
-        val updatedHabit = habit.copy(
-            currentStreak = calculatedCurrentStreak,
-            bestStreak = maxOf(habit.bestStreak, calculatedBestStreak),
-            totalCompletions = allProgress.count { it.completed },
-            updatedAt = progress.updatedAt
-        )
-        dao.update(updatedHabit)
-
-        val now = progress.updatedAt
-        val amount = 4
-        pointRepository.record(TransactionType.HABIT_COMPLETE, amount, "habit-complete-${habit.id}-${progress.date}-$now", "Habit completed", habitId = habit.id, timestamp = now)
-        true
-    }
     suspend fun delete(habitId: Long, deletedAt: Long) = database.withTransaction {
         val habit = dao.observeById(habitId).first() ?: return@withTransaction
         check(!habit.isStepsHabit()) { "The Steps habit cannot be deleted" }
-        pointRepository.record(TransactionType.HABIT_DELETE, -30, "habit-delete-$habitId-$deletedAt", "Habit deleted", habitId = habitId, timestamp = deletedAt)
+        pointRepository.record(
+            type = TransactionType.HABIT_DELETE,
+            amount = -30,
+            reference = "habit-delete-$habitId-$deletedAt",
+            description = "Deleted habit: ${habit.name}",
+            habitId = habitId,
+            timestamp = deletedAt
+        )
         dao.softDelete(habitId, deletedAt)
     }
 }

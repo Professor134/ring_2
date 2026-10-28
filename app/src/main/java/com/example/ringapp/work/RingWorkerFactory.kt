@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------
 // Project: Ring 2
 // File: app\src\main\java\com\example\ringapp\work\RingWorkerFactory.kt
-// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
+// Purpose: Worker factory for initializing WorkManager workers with dependencies.
 // -----------------------------------------------------------------------------
 
 package com.example.ringapp.work
@@ -11,18 +11,24 @@ import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.example.ringapp.data.PreferencesDataStore
+import com.example.ringapp.data.repository.HabitRepository
+import com.example.ringapp.data.repository.TaskRepository
 
-// Handles the ring worker factory logic for this component without modifying runtime behavior.
-// Represents the ring worker factory structure used by the application.
 class RingWorkerFactory(
-    private val preferences: PreferencesDataStore
+    private val preferences: PreferencesDataStore,
+    private val habitRepository: HabitRepository,
+    private val taskRepository: TaskRepository
 ) : WorkerFactory() {
     override fun createWorker(
         appContext: Context,
         workerClassName: String,
         workerParameters: WorkerParameters
     ): ListenableWorker? = when (workerClassName) {
-        DailyMaintenanceWorker::class.java.name -> DailyMaintenanceWorker(appContext, workerParameters).also { it.preferences = preferences }
+        DailyMaintenanceWorker::class.java.name -> DailyMaintenanceWorker(appContext, workerParameters).also {
+            it.preferences = preferences
+            it.habitRepository = habitRepository
+            it.taskRepository = taskRepository
+        }
         MotivationWorker::class.java.name -> MotivationWorker(appContext, workerParameters)
         else -> null
     }

@@ -59,6 +59,8 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             habitRepository.seedDefaults()
             taskRepository.cleanupOldTasks()
+            taskRepository.checkAndApplyOverdueTaskPenalties()
+            habitRepository.processSkippedDayPenalties()
         }
     }
     

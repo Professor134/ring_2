@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------
 // Project: Ring 2
 // File: data\src\main\java\com\example\ringapp\data\local\entities\HabitEntity.kt
-// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
+// Purpose: Entity representing a habit with symmetric/asymmetric target configurations.
 // -----------------------------------------------------------------------------
 
 package com.example.ringapp.data.local.entities
@@ -10,6 +10,10 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import org.json.JSONObject
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 
 @Entity(
     tableName = "habit",
@@ -21,8 +25,6 @@ import androidx.room.PrimaryKey
     )],
     indices = [Index("categoryId")]
 )
-// Handles the habit entity logic for this component without modifying runtime behavior.
-// Represents the habit entity structure used by the application.
 data class HabitEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
@@ -54,9 +56,31 @@ data class HabitEntity(
         const val BMI_HABIT_NAME = "BMI"
         const val PLATINUM_COLOR = 0xFFE5E4E2.toInt()
     }
-    
-// Manages the is steps habit flow without changing runtime behavior.
+
     fun isStepsHabit() = id == STEPS_HABIT_ID || name == STEPS_HABIT_NAME
 
     fun isBmiHabit() = id == BMI_HABIT_ID || name.equals(BMI_HABIT_NAME, ignoreCase = true)
+
+    fun getTargetForDate(date: LocalDate): Double {
+        if (!symmetric && !weeklyTargets.isNullOrBlank()) {
+            try {
+                val json = JSONObject(weeklyTargets)
+                val dayKey = date.dayOfWeek.value.toString()
+                if (json.has(dayKey)) {
+                    val obj = json.getJSONObject(dayKey)
+                    return obj.optDouble("target", target)
+                }
+            } catch (e: Exception) {
+                // Fallback to default target
+            }
+        }
+        return target
+    }
+
+    fun getTargetForTimestamp(millis: Long): Double {
+        val date = Instant.ofEpochMilli(millis)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDate()
+        return getTargetForDate(date)
+    }
 }
