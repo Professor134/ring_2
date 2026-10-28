@@ -19,6 +19,7 @@ import java.lang.Class
 import java.util.concurrent.Callable
 import javax.`annotation`.processing.Generated
 import kotlin.Boolean
+import kotlin.Double
 import kotlin.Int
 import kotlin.Long
 import kotlin.String
@@ -42,7 +43,7 @@ public class ProfileDao_Impl(
     this.__db = __db
     this.__insertionAdapterOfProfileEntity = object : EntityInsertionAdapter<ProfileEntity>(__db) {
       protected override fun createQuery(): String =
-          "INSERT OR REPLACE INTO `profile` (`userId`,`name`,`avatarColor`,`photoUri`,`dateOfBirth`,`gender`,`themePreference`,`language`,`onboardingComplete`,`createdAt`,`updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?)"
+          "INSERT OR REPLACE INTO `profile` (`userId`,`name`,`avatarColor`,`photoUri`,`dateOfBirth`,`gender`,`weightKg`,`heightCm`,`bodyMeasurements`,`themePreference`,`language`,`onboardingComplete`,`createdAt`,`updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
 
       protected override fun bind(statement: SupportSQLiteStatement, entity: ProfileEntity) {
         statement.bindLong(1, entity.userId.toLong())
@@ -66,13 +67,31 @@ public class ProfileDao_Impl(
         } else {
           statement.bindString(6, _tmpGender)
         }
+        val _tmpWeightKg: Double? = entity.weightKg
+        if (_tmpWeightKg == null) {
+          statement.bindNull(7)
+        } else {
+          statement.bindDouble(7, _tmpWeightKg)
+        }
+        val _tmpHeightCm: Double? = entity.heightCm
+        if (_tmpHeightCm == null) {
+          statement.bindNull(8)
+        } else {
+          statement.bindDouble(8, _tmpHeightCm)
+        }
+        val _tmpBodyMeasurements: String? = entity.bodyMeasurements
+        if (_tmpBodyMeasurements == null) {
+          statement.bindNull(9)
+        } else {
+          statement.bindString(9, _tmpBodyMeasurements)
+        }
         val _tmp: String = __converters.themeModeToString(entity.themePreference)
-        statement.bindString(7, _tmp)
-        statement.bindString(8, entity.language)
+        statement.bindString(10, _tmp)
+        statement.bindString(11, entity.language)
         val _tmp_1: Int = if (entity.onboardingComplete) 1 else 0
-        statement.bindLong(9, _tmp_1.toLong())
-        statement.bindLong(10, entity.createdAt)
-        statement.bindLong(11, entity.updatedAt)
+        statement.bindLong(12, _tmp_1.toLong())
+        statement.bindLong(13, entity.createdAt)
+        statement.bindLong(14, entity.updatedAt)
       }
     }
   }
@@ -104,6 +123,10 @@ public class ProfileDao_Impl(
           val _cursorIndexOfPhotoUri: Int = getColumnIndexOrThrow(_cursor, "photoUri")
           val _cursorIndexOfDateOfBirth: Int = getColumnIndexOrThrow(_cursor, "dateOfBirth")
           val _cursorIndexOfGender: Int = getColumnIndexOrThrow(_cursor, "gender")
+          val _cursorIndexOfWeightKg: Int = getColumnIndexOrThrow(_cursor, "weightKg")
+          val _cursorIndexOfHeightCm: Int = getColumnIndexOrThrow(_cursor, "heightCm")
+          val _cursorIndexOfBodyMeasurements: Int = getColumnIndexOrThrow(_cursor,
+              "bodyMeasurements")
           val _cursorIndexOfThemePreference: Int = getColumnIndexOrThrow(_cursor, "themePreference")
           val _cursorIndexOfLanguage: Int = getColumnIndexOrThrow(_cursor, "language")
           val _cursorIndexOfOnboardingComplete: Int = getColumnIndexOrThrow(_cursor,
@@ -136,6 +159,24 @@ public class ProfileDao_Impl(
             } else {
               _tmpGender = _cursor.getString(_cursorIndexOfGender)
             }
+            val _tmpWeightKg: Double?
+            if (_cursor.isNull(_cursorIndexOfWeightKg)) {
+              _tmpWeightKg = null
+            } else {
+              _tmpWeightKg = _cursor.getDouble(_cursorIndexOfWeightKg)
+            }
+            val _tmpHeightCm: Double?
+            if (_cursor.isNull(_cursorIndexOfHeightCm)) {
+              _tmpHeightCm = null
+            } else {
+              _tmpHeightCm = _cursor.getDouble(_cursorIndexOfHeightCm)
+            }
+            val _tmpBodyMeasurements: String?
+            if (_cursor.isNull(_cursorIndexOfBodyMeasurements)) {
+              _tmpBodyMeasurements = null
+            } else {
+              _tmpBodyMeasurements = _cursor.getString(_cursorIndexOfBodyMeasurements)
+            }
             val _tmpThemePreference: ThemeMode
             val _tmp: String
             _tmp = _cursor.getString(_cursorIndexOfThemePreference)
@@ -151,7 +192,7 @@ public class ProfileDao_Impl(
             val _tmpUpdatedAt: Long
             _tmpUpdatedAt = _cursor.getLong(_cursorIndexOfUpdatedAt)
             _result =
-                ProfileEntity(_tmpUserId,_tmpName,_tmpAvatarColor,_tmpPhotoUri,_tmpDateOfBirth,_tmpGender,_tmpThemePreference,_tmpLanguage,_tmpOnboardingComplete,_tmpCreatedAt,_tmpUpdatedAt)
+                ProfileEntity(_tmpUserId,_tmpName,_tmpAvatarColor,_tmpPhotoUri,_tmpDateOfBirth,_tmpGender,_tmpWeightKg,_tmpHeightCm,_tmpBodyMeasurements,_tmpThemePreference,_tmpLanguage,_tmpOnboardingComplete,_tmpCreatedAt,_tmpUpdatedAt)
           } else {
             _result = null
           }
@@ -178,6 +219,10 @@ public class ProfileDao_Impl(
           val _cursorIndexOfPhotoUri: Int = getColumnIndexOrThrow(_cursor, "photoUri")
           val _cursorIndexOfDateOfBirth: Int = getColumnIndexOrThrow(_cursor, "dateOfBirth")
           val _cursorIndexOfGender: Int = getColumnIndexOrThrow(_cursor, "gender")
+          val _cursorIndexOfWeightKg: Int = getColumnIndexOrThrow(_cursor, "weightKg")
+          val _cursorIndexOfHeightCm: Int = getColumnIndexOrThrow(_cursor, "heightCm")
+          val _cursorIndexOfBodyMeasurements: Int = getColumnIndexOrThrow(_cursor,
+              "bodyMeasurements")
           val _cursorIndexOfThemePreference: Int = getColumnIndexOrThrow(_cursor, "themePreference")
           val _cursorIndexOfLanguage: Int = getColumnIndexOrThrow(_cursor, "language")
           val _cursorIndexOfOnboardingComplete: Int = getColumnIndexOrThrow(_cursor,
@@ -210,6 +255,24 @@ public class ProfileDao_Impl(
             } else {
               _tmpGender = _cursor.getString(_cursorIndexOfGender)
             }
+            val _tmpWeightKg: Double?
+            if (_cursor.isNull(_cursorIndexOfWeightKg)) {
+              _tmpWeightKg = null
+            } else {
+              _tmpWeightKg = _cursor.getDouble(_cursorIndexOfWeightKg)
+            }
+            val _tmpHeightCm: Double?
+            if (_cursor.isNull(_cursorIndexOfHeightCm)) {
+              _tmpHeightCm = null
+            } else {
+              _tmpHeightCm = _cursor.getDouble(_cursorIndexOfHeightCm)
+            }
+            val _tmpBodyMeasurements: String?
+            if (_cursor.isNull(_cursorIndexOfBodyMeasurements)) {
+              _tmpBodyMeasurements = null
+            } else {
+              _tmpBodyMeasurements = _cursor.getString(_cursorIndexOfBodyMeasurements)
+            }
             val _tmpThemePreference: ThemeMode
             val _tmp: String
             _tmp = _cursor.getString(_cursorIndexOfThemePreference)
@@ -225,7 +288,7 @@ public class ProfileDao_Impl(
             val _tmpUpdatedAt: Long
             _tmpUpdatedAt = _cursor.getLong(_cursorIndexOfUpdatedAt)
             _result =
-                ProfileEntity(_tmpUserId,_tmpName,_tmpAvatarColor,_tmpPhotoUri,_tmpDateOfBirth,_tmpGender,_tmpThemePreference,_tmpLanguage,_tmpOnboardingComplete,_tmpCreatedAt,_tmpUpdatedAt)
+                ProfileEntity(_tmpUserId,_tmpName,_tmpAvatarColor,_tmpPhotoUri,_tmpDateOfBirth,_tmpGender,_tmpWeightKg,_tmpHeightCm,_tmpBodyMeasurements,_tmpThemePreference,_tmpLanguage,_tmpOnboardingComplete,_tmpCreatedAt,_tmpUpdatedAt)
           } else {
             _result = null
           }

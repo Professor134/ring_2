@@ -24,9 +24,14 @@ private val RingDarkColors = darkColorScheme(
     error = RingError,
     background = MidnightNavy,
     onBackground = Color.White,
-    surface = CardBackground,
+    surface = CardBackground.copy(alpha = 0.14f),
     onSurface = Color.White,
-    surfaceVariant = Color(0xFF1E222D),
+    surfaceVariant = Color(0xFF1E222D).copy(alpha = 0.14f),
+    surfaceContainerLowest = Color(0xFF11141A).copy(alpha = 0.12f),
+    surfaceContainerLow = Color(0xFF171B22).copy(alpha = 0.14f),
+    surfaceContainer = Color(0xFF1E222D).copy(alpha = 0.14f),
+    surfaceContainerHigh = Color(0xFF262B36).copy(alpha = 0.16f),
+    surfaceContainerHighest = Color(0xFF303642).copy(alpha = 0.18f),
     onSurfaceVariant = Color(0xFFB0B3C1)
 )
 
@@ -40,9 +45,14 @@ private val RingLightColors = lightColorScheme(
     error = Color(0xFFBA1A1A),
     background = Color(0xFFF0F5F2),
     onBackground = Color(0xFF191C1E),
-    surface = Color.White,
+    surface = Color.White.copy(alpha = 0.14f),
     onSurface = Color(0xFF191C1E),
-    surfaceVariant = Color(0xFFDEE5DD),
+    surfaceVariant = Color(0xFFDEE5DD).copy(alpha = 0.14f),
+    surfaceContainerLowest = Color.White.copy(alpha = 0.12f),
+    surfaceContainerLow = Color(0xFFF9FCF8).copy(alpha = 0.14f),
+    surfaceContainer = Color(0xFFF0F5F2).copy(alpha = 0.14f),
+    surfaceContainerHigh = Color(0xFFE7ECE7).copy(alpha = 0.16f),
+    surfaceContainerHighest = Color(0xFFDEE5DD).copy(alpha = 0.18f),
     onSurfaceVariant = Color(0xFF424942)
 )
 

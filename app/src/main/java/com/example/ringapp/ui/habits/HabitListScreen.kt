@@ -109,7 +109,7 @@ fun HabitListScreen(onHabitClick: (Long) -> Unit, onAddHabit: () -> Unit, viewMo
                         .background(bgColor)
                         .statusBarsPadding()
                         .padding(horizontal = 16.dp)
-                        .padding(top = 24.dp, bottom = 8.dp)
+                        .padding(top = 16.dp, bottom = 8.dp)
                 ) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { 
                         Text("HABITS", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black, color = textColor, letterSpacing = 2.sp)
@@ -129,8 +129,8 @@ fun HabitListScreen(onHabitClick: (Long) -> Unit, onAddHabit: () -> Unit, viewMo
                             unfocusedTextColor = textColor,
                             focusedBorderColor = MaterialTheme.colorScheme.primary,
                             unfocusedBorderColor = textColor.copy(alpha = 0.1f),
-                            focusedContainerColor = if (isDark) Color(0xFF1A1D23) else Color.White,
-                            unfocusedContainerColor = if (isDark) Color(0xFF161920) else Color.White
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f),
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f)
                         )
                     )
                     
@@ -273,7 +273,7 @@ fun HabitListScreen(onHabitClick: (Long) -> Unit, onAddHabit: () -> Unit, viewMo
         onClick = { onHabitClick(habit.id) },
         interactionSource = interactionSource,
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF161920) else Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f)),
         border = BorderStroke(if (isSteps) 2.dp else 1.dp, if (isSteps) baseColor else baseColor.copy(alpha = 0.1f))
     ) { 
         Column(Modifier.padding(18.dp)) { 

@@ -101,10 +101,6 @@ data class NotificationSettingsUiState(
     val actionError: String? = null
 )
 @HiltViewModel
-
-// Documentation note: this declaration is part of the application's structure and behavior remains unchanged.
-
-@HiltViewModel
 // Handles the notification settings view model logic for this component without modifying runtime behavior.
 // Represents the notification settings view model structure used by the application.
 class NotificationSettingsViewModel @Inject constructor(
@@ -207,10 +203,6 @@ private sealed interface ReminderPermissionAction {
         override val enablesReminders = enabled
     }
 }
-@Composable
-
-// Documentation note: this declaration is part of the application's structure and behavior remains unchanged.
-
 @Composable
 // Handles the notifications screen logic for this component without modifying runtime behavior.
 // Manages the notifications screen flow without changing runtime behavior.
@@ -392,10 +384,6 @@ fun NotificationsScreen(
     }
 }
 @Composable
-
-// Documentation note: this declaration is part of the application's structure and behavior remains unchanged.
-
-@Composable
 // Handles the overview metric logic for this component without modifying runtime behavior.
 // Manages the overview metric flow without changing runtime behavior.
 private fun OverviewMetric(label: String, value: String, modifier: Modifier = Modifier) {
@@ -410,10 +398,6 @@ private fun OverviewMetric(label: String, value: String, modifier: Modifier = Mo
         }
     }
 }
-@Composable
-
-// Documentation note: this declaration is part of the application's structure and behavior remains unchanged.
-
 @Composable
 // Handles the task reminder card logic for this component without modifying runtime behavior.
 // Manages the task reminder card flow without changing runtime behavior.
@@ -464,10 +448,6 @@ private fun TaskReminderCard(
         }
     }
 }
-@Composable
-
-// Documentation note: this declaration is part of the application's structure and behavior remains unchanged.
-
 @Composable
 // Handles the empty reminder tasks card logic for this component without modifying runtime behavior.
 // Manages the empty reminder tasks card flow without changing runtime behavior.

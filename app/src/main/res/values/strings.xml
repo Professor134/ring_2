@@ -1,9 +1,3 @@
-<!-- ----------------------------------------------------------------------------- -->
-<!-- Project: Ring 2 -->
-<!-- File: app\src\main\res\values\strings.xml -->
-<!-- Purpose: This resource file is documented for clarity without changing behavior. -->
-<!-- ----------------------------------------------------------------------------- -->
-
 <resources>
     <string name="app_name">RING</string>
     <string name="shortcut_add_habit">Add habit</string>

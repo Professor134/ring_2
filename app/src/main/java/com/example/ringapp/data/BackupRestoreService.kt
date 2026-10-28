@@ -28,10 +28,6 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 @Singleton
-
-// Documentation note: this declaration is part of the application's structure and behavior remains unchanged.
-
-@Singleton
 // Handles the backup restore service logic for this component without modifying runtime behavior.
 // Represents the backup restore service structure used by the application.
 class BackupRestoreService @Inject constructor(

@@ -83,7 +83,7 @@ fun AppearanceScreen(viewModel: AppViewModel) {
         Card(
             modifier = Modifier.fillMaxWidth().height(120.dp),
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f)),
             border = BorderStroke(1.dp, CyberNeonGreen.copy(alpha = 0.2f))
         ) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -102,7 +102,7 @@ fun AppearanceScreen(viewModel: AppViewModel) {
 // Handles the theme toggle button logic for this component without modifying runtime behavior.
 // Manages the theme toggle button flow without changing runtime behavior.
 fun ThemeToggleButton(selected: Boolean, label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
-    val backgroundColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+    val backgroundColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f)
     val contentColor = if (selected) SpaceBlack else MaterialTheme.colorScheme.onSurface
     
     Surface(

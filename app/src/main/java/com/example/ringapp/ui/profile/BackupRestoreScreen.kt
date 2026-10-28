@@ -51,10 +51,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ringapp.ui.theme.AppBackground
 @Composable
-
-// Documentation note: this declaration is part of the application's structure and behavior remains unchanged.
-
-@Composable
 // Handles the backup restore screen logic for this component without modifying runtime behavior.
 // Manages the backup restore screen flow without changing runtime behavior.
 fun BackupRestoreScreen(
@@ -190,10 +186,6 @@ fun BackupRestoreScreen(
         )
     }
 }
-@Composable
-
-// Documentation note: this declaration is part of the application's structure and behavior remains unchanged.
-
 @Composable
 // Handles the action card logic for this component without modifying runtime behavior.
 // Manages the action card flow without changing runtime behavior.

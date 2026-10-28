@@ -25,10 +25,6 @@ data class ViewportAnimationTrigger(
     val modifier: Modifier
 )
 @Composable
-
-// Documentation note: this declaration is part of the application's structure and behavior remains unchanged.
-
-@Composable
 // Handles the remember viewport animation trigger logic for this component without modifying runtime behavior.
 // Manages the remember viewport animation trigger flow without changing runtime behavior.
 fun rememberViewportAnimationTrigger(): ViewportAnimationTrigger {

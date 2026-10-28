@@ -22,7 +22,6 @@ import org.junit.Test
 // Handles the aggregate daily test logic for this component without modifying runtime behavior.
 // Represents the aggregate daily test structure used by the application.
 class AggregateDailyTest {
-@Test
         // Documentation note: this declaration is part of the application's structure and behavior remains unchanged.
 // Manages the excludes bmi from habit score and totals flow without changing runtime behavior.
     @Test
@@ -48,8 +47,6 @@ class AggregateDailyTest {
         assertEquals(5.0, point.actual, 0.0)
         assertEquals(10.0, point.target, 0.0)
     }
-@Test
-    
     // Documentation note: this declaration is part of the application's structure and behavior remains unchanged.
 
 // Manages the excludes inactive weekdays even when a progress record exists flow without changing runtime behavior.

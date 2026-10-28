@@ -30,10 +30,6 @@ data class BackupRestoreUiState(
     val isError: Boolean = false
 )
 @HiltViewModel
-
-// Documentation note: this declaration is part of the application's structure and behavior remains unchanged.
-
-@HiltViewModel
 // Handles the backup restore view model logic for this component without modifying runtime behavior.
 // Represents the backup restore view model structure used by the application.
 class BackupRestoreViewModel @Inject constructor(

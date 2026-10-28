@@ -57,10 +57,6 @@ data class BmiMeasurement(
     val bmi: Double
 )
 @HiltViewModel
-
-// Documentation note: this declaration is part of the application's structure and behavior remains unchanged.
-
-@HiltViewModel
 // Handles the bmi tracking view model logic for this component without modifying runtime behavior.
 // Represents the bmi tracking view model structure used by the application.
 class BmiTrackingViewModel @Inject constructor(
@@ -93,7 +89,7 @@ class BmiTrackingViewModel @Inject constructor(
             database.withTransaction {
                 val current = profileDao.getCurrent()
                     ?: error("Your profile is not available. Please restart the app and try again.")
-                val history = current.bodyMeasurements?.let(::JSONArray) ?: JSONArray()
+                val history = current.bodyMeasurements?.let { JSONArray(it) } ?: JSONArray()
                 history.put(
                     JSONObject().apply {
                         put("date", now)
@@ -112,7 +108,19 @@ class BmiTrackingViewModel @Inject constructor(
                 )
 
                 val bmiHabit = habitDao.observeActive().first().firstOrNull { it.isBmiHabit() }
-                    ?: error("The BMI tracker is unavailable. Restart the app to restore it.")
+                    ?: HabitEntity(
+                        id = HabitEntity.BMI_HABIT_ID,
+                        name = HabitEntity.BMI_HABIT_NAME,
+                        categoryId = null,
+                        type = com.example.ringapp.data.local.entities.HabitType.MEASURABLE,
+                        target = 25.0,
+                        unit = "BMI",
+                        scheduleType = com.example.ringapp.data.local.entities.ScheduleType.DAILY,
+                        startDate = now,
+                        color = HabitEntity.PLATINUM_COLOR,
+                        createdAt = now,
+                        updatedAt = now
+                    ).also { habitDao.insert(it) }
                 val dayStart = LocalDate.now().atStartOfDay(ZoneId.systemDefault())
                     .toInstant().toEpochMilli()
                 val existing = habitDao.progressForDate(bmiHabit.id, dayStart)
@@ -137,10 +145,6 @@ class BmiTrackingViewModel @Inject constructor(
         }
     }
 }
-@Composable
-
-// Documentation note: this declaration is part of the application's structure and behavior remains unchanged.
-
 @Composable
 // Handles the bmi measurement dialog logic for this component without modifying runtime behavior.
 // Manages the bmi measurement dialog flow without changing runtime behavior.

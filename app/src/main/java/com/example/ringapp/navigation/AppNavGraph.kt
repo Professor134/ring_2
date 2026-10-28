@@ -6,22 +6,36 @@
 
 package com.example.ringapp.navigation
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.border
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.draw.clip
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -33,6 +47,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.ringapp.ui.AppViewModel
 import com.example.ringapp.ui.home.HomeScreen
 import com.example.ringapp.ui.onboarding.OnboardingScreen
+import com.example.ringapp.ui.onboarding.RingSplashScreen
 import com.example.ringapp.ui.habits.HabitDetailScreen
 import com.example.ringapp.ui.habits.HabitListScreen
 import com.example.ringapp.ui.habits.AddHabitScreen
@@ -52,23 +67,49 @@ import com.example.ringapp.ui.analytics.PersonalAnalyticsScreen
 // Manages the app nav graph flow without changing runtime behavior.
 fun AppNavGraph(viewModel: AppViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    var onboardingSaving by remember { mutableStateOf(false) }
+    var onboardingError by remember { mutableStateOf<String?>(null) }
+    val finishSplash: () -> Unit = remember(viewModel) {
+        { viewModel.markFirstLaunchSplashSeen(); Unit }
+    }
+
+    if (!state.ready || (!state.onboardingComplete && !state.firstLaunchSplashSeen)) {
+        RingSplashScreen(
+            isLoading = !state.ready,
+            onFinished = if (state.ready) finishSplash else null
+        )
+        return
+    }
+
+    if (!state.onboardingComplete) {
+        OnboardingScreen(
+            isSaving = onboardingSaving,
+            errorMessage = onboardingError,
+            onComplete = { details ->
+                onboardingSaving = true
+                onboardingError = null
+                viewModel.completeOnboarding(
+                    details = details,
+                    onComplete = { onboardingSaving = false },
+                    onError = { message ->
+                        onboardingSaving = false
+                        onboardingError = message
+                    }
+                )
+            }
+        )
+        return
+    }
+
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = NavigationDestination.HOME.route) {
-        composable(Screen.Splash) {
-            SplashRoute(state.initializationState) {
-                navController.navigate(if (state.onboardingComplete) NavigationDestination.HOME.route else Screen.Onboarding) {
-                    popUpTo(Screen.Splash) { inclusive = true }
-                }
-            }
-        }
-        composable(Screen.Onboarding) {
-            OnboardingScreen {
-                viewModel.completeOnboarding()
-                navController.navigate(NavigationDestination.HOME.route) {
-                    popUpTo(Screen.Onboarding) { inclusive = true }
-                }
-            }
-        }
+    NavHost(
+        navController = navController,
+        startDestination = NavigationDestination.HOME.route,
+        enterTransition = { fadeIn(tween(180)) + slideInHorizontally(tween(220)) { it / 14 } },
+        exitTransition = { fadeOut(tween(120)) + slideOutHorizontally(tween(160)) { -it / 24 } },
+        popEnterTransition = { fadeIn(tween(180)) + slideInHorizontally(tween(220)) { -it / 14 } },
+        popExitTransition = { fadeOut(tween(120)) + slideOutHorizontally(tween(160)) { it / 24 } }
+    ) {
         composable(Screen.HabitDetail, arguments = listOf(navArgument("habitId") { type = NavType.StringType })) {
             PersonalAnalyticsScreen(onBack = { navController.popBackStack() }, onEdit = { navController.navigate(Screen.editHabit(it)) })
         }
@@ -125,15 +166,6 @@ fun AppNavGraph(viewModel: AppViewModel = hiltViewModel()) {
 }
 
 @Composable
-// Handles the splash route logic for this component without modifying runtime behavior.
-// Manages the splash route flow without changing runtime behavior.
-private fun SplashRoute(initializationState: String, onReady: () -> Unit) {
-    LaunchedEffect(initializationState) {
-        if (initializationState == "COMPLETE") onReady()
-    }
-}
-
-@Composable
 // Handles the adaptive navigation scaffold logic for this component without modifying runtime behavior.
 // Manages the adaptive navigation scaffold flow without changing runtime behavior.
 private fun AdaptiveNavigationScaffold(
@@ -146,13 +178,32 @@ private fun AdaptiveNavigationScaffold(
         if (isCompact) {
             Scaffold(
                 bottomBar = {
-                    NavigationBar(Modifier.semantics { contentDescription = "Main navigation" }) {
+                    NavigationBar(
+                        modifier = Modifier
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                            .clip(RoundedCornerShape(22.dp))
+                            .border(
+                                BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f)),
+                                RoundedCornerShape(22.dp)
+                            )
+                            .semantics { contentDescription = "Main navigation" },
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f),
+                        tonalElevation = 0.dp
+                    ) {
                         NavigationDestination.entries.forEach { destination ->
                             NavigationBarItem(
                                 selected = destination == selectedDestination,
                                 onClick = { navController.navigateTo(destination) },
+                                modifier = Modifier.animateContentSize(),
                                 icon = { NavigationMarker(destination) },
-                                label = { androidx.compose.material3.Text(destination.label) }
+                                label = { androidx.compose.material3.Text(destination.label) },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+                                )
                             )
                         }
                     }

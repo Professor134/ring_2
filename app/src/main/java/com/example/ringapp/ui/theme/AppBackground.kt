@@ -20,10 +20,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
 import com.example.ringapp.R
 @Composable
-
-// Documentation note: this declaration is part of the application's structure and behavior remains unchanged.
-
-@Composable
 // Handles the app background logic for this component without modifying runtime behavior.
 // Manages the app background flow without changing runtime behavior.
 fun AppBackground(

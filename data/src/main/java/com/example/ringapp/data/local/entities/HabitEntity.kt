@@ -30,6 +30,11 @@ data class HabitEntity(
     val categoryId: Long?,
     val type: HabitType,
     val target: Double,
+    val sets: Int = 1,
+    val repsPerSet: Int = 1,
+    val symmetric: Boolean = true,
+    val targetSequence: String? = null,
+    val weeklyTargets: String? = null,
     val unit: String? = null,
     val scheduleType: ScheduleType,
     val scheduleDays: List<Int>? = null,
@@ -45,9 +50,13 @@ data class HabitEntity(
     companion object {
         const val STEPS_HABIT_ID = 1L
         const val STEPS_HABIT_NAME = "Steps"
+        const val BMI_HABIT_ID = 2L
+        const val BMI_HABIT_NAME = "BMI"
         const val PLATINUM_COLOR = 0xFFE5E4E2.toInt()
     }
     
 // Manages the is steps habit flow without changing runtime behavior.
     fun isStepsHabit() = id == STEPS_HABIT_ID || name == STEPS_HABIT_NAME
+
+    fun isBmiHabit() = id == BMI_HABIT_ID || name.equals(BMI_HABIT_NAME, ignoreCase = true)
 }

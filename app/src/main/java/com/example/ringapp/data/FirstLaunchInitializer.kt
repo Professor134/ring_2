@@ -35,6 +35,9 @@ class FirstLaunchInitializer @Inject constructor(
         preferences.setInitializationState(InitializationState.IN_PROGRESS.value)
         val now = System.currentTimeMillis()
         database.withTransaction {
+            if (database.pointTransactionDao().findByReference("initial-points-v1") != null) {
+                return@withTransaction
+            }
             database.profileDao().insert(
                 ProfileEntity(
                     name = "",

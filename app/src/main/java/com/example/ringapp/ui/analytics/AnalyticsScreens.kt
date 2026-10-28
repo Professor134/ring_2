@@ -153,9 +153,9 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
                     Modifier
                         .fillMaxSize()
                         .statusBarsPadding()
-                        .padding(horizontal = 20.dp),
-                    contentPadding = PaddingValues(top = 24.dp, bottom = 100.dp),
-                    verticalArrangement = Arrangement.spacedBy(18.dp)
+                        .padding(horizontal = 16.dp),
+                    contentPadding = PaddingValues(top = 16.dp, bottom = 100.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     item {
                         Row(
@@ -164,17 +164,25 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                "Insights",
+                                "INSIGHTS",
                                 style = MaterialTheme.typography.headlineMedium,
                                 fontWeight = FontWeight.Black,
                                 color = textColor,
                                 letterSpacing = 2.sp
                             )
-                            Text(
-                                "ELITE  ${state.points}",
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Black
-                            )
+                            Surface(
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                                shape = RoundedCornerShape(12.dp),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+                            ) {
+                                Text(
+                                    "ELITE ${state.points}",
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Black,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
                         }
                     }
                     item {

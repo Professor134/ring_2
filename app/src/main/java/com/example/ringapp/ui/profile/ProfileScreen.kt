@@ -64,27 +64,82 @@ fun ProfileScreen(appViewModel: AppViewModel, onEdit: () -> Unit, onAppearance: 
 
     Surface(modifier = Modifier.fillMaxSize(), color = bgColor, contentColor = textColor) {
         LazyColumn(
-            Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 20.dp), 
-            contentPadding = PaddingValues(top = 24.dp, bottom = 32.dp), 
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 16.dp), 
+            contentPadding = PaddingValues(top = 16.dp, bottom = 100.dp), 
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Top Section Header: Page Title at Top-Left, Primary Action (Edit Profile) at Top-Right
             item { 
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { 
-                    ProfileAvatar(profile)
-                    Column(Modifier.weight(1f).padding(horizontal = 16.dp)) { 
-                        Text(profile.name.ifBlank { "NEURAL SUBJECT" }, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black, color = textColor, letterSpacing = 1.sp)
-                        Text("LEVEL ${state.level}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black, style = MaterialTheme.typography.labelMedium)
-                        Text("${state.points} ELITE POINTS", color = textColor.copy(alpha = 0.5f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) 
-                    }
-                    IconButton(onClick = onEdit, modifier = Modifier.background(MaterialTheme.colorScheme.primary, CircleShape)) { Icon(Icons.Default.Edit, "Edit", tint = SpaceBlack) } 
+                Row(
+                    Modifier.fillMaxWidth(), 
+                    horizontalArrangement = Arrangement.SpaceBetween, 
+                    verticalAlignment = Alignment.CenterVertically
+                ) { 
+                    Text(
+                        "PROFILE", 
+                        style = MaterialTheme.typography.headlineMedium, 
+                        fontWeight = FontWeight.Black, 
+                        color = textColor, 
+                        letterSpacing = 2.sp
+                    )
+                    IconButton(
+                        onClick = onEdit, 
+                        modifier = Modifier.background(MaterialTheme.colorScheme.primary, CircleShape)
+                    ) { 
+                        Icon(Icons.Default.Edit, "Edit Profile", tint = SpaceBlack) 
+                    } 
                 } 
+            }
+
+            // Profile Overview Card
+            item {
+                Card(
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f)),
+                    border = BorderStroke(1.dp, textColor.copy(alpha = 0.10f))
+                ) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(16.dp), 
+                        horizontalArrangement = Arrangement.SpaceBetween, 
+                        verticalAlignment = Alignment.CenterVertically
+                    ) { 
+                        ProfileAvatar(profile)
+                        Column(Modifier.weight(1f).padding(horizontal = 16.dp)) { 
+                            Text(
+                                profile.name.ifBlank { "SUBJECT" }, 
+                                style = MaterialTheme.typography.headlineSmall, 
+                                fontWeight = FontWeight.Black, 
+                                color = textColor, 
+                                letterSpacing = 1.sp
+                            )
+                            val age = profile.dateOfBirth?.let { birthDate ->
+                                val birth = java.time.Instant.ofEpochMilli(birthDate)
+                                    .atZone(java.time.ZoneId.systemDefault())
+                                    .toLocalDate()
+                                Period.between(birth, LocalDate.now()).years
+                            }
+                            Text(
+                                "LEVEL ${state.level}" + (age?.let { "  ·  $it YEARS" } ?: ""),
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Black,
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                            Text(
+                                "${state.points} ELITE POINTS", 
+                                color = textColor.copy(alpha = 0.5f), 
+                                style = MaterialTheme.typography.labelSmall, 
+                                fontWeight = FontWeight.Bold
+                            ) 
+                        }
+                    }
+                }
             }
             
             item { 
                 Card(
                     shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                    border = BorderStroke(1.dp, textColor.copy(alpha = 0.05f))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f)),
+                    border = BorderStroke(1.dp, textColor.copy(alpha = 0.14f))
                 ) { 
                     Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { 
                         Text("SYNC PROGRESS", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = textColor.copy(alpha = 0.5f), letterSpacing = 2.sp)
@@ -97,8 +152,13 @@ fun ProfileScreen(appViewModel: AppViewModel, onEdit: () -> Unit, onAppearance: 
                             (pointsInCurrentLevel.toFloat() / (currentLevelTotal - prevLevelTotal)).coerceIn(0f, 1f)
                         } else 1f
                         
+                        val animatedProgress by androidx.compose.animation.core.animateFloatAsState(
+                            targetValue = progress,
+                            animationSpec = androidx.compose.animation.core.tween(500),
+                            label = "level-progress"
+                        )
                         LinearProgressIndicator(
-                            progress = { progress }, 
+                            progress = { animatedProgress }, 
                             Modifier.fillMaxWidth().height(12.dp).clip(CircleShape),
                             color = MaterialTheme.colorScheme.primary,
                             trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
@@ -123,7 +183,7 @@ fun ProfileScreen(appViewModel: AppViewModel, onEdit: () -> Unit, onAppearance: 
             items(state.achievements) { achievement ->
                 Card(
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF161920) else Color.White),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f)),
                     border = BorderStroke(1.dp, textColor.copy(alpha = 0.05f))
                 ) {
                     ListItem(
@@ -190,7 +250,7 @@ private fun ProfileAvatar(profile: ProfileEntity) {
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF161920) else Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f)),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
     ) { 
         Column(Modifier.padding(16.dp)) { 
@@ -205,7 +265,7 @@ private fun ProfileAvatar(profile: ProfileEntity) {
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().height(56.dp),
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f),
         border = BorderStroke(1.dp, textColor.copy(alpha = 0.05f))
     ) { 
         Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) { 
@@ -276,7 +336,7 @@ fun EditProfileScreen(onBack: () -> Unit, viewModel: ProfileViewModel = hiltView
             items(state.transactions) { transaction -> 
                 Card(
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF161920) else Color.White),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f)),
                     border = BorderStroke(1.dp, textColor.copy(alpha = 0.05f))
                 ) {
                     ListItem(
@@ -305,7 +365,7 @@ fun EditProfileScreen(onBack: () -> Unit, viewModel: ProfileViewModel = hiltView
             Spacer(Modifier.height(24.dp))
             Card(
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF161920) else Color.White),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f)),
                 border = BorderStroke(1.dp, textColor.copy(alpha = 0.05f))
             ) { 
                 Text(description, Modifier.padding(20.dp), color = textColor.copy(alpha = 0.8f), style = MaterialTheme.typography.bodyLarge) 

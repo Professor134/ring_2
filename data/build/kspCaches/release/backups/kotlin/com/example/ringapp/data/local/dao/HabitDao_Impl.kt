@@ -55,7 +55,7 @@ public class HabitDao_Impl(
     this.__db = __db
     this.__insertionAdapterOfHabitEntity = object : EntityInsertionAdapter<HabitEntity>(__db) {
       protected override fun createQuery(): String =
-          "INSERT OR ABORT INTO `habit` (`id`,`name`,`description`,`categoryId`,`type`,`target`,`unit`,`scheduleType`,`scheduleDays`,`startDate`,`currentStreak`,`bestStreak`,`totalCompletions`,`color`,`deletedAt`,`createdAt`,`updatedAt`) VALUES (nullif(?, 0),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+          "INSERT OR ABORT INTO `habit` (`id`,`name`,`description`,`categoryId`,`type`,`target`,`sets`,`repsPerSet`,`symmetric`,`targetSequence`,`weeklyTargets`,`unit`,`scheduleType`,`scheduleDays`,`startDate`,`currentStreak`,`bestStreak`,`totalCompletions`,`color`,`deletedAt`,`createdAt`,`updatedAt`) VALUES (nullif(?, 0),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
 
       protected override fun bind(statement: SupportSQLiteStatement, entity: HabitEntity) {
         statement.bindLong(1, entity.id)
@@ -75,34 +75,50 @@ public class HabitDao_Impl(
         val _tmp: String = __converters.habitTypeToString(entity.type)
         statement.bindString(5, _tmp)
         statement.bindDouble(6, entity.target)
+        statement.bindLong(7, entity.sets.toLong())
+        statement.bindLong(8, entity.repsPerSet.toLong())
+        val _tmp_1: Int = if (entity.symmetric) 1 else 0
+        statement.bindLong(9, _tmp_1.toLong())
+        val _tmpTargetSequence: String? = entity.targetSequence
+        if (_tmpTargetSequence == null) {
+          statement.bindNull(10)
+        } else {
+          statement.bindString(10, _tmpTargetSequence)
+        }
+        val _tmpWeeklyTargets: String? = entity.weeklyTargets
+        if (_tmpWeeklyTargets == null) {
+          statement.bindNull(11)
+        } else {
+          statement.bindString(11, _tmpWeeklyTargets)
+        }
         val _tmpUnit: String? = entity.unit
         if (_tmpUnit == null) {
-          statement.bindNull(7)
+          statement.bindNull(12)
         } else {
-          statement.bindString(7, _tmpUnit)
+          statement.bindString(12, _tmpUnit)
         }
-        val _tmp_1: String = __converters.scheduleTypeToString(entity.scheduleType)
-        statement.bindString(8, _tmp_1)
+        val _tmp_2: String = __converters.scheduleTypeToString(entity.scheduleType)
+        statement.bindString(13, _tmp_2)
         val _tmpScheduleDays: List<Int>? = entity.scheduleDays
-        val _tmp_2: String? = __converters.fromIntList(_tmpScheduleDays)
-        if (_tmp_2 == null) {
-          statement.bindNull(9)
+        val _tmp_3: String? = __converters.fromIntList(_tmpScheduleDays)
+        if (_tmp_3 == null) {
+          statement.bindNull(14)
         } else {
-          statement.bindString(9, _tmp_2)
+          statement.bindString(14, _tmp_3)
         }
-        statement.bindLong(10, entity.startDate)
-        statement.bindLong(11, entity.currentStreak.toLong())
-        statement.bindLong(12, entity.bestStreak.toLong())
-        statement.bindLong(13, entity.totalCompletions.toLong())
-        statement.bindLong(14, entity.color.toLong())
+        statement.bindLong(15, entity.startDate)
+        statement.bindLong(16, entity.currentStreak.toLong())
+        statement.bindLong(17, entity.bestStreak.toLong())
+        statement.bindLong(18, entity.totalCompletions.toLong())
+        statement.bindLong(19, entity.color.toLong())
         val _tmpDeletedAt: Long? = entity.deletedAt
         if (_tmpDeletedAt == null) {
-          statement.bindNull(15)
+          statement.bindNull(20)
         } else {
-          statement.bindLong(15, _tmpDeletedAt)
+          statement.bindLong(20, _tmpDeletedAt)
         }
-        statement.bindLong(16, entity.createdAt)
-        statement.bindLong(17, entity.updatedAt)
+        statement.bindLong(21, entity.createdAt)
+        statement.bindLong(22, entity.updatedAt)
       }
     }
     this.__insertionAdapterOfHabitProgressEntity = object :
@@ -131,7 +147,7 @@ public class HabitDao_Impl(
     }
     this.__updateAdapterOfHabitEntity = object : EntityDeletionOrUpdateAdapter<HabitEntity>(__db) {
       protected override fun createQuery(): String =
-          "UPDATE OR ABORT `habit` SET `id` = ?,`name` = ?,`description` = ?,`categoryId` = ?,`type` = ?,`target` = ?,`unit` = ?,`scheduleType` = ?,`scheduleDays` = ?,`startDate` = ?,`currentStreak` = ?,`bestStreak` = ?,`totalCompletions` = ?,`color` = ?,`deletedAt` = ?,`createdAt` = ?,`updatedAt` = ? WHERE `id` = ?"
+          "UPDATE OR ABORT `habit` SET `id` = ?,`name` = ?,`description` = ?,`categoryId` = ?,`type` = ?,`target` = ?,`sets` = ?,`repsPerSet` = ?,`symmetric` = ?,`targetSequence` = ?,`weeklyTargets` = ?,`unit` = ?,`scheduleType` = ?,`scheduleDays` = ?,`startDate` = ?,`currentStreak` = ?,`bestStreak` = ?,`totalCompletions` = ?,`color` = ?,`deletedAt` = ?,`createdAt` = ?,`updatedAt` = ? WHERE `id` = ?"
 
       protected override fun bind(statement: SupportSQLiteStatement, entity: HabitEntity) {
         statement.bindLong(1, entity.id)
@@ -151,35 +167,51 @@ public class HabitDao_Impl(
         val _tmp: String = __converters.habitTypeToString(entity.type)
         statement.bindString(5, _tmp)
         statement.bindDouble(6, entity.target)
+        statement.bindLong(7, entity.sets.toLong())
+        statement.bindLong(8, entity.repsPerSet.toLong())
+        val _tmp_1: Int = if (entity.symmetric) 1 else 0
+        statement.bindLong(9, _tmp_1.toLong())
+        val _tmpTargetSequence: String? = entity.targetSequence
+        if (_tmpTargetSequence == null) {
+          statement.bindNull(10)
+        } else {
+          statement.bindString(10, _tmpTargetSequence)
+        }
+        val _tmpWeeklyTargets: String? = entity.weeklyTargets
+        if (_tmpWeeklyTargets == null) {
+          statement.bindNull(11)
+        } else {
+          statement.bindString(11, _tmpWeeklyTargets)
+        }
         val _tmpUnit: String? = entity.unit
         if (_tmpUnit == null) {
-          statement.bindNull(7)
+          statement.bindNull(12)
         } else {
-          statement.bindString(7, _tmpUnit)
+          statement.bindString(12, _tmpUnit)
         }
-        val _tmp_1: String = __converters.scheduleTypeToString(entity.scheduleType)
-        statement.bindString(8, _tmp_1)
+        val _tmp_2: String = __converters.scheduleTypeToString(entity.scheduleType)
+        statement.bindString(13, _tmp_2)
         val _tmpScheduleDays: List<Int>? = entity.scheduleDays
-        val _tmp_2: String? = __converters.fromIntList(_tmpScheduleDays)
-        if (_tmp_2 == null) {
-          statement.bindNull(9)
+        val _tmp_3: String? = __converters.fromIntList(_tmpScheduleDays)
+        if (_tmp_3 == null) {
+          statement.bindNull(14)
         } else {
-          statement.bindString(9, _tmp_2)
+          statement.bindString(14, _tmp_3)
         }
-        statement.bindLong(10, entity.startDate)
-        statement.bindLong(11, entity.currentStreak.toLong())
-        statement.bindLong(12, entity.bestStreak.toLong())
-        statement.bindLong(13, entity.totalCompletions.toLong())
-        statement.bindLong(14, entity.color.toLong())
+        statement.bindLong(15, entity.startDate)
+        statement.bindLong(16, entity.currentStreak.toLong())
+        statement.bindLong(17, entity.bestStreak.toLong())
+        statement.bindLong(18, entity.totalCompletions.toLong())
+        statement.bindLong(19, entity.color.toLong())
         val _tmpDeletedAt: Long? = entity.deletedAt
         if (_tmpDeletedAt == null) {
-          statement.bindNull(15)
+          statement.bindNull(20)
         } else {
-          statement.bindLong(15, _tmpDeletedAt)
+          statement.bindLong(20, _tmpDeletedAt)
         }
-        statement.bindLong(16, entity.createdAt)
-        statement.bindLong(17, entity.updatedAt)
-        statement.bindLong(18, entity.id)
+        statement.bindLong(21, entity.createdAt)
+        statement.bindLong(22, entity.updatedAt)
+        statement.bindLong(23, entity.id)
       }
     }
     this.__preparedStmtOfSoftDelete = object : SharedSQLiteStatement(__db) {
@@ -268,6 +300,11 @@ public class HabitDao_Impl(
           val _cursorIndexOfCategoryId: Int = getColumnIndexOrThrow(_cursor, "categoryId")
           val _cursorIndexOfType: Int = getColumnIndexOrThrow(_cursor, "type")
           val _cursorIndexOfTarget: Int = getColumnIndexOrThrow(_cursor, "target")
+          val _cursorIndexOfSets: Int = getColumnIndexOrThrow(_cursor, "sets")
+          val _cursorIndexOfRepsPerSet: Int = getColumnIndexOrThrow(_cursor, "repsPerSet")
+          val _cursorIndexOfSymmetric: Int = getColumnIndexOrThrow(_cursor, "symmetric")
+          val _cursorIndexOfTargetSequence: Int = getColumnIndexOrThrow(_cursor, "targetSequence")
+          val _cursorIndexOfWeeklyTargets: Int = getColumnIndexOrThrow(_cursor, "weeklyTargets")
           val _cursorIndexOfUnit: Int = getColumnIndexOrThrow(_cursor, "unit")
           val _cursorIndexOfScheduleType: Int = getColumnIndexOrThrow(_cursor, "scheduleType")
           val _cursorIndexOfScheduleDays: Int = getColumnIndexOrThrow(_cursor, "scheduleDays")
@@ -305,6 +342,26 @@ public class HabitDao_Impl(
             _tmpType = __converters.stringToHabitType(_tmp)
             val _tmpTarget: Double
             _tmpTarget = _cursor.getDouble(_cursorIndexOfTarget)
+            val _tmpSets: Int
+            _tmpSets = _cursor.getInt(_cursorIndexOfSets)
+            val _tmpRepsPerSet: Int
+            _tmpRepsPerSet = _cursor.getInt(_cursorIndexOfRepsPerSet)
+            val _tmpSymmetric: Boolean
+            val _tmp_1: Int
+            _tmp_1 = _cursor.getInt(_cursorIndexOfSymmetric)
+            _tmpSymmetric = _tmp_1 != 0
+            val _tmpTargetSequence: String?
+            if (_cursor.isNull(_cursorIndexOfTargetSequence)) {
+              _tmpTargetSequence = null
+            } else {
+              _tmpTargetSequence = _cursor.getString(_cursorIndexOfTargetSequence)
+            }
+            val _tmpWeeklyTargets: String?
+            if (_cursor.isNull(_cursorIndexOfWeeklyTargets)) {
+              _tmpWeeklyTargets = null
+            } else {
+              _tmpWeeklyTargets = _cursor.getString(_cursorIndexOfWeeklyTargets)
+            }
             val _tmpUnit: String?
             if (_cursor.isNull(_cursorIndexOfUnit)) {
               _tmpUnit = null
@@ -312,17 +369,17 @@ public class HabitDao_Impl(
               _tmpUnit = _cursor.getString(_cursorIndexOfUnit)
             }
             val _tmpScheduleType: ScheduleType
-            val _tmp_1: String
-            _tmp_1 = _cursor.getString(_cursorIndexOfScheduleType)
-            _tmpScheduleType = __converters.stringToScheduleType(_tmp_1)
+            val _tmp_2: String
+            _tmp_2 = _cursor.getString(_cursorIndexOfScheduleType)
+            _tmpScheduleType = __converters.stringToScheduleType(_tmp_2)
             val _tmpScheduleDays: List<Int>?
-            val _tmp_2: String?
+            val _tmp_3: String?
             if (_cursor.isNull(_cursorIndexOfScheduleDays)) {
-              _tmp_2 = null
+              _tmp_3 = null
             } else {
-              _tmp_2 = _cursor.getString(_cursorIndexOfScheduleDays)
+              _tmp_3 = _cursor.getString(_cursorIndexOfScheduleDays)
             }
-            _tmpScheduleDays = __converters.toIntList(_tmp_2)
+            _tmpScheduleDays = __converters.toIntList(_tmp_3)
             val _tmpStartDate: Long
             _tmpStartDate = _cursor.getLong(_cursorIndexOfStartDate)
             val _tmpCurrentStreak: Int
@@ -344,7 +401,7 @@ public class HabitDao_Impl(
             val _tmpUpdatedAt: Long
             _tmpUpdatedAt = _cursor.getLong(_cursorIndexOfUpdatedAt)
             _item =
-                HabitEntity(_tmpId,_tmpName,_tmpDescription,_tmpCategoryId,_tmpType,_tmpTarget,_tmpUnit,_tmpScheduleType,_tmpScheduleDays,_tmpStartDate,_tmpCurrentStreak,_tmpBestStreak,_tmpTotalCompletions,_tmpColor,_tmpDeletedAt,_tmpCreatedAt,_tmpUpdatedAt)
+                HabitEntity(_tmpId,_tmpName,_tmpDescription,_tmpCategoryId,_tmpType,_tmpTarget,_tmpSets,_tmpRepsPerSet,_tmpSymmetric,_tmpTargetSequence,_tmpWeeklyTargets,_tmpUnit,_tmpScheduleType,_tmpScheduleDays,_tmpStartDate,_tmpCurrentStreak,_tmpBestStreak,_tmpTotalCompletions,_tmpColor,_tmpDeletedAt,_tmpCreatedAt,_tmpUpdatedAt)
             _result.add(_item)
           }
           return _result
@@ -375,6 +432,11 @@ public class HabitDao_Impl(
           val _cursorIndexOfCategoryId: Int = getColumnIndexOrThrow(_cursor, "categoryId")
           val _cursorIndexOfType: Int = getColumnIndexOrThrow(_cursor, "type")
           val _cursorIndexOfTarget: Int = getColumnIndexOrThrow(_cursor, "target")
+          val _cursorIndexOfSets: Int = getColumnIndexOrThrow(_cursor, "sets")
+          val _cursorIndexOfRepsPerSet: Int = getColumnIndexOrThrow(_cursor, "repsPerSet")
+          val _cursorIndexOfSymmetric: Int = getColumnIndexOrThrow(_cursor, "symmetric")
+          val _cursorIndexOfTargetSequence: Int = getColumnIndexOrThrow(_cursor, "targetSequence")
+          val _cursorIndexOfWeeklyTargets: Int = getColumnIndexOrThrow(_cursor, "weeklyTargets")
           val _cursorIndexOfUnit: Int = getColumnIndexOrThrow(_cursor, "unit")
           val _cursorIndexOfScheduleType: Int = getColumnIndexOrThrow(_cursor, "scheduleType")
           val _cursorIndexOfScheduleDays: Int = getColumnIndexOrThrow(_cursor, "scheduleDays")
@@ -411,6 +473,26 @@ public class HabitDao_Impl(
             _tmpType = __converters.stringToHabitType(_tmp)
             val _tmpTarget: Double
             _tmpTarget = _cursor.getDouble(_cursorIndexOfTarget)
+            val _tmpSets: Int
+            _tmpSets = _cursor.getInt(_cursorIndexOfSets)
+            val _tmpRepsPerSet: Int
+            _tmpRepsPerSet = _cursor.getInt(_cursorIndexOfRepsPerSet)
+            val _tmpSymmetric: Boolean
+            val _tmp_1: Int
+            _tmp_1 = _cursor.getInt(_cursorIndexOfSymmetric)
+            _tmpSymmetric = _tmp_1 != 0
+            val _tmpTargetSequence: String?
+            if (_cursor.isNull(_cursorIndexOfTargetSequence)) {
+              _tmpTargetSequence = null
+            } else {
+              _tmpTargetSequence = _cursor.getString(_cursorIndexOfTargetSequence)
+            }
+            val _tmpWeeklyTargets: String?
+            if (_cursor.isNull(_cursorIndexOfWeeklyTargets)) {
+              _tmpWeeklyTargets = null
+            } else {
+              _tmpWeeklyTargets = _cursor.getString(_cursorIndexOfWeeklyTargets)
+            }
             val _tmpUnit: String?
             if (_cursor.isNull(_cursorIndexOfUnit)) {
               _tmpUnit = null
@@ -418,17 +500,17 @@ public class HabitDao_Impl(
               _tmpUnit = _cursor.getString(_cursorIndexOfUnit)
             }
             val _tmpScheduleType: ScheduleType
-            val _tmp_1: String
-            _tmp_1 = _cursor.getString(_cursorIndexOfScheduleType)
-            _tmpScheduleType = __converters.stringToScheduleType(_tmp_1)
+            val _tmp_2: String
+            _tmp_2 = _cursor.getString(_cursorIndexOfScheduleType)
+            _tmpScheduleType = __converters.stringToScheduleType(_tmp_2)
             val _tmpScheduleDays: List<Int>?
-            val _tmp_2: String?
+            val _tmp_3: String?
             if (_cursor.isNull(_cursorIndexOfScheduleDays)) {
-              _tmp_2 = null
+              _tmp_3 = null
             } else {
-              _tmp_2 = _cursor.getString(_cursorIndexOfScheduleDays)
+              _tmp_3 = _cursor.getString(_cursorIndexOfScheduleDays)
             }
-            _tmpScheduleDays = __converters.toIntList(_tmp_2)
+            _tmpScheduleDays = __converters.toIntList(_tmp_3)
             val _tmpStartDate: Long
             _tmpStartDate = _cursor.getLong(_cursorIndexOfStartDate)
             val _tmpCurrentStreak: Int
@@ -450,7 +532,7 @@ public class HabitDao_Impl(
             val _tmpUpdatedAt: Long
             _tmpUpdatedAt = _cursor.getLong(_cursorIndexOfUpdatedAt)
             _result =
-                HabitEntity(_tmpId,_tmpName,_tmpDescription,_tmpCategoryId,_tmpType,_tmpTarget,_tmpUnit,_tmpScheduleType,_tmpScheduleDays,_tmpStartDate,_tmpCurrentStreak,_tmpBestStreak,_tmpTotalCompletions,_tmpColor,_tmpDeletedAt,_tmpCreatedAt,_tmpUpdatedAt)
+                HabitEntity(_tmpId,_tmpName,_tmpDescription,_tmpCategoryId,_tmpType,_tmpTarget,_tmpSets,_tmpRepsPerSet,_tmpSymmetric,_tmpTargetSequence,_tmpWeeklyTargets,_tmpUnit,_tmpScheduleType,_tmpScheduleDays,_tmpStartDate,_tmpCurrentStreak,_tmpBestStreak,_tmpTotalCompletions,_tmpColor,_tmpDeletedAt,_tmpCreatedAt,_tmpUpdatedAt)
           } else {
             _result = null
           }

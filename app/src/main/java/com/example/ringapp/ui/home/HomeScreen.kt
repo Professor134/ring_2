@@ -50,6 +50,8 @@ import com.example.ringapp.domain.engine.ScheduleEngine
 import com.example.ringapp.ui.theme.CyberNeonBlue
 import com.example.ringapp.ui.theme.CyberNeonGreen
 import com.example.ringapp.ui.theme.SpaceBlack
+import com.example.ringapp.ui.theme.rememberViewportAnimationTrigger
+import com.example.ringapp.ui.onboarding.RingSplashScreen
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZoneOffset
@@ -70,6 +72,12 @@ fun HomeScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var measurableHabit by remember { mutableStateOf<HabitEntity?>(null) }
+    val pointsVisibility = rememberViewportAnimationTrigger()
+    val displayedPoints by animateIntAsState(
+        targetValue = if (pointsVisibility.hasEnteredViewport) state.points else 0,
+        animationSpec = tween(650),
+        label = "elite-points"
+    )
     
     val isDark = isSystemInDarkTheme()
     val bgColor = if (isDark) MaterialTheme.colorScheme.background else Color(0xFFF0F2F5)
@@ -77,7 +85,7 @@ fun HomeScreen(
 
     if (state.isLoading) { 
         Box(Modifier.fillMaxSize().background(bgColor), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            RingSplashScreen(isLoading = true)
         }; return 
     }
     
@@ -108,7 +116,7 @@ fun HomeScreen(
                     .fillMaxSize()
                     .statusBarsPadding()
                     .padding(horizontal = 16.dp),
-                contentPadding = PaddingValues(top = 24.dp, bottom = 100.dp),
+                contentPadding = PaddingValues(top = 16.dp, bottom = 100.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
@@ -128,26 +136,23 @@ fun HomeScreen(
                             )
                         }
                         
-                        val infiniteTransition = rememberInfiniteTransition(label = "points")
-                        val glowAlpha by infiniteTransition.animateFloat(
-                            initialValue = 0.4f,
-                            targetValue = 0.8f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(1500, easing = LinearEasing),
-                                repeatMode = RepeatMode.Reverse
-                            ), label = "glow"
+                        val glowAlpha by animateFloatAsState(
+                            targetValue = if (pointsVisibility.hasEnteredViewport) 0.3f else 0.12f,
+                            animationSpec = tween(280),
+                            label = "points-border"
                         )
 
                         Surface(
-                            color = if (isDark) Color(0xFF1A1D23) else Color.White, 
+                            modifier = pointsVisibility.modifier,
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f),
                             shape = RoundedCornerShape(16.dp), 
-                            tonalElevation = 8.dp,
+                            tonalElevation = 0.dp,
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = glowAlpha))
                         ) {
                             Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text("ELITE POINTS", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = textColor.copy(alpha = 0.6f))
                                 Text(
-                                    state.points.toString(), 
+                                    displayedPoints.toString(), 
                                     style = MaterialTheme.typography.titleLarge, 
                                     color = MaterialTheme.colorScheme.primary, 
                                     fontWeight = FontWeight.Black,
@@ -216,7 +221,7 @@ fun HomeScreen(
     val isDark = isSystemInDarkTheme()
     Card(
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF1A1D23) else Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f)),
         border = BorderStroke(1.dp, textColor.copy(alpha = 0.05f))
     ) { 
         Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) { 
@@ -276,7 +281,7 @@ fun HomeScreen(
         onClick = onHabitClick,
         interactionSource = interactionSource,
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF161920) else Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f)),
         border = BorderStroke(if (isSteps) 2.dp else 1.dp, if (isSteps) baseColor else baseColor.copy(alpha = 0.15f))
     ) { 
         Column(Modifier.padding(18.dp)) { 
@@ -440,7 +445,7 @@ private fun categoryIcon(iconName: String): ImageVector = when (iconName.lowerca
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF161920) else Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f)),
         border = BorderStroke(1.dp, textColor.copy(alpha = 0.05f))
     ) { 
         Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) { 

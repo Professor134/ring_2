@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 9,
-    "identityHash": "03126d2c7a5fa4998ac023801c86fe8a",
+    "identityHash": "7bbcbe19862efc4e493622836c335f7e",
     "entities": [
       {
         "tableName": "habit",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `description` TEXT, `categoryId` INTEGER, `type` TEXT NOT NULL, `target` REAL NOT NULL, `sets` INTEGER NOT NULL DEFAULT 1, `repsPerSet` INTEGER NOT NULL DEFAULT 1, `symmetric` INTEGER NOT NULL DEFAULT 1, `targetSequence` TEXT, `weeklyTargets` TEXT, `unit` TEXT, `scheduleType` TEXT NOT NULL, `scheduleDays` TEXT, `startDate` INTEGER NOT NULL, `currentStreak` INTEGER NOT NULL, `bestStreak` INTEGER NOT NULL, `totalCompletions` INTEGER NOT NULL, `color` INTEGER NOT NULL, `deletedAt` INTEGER, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, FOREIGN KEY(`categoryId`) REFERENCES `category`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `description` TEXT, `categoryId` INTEGER, `type` TEXT NOT NULL, `target` REAL NOT NULL, `sets` INTEGER NOT NULL, `repsPerSet` INTEGER NOT NULL, `symmetric` INTEGER NOT NULL, `targetSequence` TEXT, `weeklyTargets` TEXT, `unit` TEXT, `scheduleType` TEXT NOT NULL, `scheduleDays` TEXT, `startDate` INTEGER NOT NULL, `currentStreak` INTEGER NOT NULL, `bestStreak` INTEGER NOT NULL, `totalCompletions` INTEGER NOT NULL, `color` INTEGER NOT NULL, `deletedAt` INTEGER, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, FOREIGN KEY(`categoryId`) REFERENCES `category`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
         "fields": [
           {
             "fieldPath": "id",
@@ -48,22 +48,19 @@
             "fieldPath": "sets",
             "columnName": "sets",
             "affinity": "INTEGER",
-            "notNull": true,
-            "defaultValue": "1"
+            "notNull": true
           },
           {
             "fieldPath": "repsPerSet",
             "columnName": "repsPerSet",
             "affinity": "INTEGER",
-            "notNull": true,
-            "defaultValue": "1"
+            "notNull": true
           },
           {
             "fieldPath": "symmetric",
             "columnName": "symmetric",
             "affinity": "INTEGER",
-            "notNull": true,
-            "defaultValue": "1"
+            "notNull": true
           },
           {
             "fieldPath": "targetSequence",
@@ -485,7 +482,7 @@
       },
       {
         "tableName": "task",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `description` TEXT, `priority` TEXT NOT NULL, `dueDate` INTEGER, `dueTime` INTEGER, `repeatType` TEXT NOT NULL, `repeatInterval` INTEGER NOT NULL, `repeatDaysOfWeek` TEXT, `repeatDayOfMonth` INTEGER, `repeatMonth` INTEGER, `repeatEndDate` INTEGER, `completed` INTEGER NOT NULL, `completedAt` INTEGER, `iterationDueDates` TEXT NOT NULL DEFAULT '[]', `reminderEnabled` INTEGER NOT NULL, `reminderTime` INTEGER, `parentTaskId` INTEGER, `subtasks` TEXT, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `deletedAt` INTEGER, FOREIGN KEY(`parentTaskId`) REFERENCES `task`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `description` TEXT, `priority` TEXT NOT NULL, `dueDate` INTEGER, `dueTime` INTEGER, `repeatType` TEXT NOT NULL, `repeatInterval` INTEGER NOT NULL, `repeatDaysOfWeek` TEXT, `repeatDayOfMonth` INTEGER, `repeatMonth` INTEGER, `repeatEndDate` INTEGER, `completed` INTEGER NOT NULL, `completedAt` INTEGER, `reminderEnabled` INTEGER NOT NULL, `reminderTime` INTEGER, `parentTaskId` INTEGER, `subtasks` TEXT, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `deletedAt` INTEGER, FOREIGN KEY(`parentTaskId`) REFERENCES `task`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
         "fields": [
           {
             "fieldPath": "id",
@@ -570,13 +567,6 @@
             "columnName": "completedAt",
             "affinity": "INTEGER",
             "notNull": false
-          },
-          {
-            "fieldPath": "iterationDueDates",
-            "columnName": "iterationDueDates",
-            "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "'[]'"
           },
           {
             "fieldPath": "reminderEnabled",
@@ -1686,7 +1676,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '03126d2c7a5fa4998ac023801c86fe8a')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '7bbcbe19862efc4e493622836c335f7e')"
     ]
   }
 }

@@ -39,7 +39,13 @@ object DataModule {
 // Manages the provide database flow without changing runtime behavior.
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, "ring_database")
-            .addMigrations(com.example.ringapp.data.db.MIGRATION_4_5, com.example.ringapp.data.db.MIGRATION_5_6, com.example.ringapp.data.db.MIGRATION_6_7)
+            .addMigrations(
+                com.example.ringapp.data.db.MIGRATION_4_5,
+                com.example.ringapp.data.db.MIGRATION_5_6,
+                com.example.ringapp.data.db.MIGRATION_6_7,
+                com.example.ringapp.data.db.MIGRATION_7_8,
+                com.example.ringapp.data.db.MIGRATION_8_9
+            )
             .build()
 
     @Provides fun provideHabitDao(database: AppDatabase): HabitDao = database.habitDao()

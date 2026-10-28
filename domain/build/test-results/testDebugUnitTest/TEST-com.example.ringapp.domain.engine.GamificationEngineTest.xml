@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.example.ringapp.domain.engine.GamificationEngineTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-09-26T04:28:45.470Z" hostname="LAPTOP-F8B4MOBO" time="0.011">
+<testsuite name="com.example.ringapp.domain.engine.GamificationEngineTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-27T14:56:08.445Z" hostname="LAPTOP-F8B4MOBO" time="0.018">
   <properties/>
-  <testcase name="creationCostsArePredictable" classname="com.example.ringapp.domain.engine.GamificationEngineTest" time="0.004"/>
-  <testcase name="completedTaskRewardsTwoPoints" classname="com.example.ringapp.domain.engine.GamificationEngineTest" time="0.001"/>
+  <testcase name="creationCostsArePredictable" classname="com.example.ringapp.domain.engine.GamificationEngineTest" time="0.01"/>
+  <testcase name="completedTaskRewardsTwoPoints" classname="com.example.ringapp.domain.engine.GamificationEngineTest" time="0.002"/>
   <testcase name="incompleteHabitHasNoReward" classname="com.example.ringapp.domain.engine.GamificationEngineTest" time="0.001"/>
-  <testcase name="completedHabitRewardsFourPoints" classname="com.example.ringapp.domain.engine.GamificationEngineTest" time="0.004"/>
+  <testcase name="completedHabitRewardsFourPoints" classname="com.example.ringapp.domain.engine.GamificationEngineTest" time="0.001"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

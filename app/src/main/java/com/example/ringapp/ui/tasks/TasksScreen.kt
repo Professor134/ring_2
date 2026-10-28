@@ -59,7 +59,7 @@ fun TasksScreen(onAddTask: () -> Unit, onTaskClick: (Long) -> Unit, viewModel: T
     Surface(modifier = Modifier.fillMaxSize(), color = bgColor, contentColor = textColor) {
         Scaffold(
             topBar = {
-                Column(Modifier.statusBarsPadding().padding(horizontal = 16.dp).padding(top = 24.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.statusBarsPadding().padding(horizontal = 16.dp).padding(top = 16.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Text("TASKS", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black, color = textColor, letterSpacing = 2.sp)
                         Surface(
@@ -128,7 +128,7 @@ fun TasksScreen(onAddTask: () -> Unit, onTaskClick: (Long) -> Unit, viewModel: T
     Card(
         onClick = onClick,
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF161920) else Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f)),
         border = BorderStroke(1.dp, textColor.copy(alpha = 0.05f))
     ) {
         Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {

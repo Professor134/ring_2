@@ -59,7 +59,7 @@ class MotivationWorker(context: Context, workerParams: WorkerParameters) : Corou
 
         val notificationId = 1001 // Fixed ID to prevent duplicate notifications
         val notification = NotificationCompat.Builder(applicationContext, "motivation")
-            .setSmallIcon(R.drawable.ic_launcher_foreground2)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle("Daily Motivation")
             .setContentText(quote)
             .setStyle(NotificationCompat.BigTextStyle().bigText(quote))

@@ -87,10 +87,13 @@ class PersonalAnalyticsViewModel @Inject constructor(
 // Handles the aggregate daily logic for this component without modifying runtime behavior.
 // Manages the aggregate daily flow without changing runtime behavior.
 fun aggregateDaily(habits: List<HabitEntity>, progress: List<HabitProgressEntity>, date: LocalDate): AnalyticsPoint? {
-    val active = habits.filter { com.example.ringapp.domain.engine.ScheduleEngine.isActiveOnDate(it, date) }
+    val active = habits.filter {
+        !it.isBmiHabit() && com.example.ringapp.domain.engine.ScheduleEngine.isActiveOnDate(it, date)
+    }
     if (active.isEmpty()) return null
     val timestamp = startOfDay(date)
-    val dayRecords = progress.filter { it.date == timestamp }
+    val activeHabitIds = active.mapTo(mutableSetOf()) { it.id }
+    val dayRecords = progress.filter { it.date == timestamp && it.habitId in activeHabitIds }
     val totalPercentage = active.sumOf { habit ->
         dayRecords.firstOrNull { it.habitId == habit.id }?.percentage ?: 0
     }
