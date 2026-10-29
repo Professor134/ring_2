@@ -303,7 +303,15 @@ fun HomeScreen(
                 }
                 Column(Modifier.weight(1f).padding(horizontal = 14.dp)) { 
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                        Text(habit.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = textColor)
+                        Text(
+                            text = habit.name, 
+                            style = MaterialTheme.typography.titleMedium, 
+                            fontWeight = FontWeight.Bold, 
+                            color = textColor,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false).padding(end = 8.dp)
+                        )
                         if (!isSteps) {
                             Surface(color = Color(0xFFFF3131).copy(alpha = 0.1f), shape = CircleShape) {
                                 Text("🔥 ${habit.currentStreak}", modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = Color(0xFFFF3131), fontWeight = FontWeight.Black, style = MaterialTheme.typography.labelSmall)
@@ -464,7 +472,103 @@ private fun categoryIcon(iconName: String): ImageVector = when (iconName.lowerca
     } 
 }
 
-@Composable private fun ProgressDialog(habit: HabitEntity, progress: HabitProgressEntity?, onDismiss: () -> Unit, onSave: (Double, String?) -> Unit) { var value by remember(progress) { mutableStateOf((progress?.actual ?: 0.0).toString()) }; var note by remember(progress) { mutableStateOf(progress?.note.orEmpty()) }; AlertDialog(onDismissRequest = onDismiss, title = { Text("Today's Progress") }, text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { Text("Target: ${habit.target} ${habit.unit.orEmpty()}"); OutlinedTextField(value, { value = it.filter { c -> c.isDigit() || c == '.' } }, label = { Text("Value") }, singleLine = true); OutlinedTextField(note, { note = it }, label = { Text("Add Note (optional)") }) } }, confirmButton = { TextButton(onClick = { onSave(value.toDoubleOrNull() ?: 0.0, note.ifBlank { null }) }) { Text("Save") } }, dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }) }
+@Composable 
+private fun ProgressDialog(
+    habit: HabitEntity, 
+    progress: HabitProgressEntity?, 
+    onDismiss: () -> Unit, 
+    onSave: (Double, String?) -> Unit
+) { 
+    val todayTarget = habit.getTargetForDate(LocalDate.now())
+    val sets = habit.sets.coerceAtLeast(1)
+    val repsPerSet = habit.repsPerSet.coerceAtLeast(1)
+
+    var value by remember(progress) { mutableStateOf((progress?.actual ?: 0.0).toInt().toString()) }
+    var note by remember(progress) { mutableStateOf(progress?.note.orEmpty()) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss, 
+        title = { Text("Today's Progress", fontWeight = FontWeight.Bold) }, 
+        text = { 
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { 
+                if (sets > 1 || repsPerSet > 1) {
+                    Text(
+                        text = "Target: ${todayTarget.toInt()} ${habit.unit.orEmpty()} ($sets sets × $repsPerSet reps)",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                } else {
+                    Text(
+                        text = "Target: ${todayTarget.toInt()} ${habit.unit.orEmpty()}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                OutlinedTextField(
+                    value = value, 
+                    onValueChange = { input -> 
+                        value = input.filter { c -> c.isDigit() || c == '.' } 
+                    }, 
+                    label = { Text("Total Numerical Progress (${habit.unit.orEmpty()})") }, 
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                val currentVal = value.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0
+                val totalReps = currentVal.toInt()
+
+                if (sets > 1 && repsPerSet > 1 && totalReps > 0) {
+                    val completeSets = totalReps / repsPerSet
+                    val partialReps = totalReps % repsPerSet
+
+                    val breakdownText = buildString {
+                        append("$completeSets complete set${if (completeSets != 1) "s" else ""} of $repsPerSet reps")
+                        if (partialReps > 0) {
+                            append(" + $partialReps rep${if (partialReps != 1) "s" else ""} in set ${completeSets + 1}")
+                        }
+                    }
+
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+                    ) {
+                        Text(
+                            text = "Set Breakdown: $breakdownText",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(10.dp)
+                        )
+                    }
+                }
+
+                OutlinedTextField(
+                    value = note, 
+                    onValueChange = { note = it }, 
+                    label = { Text("Add Note (optional)") },
+                    modifier = Modifier.fillMaxWidth()
+                ) 
+            } 
+        }, 
+        confirmButton = { 
+            TextButton(
+                onClick = { 
+                    val parsed = value.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0
+                    onSave(parsed, note.ifBlank { null }) 
+                }
+            ) { 
+                Text("Save Progress", fontWeight = FontWeight.Bold) 
+            } 
+        }, 
+        dismissButton = { 
+            TextButton(onClick = onDismiss) { Text("Cancel") } 
+        }
+    ) 
+}
 
 // Handles the today timestamp logic for this component without modifying runtime behavior.
 // Manages the today timestamp flow without changing runtime behavior.

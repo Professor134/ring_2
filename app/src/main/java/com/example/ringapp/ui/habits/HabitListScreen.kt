@@ -405,11 +405,13 @@ private fun HabitRow(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            habit.name,
+                            text = habit.name,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.weight(1f),
-                            color = textColor
+                            color = textColor,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false).padding(end = 8.dp)
                         )
                         if (!isSteps) {
                             Surface(color = Color(0xFFFF3131).copy(alpha = 0.1f), shape = CircleShape) {
@@ -569,37 +571,88 @@ private fun ProgressDialog(
     onSave: (Double, String?) -> Unit
 ) {
     val todayTarget = habit.getTargetForDate(LocalDate.now())
-    var value by remember(progress) { mutableStateOf((progress?.actual ?: 0.0).toString()) }
+    val sets = habit.sets.coerceAtLeast(1)
+    val repsPerSet = habit.repsPerSet.coerceAtLeast(1)
+
+    var value by remember(progress) { mutableStateOf((progress?.actual ?: 0.0).toInt().toString()) }
     var note by remember(progress) { mutableStateOf(progress?.note.orEmpty()) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Today's Progress") },
+        title = { Text("Today's Progress", fontWeight = FontWeight.Bold) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Target: $todayTarget ${habit.unit.orEmpty()}")
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (sets > 1 || repsPerSet > 1) {
+                    Text(
+                        text = "Target: ${todayTarget.toInt()} ${habit.unit.orEmpty()} ($sets sets × $repsPerSet reps)",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                } else {
+                    Text(
+                        text = "Target: ${todayTarget.toInt()} ${habit.unit.orEmpty()}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
                 OutlinedTextField(
                     value = value,
                     onValueChange = { input ->
                         value = input.filter { c -> c.isDigit() || c == '.' }
                     },
-                    label = { Text("Value") },
-                    singleLine = true
+                    label = { Text("Total Numerical Progress (${habit.unit.orEmpty()})") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
+
+                val currentVal = value.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0
+                val totalReps = currentVal.toInt()
+
+                if (sets > 1 && repsPerSet > 1 && totalReps > 0) {
+                    val completeSets = totalReps / repsPerSet
+                    val partialReps = totalReps % repsPerSet
+
+                    val breakdownText = buildString {
+                        append("$completeSets complete set${if (completeSets != 1) "s" else ""} of $repsPerSet reps")
+                        if (partialReps > 0) {
+                            append(" + $partialReps rep${if (partialReps != 1) "s" else ""} in set ${completeSets + 1}")
+                        }
+                    }
+
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+                    ) {
+                        Text(
+                            text = "Set Breakdown: $breakdownText",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(10.dp)
+                        )
+                    }
+                }
+
                 OutlinedTextField(
                     value = note,
                     onValueChange = { note = it },
-                    label = { Text("Add Note (optional)") }
+                    label = { Text("Add Note (optional)") },
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         },
         confirmButton = {
             TextButton(
                 onClick = {
-                    onSave(value.toDoubleOrNull() ?: 0.0, note.ifBlank { null })
+                    val parsed = value.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0
+                    onSave(parsed, note.ifBlank { null })
                 }
             ) {
-                Text("Save")
+                Text("Save Progress", fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
