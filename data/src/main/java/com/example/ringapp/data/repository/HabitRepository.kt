@@ -241,15 +241,18 @@ class HabitRepository @Inject constructor(
                         timestamp = now
                     )
                 }
-                // Award partial completion reward (1 pt)
-                pointRepository.record(
-                    type = TransactionType.HABIT_COMPLETE,
-                    amount = 1,
-                    reference = "habit-partial-${habit.id}-$dateStr-$now",
-                    description = "Partial progress recorded",
-                    habitId = habit.id,
-                    timestamp = now
-                )
+                // Check if partial reward has already been awarded on this date
+                val alreadyPartial = pointDao.findByReference("habit-partial-${habit.id}-$dateStr") != null
+                if (!alreadyPartial || prevCompleted) {
+                    pointRepository.record(
+                        type = TransactionType.HABIT_COMPLETE,
+                        amount = 1,
+                        reference = "habit-partial-${habit.id}-$dateStr",
+                        description = "Partial progress recorded",
+                        habitId = habit.id,
+                        timestamp = now
+                    )
+                }
             } else { // Zero progress state
                 if (prevCompleted) {
                     pointRepository.record(

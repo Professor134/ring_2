@@ -35,6 +35,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -182,12 +183,13 @@ private fun AdaptiveNavigationScaffold(
                         modifier = Modifier
                             .padding(horizontal = 10.dp, vertical = 6.dp)
                             .clip(RoundedCornerShape(22.dp))
+                            .blur(16.dp)
                             .border(
                                 BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f)),
                                 RoundedCornerShape(22.dp)
                             )
                             .semantics { contentDescription = "Main navigation" },
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f),
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.10f),
                         tonalElevation = 0.dp
                     ) {
                         NavigationDestination.entries.forEach { destination ->

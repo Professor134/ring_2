@@ -63,6 +63,7 @@
             </intent-filter>
         </receiver>
         <receiver android:name="com.example.ringapp.work.ReminderAlarmReceiver" android:exported="false" />
+        <receiver android:name="com.example.ringapp.work.BmiReminderReceiver" android:exported="false" />
 
     </application>
 

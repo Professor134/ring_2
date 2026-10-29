@@ -244,9 +244,14 @@ fun HomeScreen(
 ) { 
     val category = categories.firstOrNull { it.id == habit.categoryId }
     val isSteps = habit.isStepsHabit()
-    val categoryName = if (isSteps) "System" else (category?.name ?: "Personal")
+    val isBmi = habit.isBmiHabit()
+    val categoryName = if (isSteps) "System" else if (isBmi) "Health" else (category?.name ?: "Personal")
     
-    val baseColorInt = if (isSteps) HabitEntity.PLATINUM_COLOR else CategoryConstants.getColorForCategory(categoryName)
+    val baseColorInt = when {
+        isSteps -> HabitEntity.PLATINUM_COLOR
+        isBmi -> 0xFFFF6D00.toInt()
+        else -> CategoryConstants.getColorForCategory(categoryName)
+    }
     val baseColor = Color(baseColorInt)
     
     val isCompleted = progress?.completed == true
@@ -488,6 +493,8 @@ private fun ProgressDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss, 
+        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.60f),
+        modifier = Modifier.blur(16.dp),
         title = { Text("Today's Progress", fontWeight = FontWeight.Bold) }, 
         text = { 
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { 

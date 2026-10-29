@@ -75,6 +75,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
@@ -337,8 +338,13 @@ private fun HabitRow(
 ) {
     val category = categories.firstOrNull { it.id == habit.categoryId }
     val isSteps = habit.isStepsHabit()
-    val categoryName = if (isSteps) "System" else (category?.name ?: "Personal")
-    val baseColorInt = if (isSteps) HabitEntity.PLATINUM_COLOR else CategoryConstants.getColorForCategory(categoryName)
+    val isBmi = habit.isBmiHabit()
+    val categoryName = if (isSteps) "System" else if (isBmi) "Health" else (category?.name ?: "Personal")
+    val baseColorInt = when {
+        isSteps -> HabitEntity.PLATINUM_COLOR
+        isBmi -> 0xFFFF6D00.toInt()
+        else -> CategoryConstants.getColorForCategory(categoryName)
+    }
     val baseColor = Color(baseColorInt)
 
     val todayDate = LocalDate.now()
@@ -579,6 +585,8 @@ private fun ProgressDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.60f),
+        modifier = Modifier.blur(16.dp),
         title = { Text("Today's Progress", fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {

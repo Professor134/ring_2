@@ -36,11 +36,17 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.json.JSONArray
+import java.text.SimpleDateFormat
+import java.time.Instant
+import java.util.Date
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ringapp.data.local.entities.*
@@ -301,6 +307,15 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
             }; return
         }
 
+        if (habit.isBmiHabit()) {
+            BmiAnalyticsScreen(
+                habit = habit,
+                profile = state.profile,
+                onBack = onBack
+            )
+            return
+        }
+
         val isSteps = habit.isStepsHabit()
         val today = LocalDate.now()
         val habitStart = java.time.Instant.ofEpochMilli(habit.startDate).atZone(ZoneId.systemDefault()).toLocalDate()
@@ -498,6 +513,23 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
                                     )
                                 }
                             }
+                        }
+                    }
+                    if (!isSteps && !habit.isBmiHabit() && habit.type == HabitType.MEASURABLE) {
+                        item {
+                            val todayRec = state.progress.firstOrNull { it.date == dayStart(today) }
+                            val progressActual = todayRec?.actual ?: 0.0
+                            val todayTarget = habit.getTargetForDate(today)
+
+                            DualCircularProgressIndicator(
+                                progressActual = progressActual,
+                                sets = habit.sets,
+                                repsPerSet = habit.repsPerSet,
+                                target = todayTarget,
+                                baseColor = habitColor,
+                                unit = habit.unit.orEmpty(),
+                                modifier = Modifier.padding(vertical = 12.dp)
+                            )
                         }
                     }
                     if (!isSteps) item { Targets(habit, state.progress, habitColor, textColor) }
@@ -1171,3 +1203,464 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
             }
         }
     }
+
+// -----------------------------------------------------------------------------
+// Dual Circular Progress Indicator for Measurable Habits (Requirement 11)
+// Outer ring = Completed Sets relative to target sets
+// Inner ring = Repetitions within current set relative to repsPerSet
+// Center element = Round button displaying actual recorded progress
+// -----------------------------------------------------------------------------
+@Composable
+fun DualCircularProgressIndicator(
+    progressActual: Double,
+    sets: Int,
+    repsPerSet: Int,
+    target: Double,
+    baseColor: Color,
+    unit: String,
+    modifier: Modifier = Modifier,
+    onRecordTap: (() -> Unit)? = null
+) {
+    val safeSets = sets.coerceAtLeast(1)
+    val safeReps = repsPerSet.coerceAtLeast(1)
+
+    val isSingleSetRep = (safeSets == 1 && safeReps == 1) || target <= 1.0
+
+    val actualInt = progressActual.toInt()
+    val completedSets = if (safeReps > 0) (actualInt / safeReps).coerceAtMost(safeSets) else 0
+    val currentSetReps = if (safeReps > 0) (actualInt % safeReps) else 0
+
+    val outerTargetProgress = (completedSets.toFloat() / safeSets.toFloat()).coerceIn(0f, 1f)
+    val innerTargetProgress = if (completedSets >= safeSets) 1f else (currentSetReps.toFloat() / safeReps.toFloat()).coerceIn(0f, 1f)
+
+    val animatedOuterProgress by animateFloatAsState(
+        targetValue = outerTargetProgress,
+        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        label = "outerProgress"
+    )
+
+    val animatedInnerProgress by animateFloatAsState(
+        targetValue = innerTargetProgress,
+        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        label = "innerProgress"
+    )
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.size(170.dp)
+        ) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val strokeOuter = 12.dp.toPx()
+                val strokeInner = 8.dp.toPx()
+
+                val outerRadius = (size.minDimension / 2f) - strokeOuter
+                val innerRadius = outerRadius - strokeOuter - 6.dp.toPx()
+
+                // Outer Track
+                drawCircle(
+                    color = baseColor.copy(alpha = 0.15f),
+                    radius = outerRadius,
+                    style = Stroke(width = strokeOuter, cap = StrokeCap.Round)
+                )
+
+                if (!isSingleSetRep) {
+                    // Inner Track
+                    drawCircle(
+                        color = baseColor.copy(alpha = 0.10f),
+                        radius = innerRadius,
+                        style = Stroke(width = strokeInner, cap = StrokeCap.Round)
+                    )
+                }
+
+                // Outer Ring (Completed Sets)
+                drawArc(
+                    color = baseColor,
+                    startAngle = -90f,
+                    sweepAngle = 360f * animatedOuterProgress,
+                    useCenter = false,
+                    style = Stroke(width = strokeOuter, cap = StrokeCap.Round)
+                )
+
+                // Inner Ring (Current Set Reps)
+                if (!isSingleSetRep) {
+                    val innerColor = baseColor.copy(alpha = 0.85f)
+                    drawArc(
+                        color = innerColor,
+                        startAngle = -90f,
+                        sweepAngle = 360f * animatedInnerProgress,
+                        useCenter = false,
+                        style = Stroke(width = strokeInner, cap = StrokeCap.Round)
+                    )
+                }
+            }
+
+            // Round Center Element
+            Surface(
+                shape = CircleShape,
+                color = baseColor.copy(alpha = 0.14f),
+                border = BorderStroke(1.5.dp, baseColor.copy(alpha = 0.4f)),
+                modifier = Modifier
+                    .size(105.dp)
+                    .then(if (onRecordTap != null) Modifier.clickable { onRecordTap() } else Modifier)
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(6.dp)
+                ) {
+                    Text(
+                        text = if (actualInt == progressActual.toInt()) "$actualInt" else "%.1f".format(Locale.US, progressActual),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Text(
+                        text = "of ${target.toInt()} $unit",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                    )
+                    if (!isSingleSetRep) {
+                        Text(
+                            text = "Set ${minOf(completedSets + 1, safeSets)} / $safeSets",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = baseColor,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// BMI Analytics Screen (Requirement 12)
+// Dedicated Bright Orange theme, Graph filters for BMI, Weight, and Height,
+// Historical measurements line chart over actual dates, details card, and update dialog.
+// -----------------------------------------------------------------------------
+@Composable
+fun BmiAnalyticsScreen(
+    habit: HabitEntity,
+    profile: ProfileEntity?,
+    onBack: () -> Unit
+) {
+    var filter by remember { mutableStateOf("BMI") } // "BMI", "Weight", "Height"
+    var showUpdateDialog by remember { mutableStateOf(false) }
+    var selectedPoint by remember { mutableStateOf<BmiMeasurement?>(null) }
+
+    val orangeColor = Color(0xFFFF6D00)
+    val isDark = isSystemInDarkTheme()
+    val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
+    val textColor = if (isDark) Color.White else MaterialTheme.colorScheme.onBackground
+
+    val measurements = remember(profile?.bodyMeasurements, profile?.updatedAt) {
+        val list = mutableListOf<BmiMeasurement>()
+        val jsonStr = profile?.bodyMeasurements
+        if (!jsonStr.isNullOrBlank()) {
+            try {
+                val array = JSONArray(jsonStr)
+                for (i in 0 until array.length()) {
+                    val obj = array.getJSONObject(i)
+                    val date = obj.optLong("date", System.currentTimeMillis())
+                    val w = obj.optDouble("weightKg", 0.0)
+                    val h = obj.optDouble("heightCm", 0.0)
+                    val b = obj.optDouble("bmi", 0.0)
+                    if (w > 0 && h > 0 && b > 0) {
+                        list.add(BmiMeasurement(date, w, h, b))
+                    }
+                }
+            } catch (e: Exception) {
+                // Fallback
+            }
+        }
+        if (list.isEmpty() && profile != null && (profile.weightKg ?: 0.0) > 0 && (profile.heightCm ?: 0.0) > 0) {
+            val w = profile.weightKg!!
+            val h = profile.heightCm!!
+            val b = w / ((h / 100.0) * (h / 100.0))
+            list.add(BmiMeasurement(profile.createdAt, w, h, b))
+        }
+        list.sortedBy { it.date }
+    }
+
+    val latest = measurements.lastOrNull()
+
+    Surface(modifier = Modifier.fillMaxSize(), color = bgColor, contentColor = textColor) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .padding(horizontal = 20.dp),
+            contentPadding = PaddingValues(top = 24.dp, bottom = 36.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp)
+        ) {
+            // Header
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = textColor)
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "BMI TRACKING",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Black,
+                            color = orangeColor,
+                            letterSpacing = 1.sp
+                        )
+                        Text(
+                            text = "HEALTH & BODY METRICS (0 POINTS)",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = textColor.copy(alpha = 0.5f)
+                        )
+                    }
+                }
+            }
+
+            // Current BMI Status Card
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = orangeColor.copy(alpha = 0.12f)),
+                    border = BorderStroke(1.dp, orangeColor.copy(alpha = 0.3f))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        if (latest != null) {
+                            val category = when {
+                                latest.bmi < 18.5 -> "Underweight"
+                                latest.bmi < 25.0 -> "Normal Weight"
+                                latest.bmi < 30.0 -> "Overweight"
+                                else -> "Obese"
+                            }
+                            val formattedDate = SimpleDateFormat("d MMMM yyyy", Locale.getDefault()).format(Date(latest.date))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text(
+                                        text = "BMI ${"%.1f".format(Locale.getDefault(), latest.bmi)}",
+                                        style = MaterialTheme.typography.headlineMedium,
+                                        fontWeight = FontWeight.Black,
+                                        color = orangeColor
+                                    )
+                                    Text(
+                                        text = category,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = textColor
+                                    )
+                                }
+                                Surface(
+                                    color = orangeColor.copy(alpha = 0.2f),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text(
+                                        text = "${latest.weightKg} kg  •  ${latest.heightCm.toInt()} cm",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = textColor,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                    )
+                                }
+                            }
+                            Text(
+                                text = "Last updated: $formattedDate",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = textColor.copy(alpha = 0.6f)
+                            )
+                        } else {
+                            Text(
+                                text = "No BMI measurements recorded yet.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = textColor
+                            )
+                        }
+
+                        Button(
+                            onClick = { showUpdateDialog = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = orangeColor),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+                        ) {
+                            Text("Update Weight & Height", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+
+            // Metric Graph Filters (BMI, Weight, Height)
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "HISTORICAL METRIC GRAPH",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Black,
+                        color = textColor.copy(alpha = 0.5f),
+                        letterSpacing = 2.sp
+                    )
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        listOf("BMI", "Weight", "Height").forEach { option ->
+                            FilterChip(
+                                selected = filter == option,
+                                onClick = { filter = option },
+                                label = { Text(option.uppercase()) },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = orangeColor,
+                                    selectedLabelColor = Color.White
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Line Chart for selected metric (BMI, Weight, Height)
+            item {
+                val chartPoints = measurements.map { m ->
+                    val valToDisplay = when (filter) {
+                        "Weight" -> m.weightKg
+                        "Height" -> m.heightCm
+                        else -> m.bmi
+                    }
+                    val dateLabel = SimpleDateFormat("d MMM", Locale.getDefault()).format(Date(m.date))
+                    val dateObj = Instant.ofEpochMilli(m.date).atZone(ZoneId.systemDefault()).toLocalDate()
+
+                    LinePoint(
+                        label = dateLabel,
+                        score = valToDisplay.toInt(),
+                        actual = valToDisplay,
+                        target = when (filter) { "Weight" -> 100.0; "Height" -> 200.0; else -> 30.0 },
+                        completed = true,
+                        date = dateObj,
+                        isActive = true
+                    )
+                }
+
+                Card(
+                    shape = RoundedCornerShape(24.dp),
+                    border = BorderStroke(1.dp, orangeColor.copy(alpha = 0.2f)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f))
+                ) {
+                    if (chartPoints.isNotEmpty()) {
+                        AnalyticsLineChart(
+                            points = chartPoints,
+                            modifier = Modifier.fillMaxWidth().height(220.dp).padding(16.dp),
+                            color = orangeColor,
+                            onPointTap = { point ->
+                                selectedPoint = measurements.firstOrNull {
+                                    SimpleDateFormat("d MMM", Locale.getDefault()).format(Date(it.date)) == point.label
+                                }
+                            }
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().height(180.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("No measurements recorded for this graph", color = textColor.copy(alpha = 0.5f))
+                        }
+                    }
+                }
+            }
+
+            // Selected Measurement Point Details Card
+            if (selectedPoint != null) item {
+                val p = selectedPoint!!
+                val formattedDate = SimpleDateFormat("EEEE, d MMMM yyyy", Locale.getDefault()).format(Date(p.date))
+
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    border = BorderStroke(1.dp, orangeColor.copy(alpha = 0.3f))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(formattedDate, fontWeight = FontWeight.Black, color = orangeColor)
+                        Text("BMI: ${"%.1f".format(Locale.getDefault(), p.bmi)}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text("Weight: ${p.weightKg} kg  •  Height: ${p.heightCm.toInt()} cm", style = MaterialTheme.typography.bodyMedium, color = textColor.copy(alpha = 0.8f))
+                    }
+                }
+            }
+
+            // Measurement History Log
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "HISTORICAL MEASUREMENTS",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Black,
+                        color = textColor.copy(alpha = 0.5f),
+                        letterSpacing = 2.sp
+                    )
+
+                    measurements.reversed().forEach { m ->
+                        Card(
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f)),
+                            border = BorderStroke(1.dp, textColor.copy(alpha = 0.05f))
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(14.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text(
+                                        text = SimpleDateFormat("d MMM yyyy, HH:mm", Locale.getDefault()).format(Date(m.date)),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = textColor
+                                    )
+                                    Text(
+                                        text = "${m.weightKg} kg  •  ${m.heightCm.toInt()} cm",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = textColor.copy(alpha = 0.6f)
+                                    )
+                                }
+                                Surface(
+                                    color = orangeColor.copy(alpha = 0.15f),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Text(
+                                        text = "BMI ${"%.1f".format(Locale.getDefault(), m.bmi)}",
+                                        color = orangeColor,
+                                        fontWeight = FontWeight.Black,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showUpdateDialog) {
+        BmiMeasurementDialog(onDismiss = { showUpdateDialog = false })
+    }
+}

@@ -29,7 +29,7 @@ data class AnalyticsPoint(val date: LocalDate, val score: Int, val actual: Doubl
 data class AnalyticsUiState(val habits: List<HabitEntity> = emptyList(), val tasks: List<TaskEntity> = emptyList(), val categories: List<CategoryEntity> = emptyList(), val progress: List<HabitProgressEntity> = emptyList(), val points: Int = 0, val bestStreak: Int = 0, val loading: Boolean = true, val error: String? = null)
 
 // Represents the personal analytics state structure used by the application.
-data class PersonalAnalyticsState(val habit: HabitEntity? = null, val category: CategoryEntity? = null, val progress: List<HabitProgressEntity> = emptyList(), val transactions: List<PointTransactionEntity> = emptyList(), val points: Int = 0, val habitPoints: Int = 0, val loading: Boolean = true, val error: String? = null)
+data class PersonalAnalyticsState(val habit: HabitEntity? = null, val category: CategoryEntity? = null, val profile: ProfileEntity? = null, val progress: List<HabitProgressEntity> = emptyList(), val transactions: List<PointTransactionEntity> = emptyList(), val points: Int = 0, val habitPoints: Int = 0, val loading: Boolean = true, val error: String? = null)
 
 @HiltViewModel
 // Handles the analytics view model logic for this component without modifying runtime behavior.
@@ -57,6 +57,7 @@ class PersonalAnalyticsViewModel @Inject constructor(
     observeTransactions: ObserveHabitTransactionsUseCase,
     observeUserProgress: ObserveUserProgressUseCase,
     observeCategories: ObserveCategoriesUseCase,
+    observeProfile: ObserveProfileUseCase,
     private val deleteHabit: DeleteHabitUseCase
 ) : ViewModel() {
     private val habitId = checkNotNull(savedStateHandle.get<String>("habitId")).toLong()
@@ -64,13 +65,15 @@ class PersonalAnalyticsViewModel @Inject constructor(
         observeDetail(habitId, 365), 
         observeTransactions(habitId), 
         observeUserProgress(),
-        observeCategories()
-    ) { detail, transactions, user, categories -> 
-        val habit = detail?.habit
+        observeCategories(),
+        observeProfile()
+    ) { detail, transactions, user, categories, profile -> 
+        val habit = (detail as HabitDetailData?)?.habit
         PersonalAnalyticsState(
             habit = habit, 
             category = categories.find { it.id == habit?.categoryId },
-            progress = detail?.progress.orEmpty(), 
+            profile = profile,
+            progress = (detail as HabitDetailData?)?.progress.orEmpty(), 
             transactions = transactions, 
             points = user?.currentPoints ?: 0, 
             habitPoints = transactions.sumOf { it.amount },
