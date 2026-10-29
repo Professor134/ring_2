@@ -11,6 +11,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -21,6 +22,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Delete
@@ -301,130 +303,72 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
 
         val isSteps = habit.isStepsHabit()
         val today = LocalDate.now()
+        val habitStart = java.time.Instant.ofEpochMilli(habit.startDate).atZone(ZoneId.systemDefault()).toLocalDate()
 
-// Represents the period point structure used by the application.
         data class PeriodPoint(
             val label: String,
             val actual: Double,
+            val target: Double,
             val completed: Boolean,
             val date: LocalDate? = null
         )
 
-        val periodPoints: List<PeriodPoint> = when (range) {
-            "Weeks" -> {
-                (6 downTo 0).map { w ->
-                    val endDate = today.minusDays((w * 7).toLong())
-                    val startDate = endDate.minusDays(6)
-                    var totalActual = 0.0
-                    var completedDays = 0
-                    var current = startDate
-                    while (!current.isAfter(endDate)) {
-                        val rec = state.progress.firstOrNull { it.date == dayStart(current) }
-                        if (rec != null) {
-                            totalActual += rec.actual
-                            if (rec.completed) completedDays++
-                        }
-                        current = current.plusDays(1)
-                    }
-                    val avgActual = totalActual / 7.0
-                    PeriodPoint(
-                        label = startDate.format(DateTimeFormatter.ofPattern("d MMM")),
-                        actual = avgActual,
-                        completed = completedDays >= 4,
-                        date = endDate
-                    )
-                }
+        // Filter ONLY active scheduled dates for graph points (Requirement 10: Inactive dates must not produce graph points or zero values)
+        val activeDatesInPeriod = mutableListOf<LocalDate>()
+        var scanDate = habitStart
+        while (!scanDate.isAfter(today)) {
+            if (ScheduleEngine.isActiveOnDate(habit, scanDate)) {
+                activeDatesInPeriod.add(scanDate)
             }
+            scanDate = scanDate.plusDays(1)
+        }
 
-            "Months" -> {
-                (6 downTo 0).map { m ->
-                    val monthDate = today.minusMonths(m.toLong())
-                    val startOfMonth = monthDate.withDayOfMonth(1)
-                    val endOfMonth =
-                        if (m == 0) today else monthDate.withDayOfMonth(monthDate.lengthOfMonth())
-                    var totalActual = 0.0
-                    var daysCount = 0
-                    var current = startOfMonth
-                    while (!current.isAfter(endOfMonth)) {
-                        val rec = state.progress.firstOrNull { it.date == dayStart(current) }
-                        if (rec != null) totalActual += rec.actual
-                        daysCount++
-                        current = current.plusDays(1)
-                    }
-                    val avgActual = if (daysCount > 0) totalActual / daysCount else 0.0
-                    PeriodPoint(
-                        label = monthDate.format(DateTimeFormatter.ofPattern("MMM")),
-                        actual = avgActual,
-                        completed = avgActual > 0,
-                        date = endOfMonth
-                    )
-                }
-            }
+        val limitCount = when (range) {
+            "Weeks" -> 28
+            "Months" -> 90
+            "Year" -> 365
+            else -> 14 // Days: past 14 active days
+        }
+        val selectedActiveDates = activeDatesInPeriod.takeLast(limitCount)
 
-            "Year" -> {
-                (11 downTo 0).map { m ->
-                    val monthDate = today.minusMonths(m.toLong())
-                    val startOfMonth = monthDate.withDayOfMonth(1)
-                    val endOfMonth =
-                        if (m == 0) today else monthDate.withDayOfMonth(monthDate.lengthOfMonth())
-                    var totalActual = 0.0
-                    var daysCount = 0
-                    var current = startOfMonth
-                    while (!current.isAfter(endOfMonth)) {
-                        val rec = state.progress.firstOrNull { it.date == dayStart(current) }
-                        if (rec != null) totalActual += rec.actual
-                        daysCount++
-                        current = current.plusDays(1)
-                    }
-                    val avgActual = if (daysCount > 0) totalActual / daysCount else 0.0
-                    PeriodPoint(
-                        label = monthDate.format(DateTimeFormatter.ofPattern("MMM")),
-                        actual = avgActual,
-                        completed = avgActual > 0,
-                        date = endOfMonth
-                    )
-                }
+        val periodPoints = if (selectedActiveDates.isNotEmpty()) {
+            selectedActiveDates.map { date ->
+                val record = state.progress.firstOrNull { it.date == dayStart(date) }
+                val actual = record?.actual ?: 0.0
+                val dayTarget = habit.getTargetForDate(date)
+                val completed = actual >= dayTarget && dayTarget > 0.0
+                PeriodPoint(
+                    label = date.format(dateFormatter),
+                    actual = actual,
+                    target = dayTarget,
+                    completed = completed,
+                    date = date
+                )
             }
-
-            else -> { // Days: past 11 days
-                (10 downTo 0).map { d ->
-                    val date = today.minusDays(d.toLong())
-                    val rec = state.progress.firstOrNull { it.date == dayStart(date) }
-                    val actual = rec?.actual ?: 0.0
-                    PeriodPoint(
-                        label = date.format(dateFormatter),
-                        actual = actual,
-                        completed = rec?.completed == true,
-                        date = date
-                    )
-                }
-            }
+        } else {
+            // Fallback for brand new habits
+            listOf(
+                PeriodPoint(
+                    label = today.format(dateFormatter),
+                    actual = 0.0,
+                    target = habit.getTargetForDate(today),
+                    completed = false,
+                    date = today
+                )
+            )
         }
 
         val maxActual = periodPoints.maxOfOrNull { it.actual } ?: 0.0
-        val dynamicCeiling = when {
-            maxActual <= 1.0 -> 1.0
-            maxActual <= 10.0 -> 10.0
-            maxActual <= 25.0 -> 25.0
-            maxActual <= 50.0 -> 50.0
-            maxActual <= 100.0 -> 100.0
-            maxActual <= 250.0 -> 250.0
-            maxActual <= 500.0 -> 500.0
-            maxActual <= 1000.0 -> 1000.0
-            maxActual <= 2500.0 -> 2500.0
-            maxActual <= 5000.0 -> 5000.0
-            maxActual <= 7500.0 -> 7500.0
-            maxActual <= 10000.0 -> 10000.0
-            else -> (kotlin.math.ceil(maxActual / 2500.0) * 2500.0).coerceAtLeast(10000.0)
-        }
+        val maxTarget = periodPoints.maxOfOrNull { it.target } ?: 1.0
+        val dynamicCeiling = maxOf(maxActual, maxTarget, 1.0)
 
         val points = periodPoints.map { p ->
-            val score = (p.actual * 100 / dynamicCeiling).toInt().coerceIn(0, 100)
+            val score = if (dynamicCeiling > 0) (p.actual * 100 / dynamicCeiling).toInt().coerceIn(0, 100) else 0
             LinePoint(
                 p.label,
                 score,
                 p.actual,
-                dynamicCeiling,
+                p.target,
                 p.completed,
                 date = p.date,
                 isActive = true
@@ -579,49 +523,77 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
                         val record = if (point.date != null) state.progress.firstOrNull {
                             it.date == dayStart(point.date)
                         } else null
+                        val dayTarget = point.date?.let { habit.getTargetForDate(it) } ?: point.target
+                        val actualVal = point.actual
+
                         Card(
                             shape = RoundedCornerShape(20.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                             border = BorderStroke(1.dp, habitColor.copy(alpha = 0.3f))
                         ) {
-                            Column(Modifier.padding(16.dp)) {
-                                Text(point.label, fontWeight = FontWeight.Black, color = habitColor)
-                                if (isSteps) {
-                                    val valueText =
-                                        if (range == "Days") "${point.actual.toInt()} steps" else "${point.actual.toInt()} avg steps/day"
-                                    Text(valueText, fontWeight = FontWeight.Bold)
+                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(
+                                    text = point.date?.format(DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy")) ?: point.label,
+                                    fontWeight = FontWeight.Black,
+                                    color = habitColor
+                                )
+
+                                val valFormatted = if (actualVal == actualVal.toInt().toDouble()) actualVal.toInt().toString() else String.format(Locale.US, "%.1f", actualVal)
+                                val targetFormatted = if (dayTarget == dayTarget.toInt().toDouble()) dayTarget.toInt().toString() else String.format(Locale.US, "%.1f", dayTarget)
+                                val unitStr = habit.unit.orEmpty()
+
+                                Text(
+                                    text = "Recorded Progress: $valFormatted $unitStr (Target: $targetFormatted $unitStr)",
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+
+                                if (habit.sets > 1 && habit.repsPerSet > 1 && actualVal > 0) {
+                                    val completeSets = actualVal.toInt() / habit.repsPerSet
+                                    val partialReps = actualVal.toInt() % habit.repsPerSet
+                                    val setStr = if (partialReps > 0) "$completeSets complete sets + $partialReps reps" else "$completeSets complete sets"
                                     Text(
-                                        "Scale: 0 - ${point.target.toInt()} steps",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = textColor.copy(alpha = 0.6f)
-                                    )
-                                } else {
-                                    val valFormatted = if (point.actual == point.actual.toInt()
-                                            .toDouble()
-                                    ) point.actual.toInt().toString() else String.format(
-                                        Locale.US,
-                                        "%.1f",
-                                        point.actual
-                                    )
-                                    val unitStr = habit.unit.orEmpty()
-                                    val valueText =
-                                        if (range == "Days") "$valFormatted $unitStr" else "$valFormatted avg $unitStr/day"
-                                    Text(valueText, fontWeight = FontWeight.Bold)
-                                    Text(
-                                        "Scale: 0 - ${point.target.toInt()} $unitStr",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = textColor.copy(alpha = 0.6f)
-                                    )
-                                    Text(
-                                        "${point.score}%  ${if (point.completed) "Complete" else if (point.actual > 0) "Partial" else "Missed"}",
-                                        color = if (point.completed) CyberNeonGreen else Color.Red
+                                        text = "Sets breakdown: $setStr (${habit.sets} sets × ${habit.repsPerSet} reps)",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = textColor.copy(alpha = 0.7f)
                                     )
                                 }
-                                if (!record?.note.isNullOrBlank()) {
-                                    Spacer(Modifier.height(8.dp))
+
+                                val statusText: String
+                                val statusColor: Color
+                                if (point.date != null && point.date.isAfter(LocalDate.now())) {
+                                    statusText = "Scheduled"
+                                    statusColor = Color(0xFF2196F3)
+                                } else if (actualVal >= dayTarget && dayTarget > 0) {
+                                    statusText = "Target Achieved"
+                                    statusColor = Color(0xFF4CAF50)
+                                } else if (actualVal > 0) {
+                                    statusText = "Partial Progress ($valFormatted / $targetFormatted $unitStr)"
+                                    statusColor = Color(0xFFFF9800)
+                                } else {
+                                    statusText = "Zero Progress"
+                                    statusColor = Color(0xFFFF3131)
+                                }
+
+                                Surface(
+                                    color = statusColor.copy(alpha = 0.15f),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
                                     Text(
-                                        "Log: ${record.note}",
-                                        style = MaterialTheme.typography.bodySmall
+                                        text = statusText,
+                                        color = statusColor,
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                    )
+                                }
+
+                                if (!record?.note.isNullOrBlank()) {
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(
+                                        text = "Log Note: ${record.note}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = textColor.copy(alpha = 0.8f)
                                     )
                                 }
                             }
@@ -785,7 +757,6 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
 
 // Manages the habit calendar flow without changing runtime behavior.
     @Composable
-// Manages the habit calendar flow without changing runtime behavior.
     private fun HabitCalendar(
         habit: HabitEntity,
         progress: List<HabitProgressEntity>,
@@ -793,6 +764,8 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
         onDateClick: (LocalDate) -> Unit
     ) {
         var currentMonth by remember { mutableStateOf(LocalDate.now().withDayOfMonth(1)) }
+        val habitStart = java.time.Instant.ofEpochMilli(habit.startDate).atZone(ZoneId.systemDefault()).toLocalDate()
+        val today = LocalDate.now()
 
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(
@@ -810,8 +783,8 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = { currentMonth = currentMonth.minusMonths(1) }) {
                         Icon(
-                            Icons.Default.ArrowBack,
-                            null,
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            "Previous Month",
                             Modifier.size(20.dp),
                             tint = textColor
                         )
@@ -826,8 +799,8 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
                         currentMonth = currentMonth.plusMonths(1)
                     }) {
                         Icon(
-                            Icons.Default.ArrowBack,
-                            null,
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            "Next Month",
                             Modifier.size(20.dp).rotate(180f),
                             tint = textColor
                         )
@@ -860,25 +833,53 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
                             val date = currentMonth.withDayOfMonth(dayOfMonth)
                             val record = progress.firstOrNull { it.date == dayStart(date) }
                             val active = ScheduleEngine.isActiveOnDate(habit, date)
-                            val isSteps = habit.isStepsHabit()
-                            val color = when {
-                                date.isAfter(LocalDate.now()) -> Color.Gray.copy(alpha = 0.1f)
-                                record != null && record.actual > 0 -> if (isSteps) Color(
-                                    HabitEntity.PLATINUM_COLOR
-                                ) else MaterialTheme.colorScheme.primary
+                            val dayTarget = habit.getTargetForDate(date)
 
-                                else -> Color.Transparent
+                            val (borderColor, textColorForDate, bgColor) = when {
+                                // 1. Pre-installation / habit start
+                                date.isBefore(habitStart) -> {
+                                    Triple(Color.Gray.copy(alpha = 0.5f), Color.White, Color.Gray.copy(alpha = 0.15f))
+                                }
+                                // 2. Future dates that are scheduled as active
+                                date.isAfter(today) && active -> {
+                                    Triple(Color(0xFF2196F3), Color.White, Color(0xFF2196F3).copy(alpha = 0.18f))
+                                }
+                                // 3. Future dates that are inactive
+                                date.isAfter(today) -> {
+                                    Triple(Color.White.copy(alpha = 0.5f), Color.White, Color.Gray.copy(alpha = 0.15f))
+                                }
+                                // 4. Past/today dates that are inactive
+                                !active -> {
+                                    Triple(Color.White.copy(alpha = 0.5f), Color.White, Color.Gray.copy(alpha = 0.15f))
+                                }
+                                // 5. Active past/today dates with COMPLETED progress
+                                record != null && record.actual >= dayTarget && dayTarget > 0.0 -> {
+                                    Triple(Color(0xFF4CAF50), Color.White, Color(0xFF4CAF50).copy(alpha = 0.18f))
+                                }
+                                // 6. Active past/today dates with PARTIAL progress (> 0 but < target)
+                                record != null && record.actual > 0.0 -> {
+                                    Triple(Color(0xFFFF9800), Color.White, Color(0xFFFF9800).copy(alpha = 0.18f))
+                                }
+                                // 7. Active past/today dates with ZERO progress
+                                else -> {
+                                    Triple(Color(0xFFFF3131), Color.White, Color(0xFFFF3131).copy(alpha = 0.18f))
+                                }
                             }
+
                             Box(
-                                Modifier.size(34.dp).clip(CircleShape).background(color)
+                                modifier = Modifier
+                                    .size(34.dp)
+                                    .clip(CircleShape)
+                                    .background(bgColor)
+                                    .border(1.5.dp, borderColor, CircleShape)
                                     .clickable { onDateClick(date) },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    dayOfMonth.toString(),
+                                    text = dayOfMonth.toString(),
                                     style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Black,
-                                    color = if (color == Color.Transparent) textColor else if (isSteps) Color.Black else Color.White
+                                    fontWeight = FontWeight.Bold,
+                                    color = textColorForDate
                                 )
                             }
                         } else {
