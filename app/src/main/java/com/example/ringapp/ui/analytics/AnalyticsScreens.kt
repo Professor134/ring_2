@@ -152,6 +152,12 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
     val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
     val textColor = if (isDark) Color.White else MaterialTheme.colorScheme.onBackground
 
+    val displayedPoints by animateIntAsState(
+        targetValue = state.points,
+        animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing),
+        label = "animatedMainPoints"
+    )
+
     Surface(modifier = Modifier.fillMaxSize(), color = bgColor, contentColor = textColor) {
         AnimatedVisibility(
             visible = true,
@@ -184,7 +190,7 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
                                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
                             ) {
                                 Text(
-                                    "ELITE ${state.points}",
+                                    "ELITE $displayedPoints",
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Black,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
@@ -298,6 +304,13 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
         var range by remember { mutableStateOf("Days") }
         var selected by remember { mutableStateOf<LinePoint?>(null) }
         var confirmDelete by remember { mutableStateOf(false) }
+
+        val displayedPoints by animateIntAsState(
+            targetValue = state.points,
+            animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing),
+            label = "animatedPersonalPoints"
+        )
+
         val habit = state.habit
         if (state.loading || habit == null) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -463,7 +476,7 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
                             )
                             Metric(
                                 "Elite Pts",
-                                state.points.toString(),
+                                displayedPoints.toString(),
                                 Modifier.weight(1f),
                                 textColor
                             )
@@ -1251,13 +1264,13 @@ fun DualCircularProgressIndicator(
 
     val animatedOuterProgress by animateFloatAsState(
         targetValue = outerTargetProgress,
-        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        animationSpec = spring(stiffness = Spring.StiffnessVeryLow),
         label = "outerProgress"
     )
 
     val animatedInnerProgress by animateFloatAsState(
         targetValue = innerTargetProgress,
-        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        animationSpec = spring(stiffness = Spring.StiffnessVeryLow),
         label = "innerProgress"
     )
 

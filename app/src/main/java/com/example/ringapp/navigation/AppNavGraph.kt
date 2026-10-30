@@ -106,10 +106,10 @@ fun AppNavGraph(viewModel: AppViewModel = hiltViewModel()) {
     NavHost(
         navController = navController,
         startDestination = NavigationDestination.HOME.route,
-        enterTransition = { fadeIn(tween(180)) + slideInHorizontally(tween(220)) { it / 14 } },
-        exitTransition = { fadeOut(tween(120)) + slideOutHorizontally(tween(160)) { -it / 24 } },
-        popEnterTransition = { fadeIn(tween(180)) + slideInHorizontally(tween(220)) { -it / 14 } },
-        popExitTransition = { fadeOut(tween(120)) + slideOutHorizontally(tween(160)) { it / 24 } }
+        enterTransition = { fadeIn(tween(350)) + slideInHorizontally(tween(400)) { it / 14 } },
+        exitTransition = { fadeOut(tween(250)) + slideOutHorizontally(tween(300)) { -it / 24 } },
+        popEnterTransition = { fadeIn(tween(350)) + slideInHorizontally(tween(400)) { -it / 14 } },
+        popExitTransition = { fadeOut(tween(250)) + slideOutHorizontally(tween(300)) { it / 24 } }
     ) {
         composable(Screen.HabitDetail, arguments = listOf(navArgument("habitId") { type = NavType.StringType })) {
             PersonalAnalyticsScreen(onBack = { navController.popBackStack() }, onEdit = { navController.navigate(Screen.editHabit(it)) })

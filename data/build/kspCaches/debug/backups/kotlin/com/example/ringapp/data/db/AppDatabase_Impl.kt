@@ -127,7 +127,7 @@ public class AppDatabase_Impl : AppDatabase() {
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_streak_milestone_habitId` ON `streak_milestone` (`habitId`)")
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_streak_milestone_cycleId` ON `streak_milestone` (`cycleId`)")
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_streak_milestone_habitId_cycleId_milestoneLength` ON `streak_milestone` (`habitId`, `cycleId`, `milestoneLength`)")
-        db.execSQL("CREATE TABLE IF NOT EXISTS `task` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `description` TEXT, `priority` TEXT NOT NULL, `dueDate` INTEGER, `dueTime` INTEGER, `repeatType` TEXT NOT NULL, `repeatInterval` INTEGER NOT NULL, `repeatDaysOfWeek` TEXT, `repeatDayOfMonth` INTEGER, `repeatMonth` INTEGER, `repeatEndDate` INTEGER, `completed` INTEGER NOT NULL, `completedAt` INTEGER, `reminderEnabled` INTEGER NOT NULL, `reminderTime` INTEGER, `parentTaskId` INTEGER, `subtasks` TEXT, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `deletedAt` INTEGER, FOREIGN KEY(`parentTaskId`) REFERENCES `task`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )")
+        db.execSQL("CREATE TABLE IF NOT EXISTS `task` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `description` TEXT, `priority` TEXT NOT NULL, `dueDate` INTEGER, `dueTime` INTEGER, `repeatType` TEXT NOT NULL, `repeatInterval` INTEGER NOT NULL, `repeatDaysOfWeek` TEXT, `repeatDayOfMonth` INTEGER, `repeatMonth` INTEGER, `repeatEndDate` INTEGER, `repeatHistory` TEXT, `completed` INTEGER NOT NULL, `completedAt` INTEGER, `reminderEnabled` INTEGER NOT NULL, `reminderTime` INTEGER, `parentTaskId` INTEGER, `subtasks` TEXT, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `deletedAt` INTEGER, FOREIGN KEY(`parentTaskId`) REFERENCES `task`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )")
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_task_parentTaskId` ON `task` (`parentTaskId`)")
         db.execSQL("CREATE TABLE IF NOT EXISTS `point_transaction` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `amount` INTEGER NOT NULL, `type` TEXT NOT NULL, `description` TEXT NOT NULL, `habitId` INTEGER, `taskId` INTEGER, `cycleId` INTEGER, `uniqueReference` TEXT NOT NULL, `timestamp` INTEGER NOT NULL, `deviceId` TEXT, `createdAt` INTEGER NOT NULL, FOREIGN KEY(`habitId`) REFERENCES `habit`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`taskId`) REFERENCES `task`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`cycleId`) REFERENCES `streak_cycle`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )")
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_point_transaction_habitId` ON `point_transaction` (`habitId`)")
@@ -152,7 +152,7 @@ public class AppDatabase_Impl : AppDatabase() {
         db.execSQL("CREATE TABLE IF NOT EXISTS `analytics_daily` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `date` INTEGER NOT NULL, `habitScore` INTEGER NOT NULL, `taskScore` INTEGER NOT NULL, `consistencyScore` INTEGER NOT NULL, `streakScore` INTEGER NOT NULL, `productivityScore` INTEGER NOT NULL, `completionRate` INTEGER NOT NULL, `habitCompletions` INTEGER NOT NULL, `taskCompletions` INTEGER NOT NULL, `activeHabits` INTEGER NOT NULL, `activeTasks` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL)")
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_analytics_daily_date` ON `analytics_daily` (`date`)")
         db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)")
-        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '7bbcbe19862efc4e493622836c335f7e')")
+        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '14288e45e65adfb579dbe36c3d7e13d1')")
       }
 
       public override fun dropAllTables(db: SupportSQLiteDatabase) {
@@ -399,7 +399,7 @@ public class AppDatabase_Impl : AppDatabase() {
               | Found:
               |""".trimMargin() + _existingStreakMilestone)
         }
-        val _columnsTask: HashMap<String, TableInfo.Column> = HashMap<String, TableInfo.Column>(21)
+        val _columnsTask: HashMap<String, TableInfo.Column> = HashMap<String, TableInfo.Column>(22)
         _columnsTask.put("id", TableInfo.Column("id", "INTEGER", true, 1, null,
             TableInfo.CREATED_FROM_ENTITY))
         _columnsTask.put("title", TableInfo.Column("title", "TEXT", true, 0, null,
@@ -424,6 +424,8 @@ public class AppDatabase_Impl : AppDatabase() {
             TableInfo.CREATED_FROM_ENTITY))
         _columnsTask.put("repeatEndDate", TableInfo.Column("repeatEndDate", "INTEGER", false, 0,
             null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsTask.put("repeatHistory", TableInfo.Column("repeatHistory", "TEXT", false, 0, null,
+            TableInfo.CREATED_FROM_ENTITY))
         _columnsTask.put("completed", TableInfo.Column("completed", "INTEGER", true, 0, null,
             TableInfo.CREATED_FROM_ENTITY))
         _columnsTask.put("completedAt", TableInfo.Column("completedAt", "INTEGER", false, 0, null,
@@ -929,7 +931,7 @@ public class AppDatabase_Impl : AppDatabase() {
         }
         return RoomOpenHelper.ValidationResult(true, null)
       }
-    }, "7bbcbe19862efc4e493622836c335f7e", "e8306417777098fd35ad350f9603243e")
+    }, "14288e45e65adfb579dbe36c3d7e13d1", "f59d52da4ff0d9fc903554addeaf8061")
     val _sqliteConfig: SupportSQLiteOpenHelper.Configuration =
         SupportSQLiteOpenHelper.Configuration.builder(config.context).name(config.name).callback(_openCallback).build()
     val _helper: SupportSQLiteOpenHelper = config.sqliteOpenHelperFactory.create(_sqliteConfig)

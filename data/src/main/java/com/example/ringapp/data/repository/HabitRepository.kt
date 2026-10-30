@@ -291,11 +291,19 @@ class HabitRepository @Inject constructor(
         val today = LocalDate.now()
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.US)
 
-        // Check past 30 days up to yesterday
-        for (i in 1..30) {
-            val pastDate = today.minusDays(i.toLong())
-            val pastDateStr = pastDate.format(formatter)
-            val pastDateMillis = pastDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        // Fix: Only check past days ON OR AFTER stepHabit.startDate up to yesterday!
+        // Prevents deducting penalties for days prior to app installation.
+        val habitStartDate = java.time.Instant.ofEpochMilli(stepHabit.startDate)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDate()
+
+        val yesterday = today.minusDays(1)
+        if (habitStartDate.isAfter(yesterday)) return@withTransaction
+
+        var checkDate = habitStartDate
+        while (!checkDate.isAfter(yesterday)) {
+            val pastDateStr = checkDate.format(formatter)
+            val pastDateMillis = checkDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
             val progress = dao.progressForDate(stepHabit.id, pastDateMillis)
             if (progress == null || progress.actual < 1000.0) {
@@ -308,6 +316,7 @@ class HabitRepository @Inject constructor(
                     timestamp = System.currentTimeMillis()
                 )
             }
+            checkDate = checkDate.plusDays(1)
         }
     }
 

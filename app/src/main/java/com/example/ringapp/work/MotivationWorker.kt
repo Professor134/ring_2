@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------
 // Project: Ring 2
 // File: app\src\main\java\com\example\ringapp\work\MotivationWorker.kt
-// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
+// Purpose: CoroutineWorker for delivering daily motivational quote notifications with custom tone support.
 // -----------------------------------------------------------------------------
 
 package com.example.ringapp.work
@@ -9,14 +9,16 @@ package com.example.ringapp.work
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.media.AudioAttributes
+import android.media.RingtoneManager
+import android.net.Uri
+import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.ringapp.R
 import kotlin.random.Random
 
-// Handles the motivation worker logic for this component without modifying runtime behavior.
-// Represents the motivation worker structure used by the application.
 class MotivationWorker(context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
     override suspend fun doWork(): Result {
         val quotes = listOf(
@@ -51,18 +53,32 @@ class MotivationWorker(context: Context, workerParams: WorkerParameters) : Corou
         val quote = quotes[Random.nextInt(quotes.size)]
 
         val manager = applicationContext.getSystemService(NotificationManager::class.java)
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            manager.createNotificationChannel(
-                NotificationChannel("motivation", "Daily Motivation", NotificationManager.IMPORTANCE_DEFAULT)
-            )
+
+        val soundResId = applicationContext.resources.getIdentifier("ring_notification", "raw", applicationContext.packageName)
+        val soundUri = if (soundResId != 0) {
+            Uri.parse("android.resource://${applicationContext.packageName}/$soundResId")
+        } else {
+            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
         }
 
-        val notificationId = 1001 // Fixed ID to prevent duplicate notifications
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val attributes = AudioAttributes.Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                .build()
+
+            val channel = NotificationChannel("motivation", "Daily Motivation", NotificationManager.IMPORTANCE_DEFAULT)
+            channel.setSound(soundUri, attributes)
+            manager.createNotificationChannel(channel)
+        }
+
+        val notificationId = 1001
         val notification = NotificationCompat.Builder(applicationContext, "motivation")
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle("Daily Motivation")
             .setContentText(quote)
             .setStyle(NotificationCompat.BigTextStyle().bigText(quote))
+            .setSound(soundUri)
             .setAutoCancel(true)
             .build()
 

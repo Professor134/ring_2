@@ -1,14 +1,27 @@
 // -----------------------------------------------------------------------------
 // Project: Ring 2
 // File: app\src\main\java\com\example\ringapp\ui\tasks\TaskDetailScreen.kt
-// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
+// Purpose: Displays task details, checklist, historical repeat iterations, and chronology log.
 // -----------------------------------------------------------------------------
 
 package com.example.ringapp.ui.tasks
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -17,9 +30,24 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Badge
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,27 +61,34 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.ringapp.data.local.entities.PointTransactionEntity
+import com.example.ringapp.data.local.entities.RepeatType
 import com.example.ringapp.data.local.entities.TaskEntity
 import com.example.ringapp.data.local.entities.TaskPriority
-import com.example.ringapp.data.local.entities.RepeatType
-import com.example.ringapp.data.local.entities.PointTransactionEntity
 import com.example.ringapp.domain.engine.ScheduleEngine
-import com.example.ringapp.domain.usecase.*
-import com.example.ringapp.ui.theme.CyberNeonGreen
+import com.example.ringapp.domain.usecase.CompleteTaskUseCase
+import com.example.ringapp.domain.usecase.DeleteTaskUseCase
+import com.example.ringapp.domain.usecase.ObserveTaskTransactionsUseCase
+import com.example.ringapp.domain.usecase.ObserveTaskUseCase
+import com.example.ringapp.domain.usecase.UpdateTaskUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
+import org.json.JSONArray
 import java.text.SimpleDateFormat
-import java.time.LocalDate
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.*
+import java.util.Date
+import java.util.Locale
+import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 @HiltViewModel
-// Handles the task detail view model logic for this component without modifying runtime behavior.
-// Represents the task detail view model structure used by the application.
 class TaskDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     observeTask: ObserveTaskUseCase,
@@ -73,7 +108,6 @@ class TaskDetailViewModel @Inject constructor(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
-// Manages the toggle task flow without changing runtime behavior.
     fun toggleTask(task: TaskEntity) = viewModelScope.launch {
         try {
             _errorMessage.value = null
@@ -82,25 +116,32 @@ class TaskDetailViewModel @Inject constructor(
             _errorMessage.value = e.message ?: "Unable to complete task"
         }
     }
-    
-// Manages the toggle subtask flow without changing runtime behavior.
+
     fun toggleSubtask(task: TaskEntity, subtaskId: String) = viewModelScope.launch {
         val updatedSubtasks = task.subtasks?.map { if (it.id == subtaskId) it.copy(completed = !it.completed) else it }
         updateTask(task.copy(subtasks = updatedSubtasks, updatedAt = System.currentTimeMillis()))
     }
 
-// Manages the delete flow without changing runtime behavior.
     fun delete(taskId: Long, onDeleted: () -> Unit) = viewModelScope.launch {
         deleteTask(taskId)
         onDeleted()
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+data class TaskIterationRecord(
+    val iterationDate: Long,
+    val completedAt: Long?,
+    val status: String,
+    val subtasksCount: Int,
+    val subtasksCompleted: Int
+)
+
 @Composable
-// Handles the task detail screen logic for this component without modifying runtime behavior.
-// Manages the task detail screen flow without changing runtime behavior.
-fun TaskDetailScreen(onBack: () -> Unit, onEdit: (Long) -> Unit, viewModel: TaskDetailViewModel = hiltViewModel()) {
+fun TaskDetailScreen(
+    onBack: () -> Unit,
+    onEdit: (Long) -> Unit,
+    viewModel: TaskDetailViewModel = hiltViewModel()
+) {
     val task by viewModel.task.collectAsStateWithLifecycle()
     val transactions by viewModel.transactions.collectAsStateWithLifecycle()
     val errorMsg by viewModel.errorMessage.collectAsStateWithLifecycle()
@@ -120,11 +161,48 @@ fun TaskDetailScreen(onBack: () -> Unit, onEdit: (Long) -> Unit, viewModel: Task
 
     val t = task!!
 
+    // Parse historical iterations from repeatHistory JSON
+    val historicalIterations = remember(t.repeatHistory) {
+        val list = mutableListOf<TaskIterationRecord>()
+        val historyStr = t.repeatHistory
+        if (!historyStr.isNullOrBlank()) {
+            try {
+                val array = JSONArray(historyStr)
+                for (i in 0 until array.length()) {
+                    val obj = array.getJSONObject(i)
+                    list.add(
+                        TaskIterationRecord(
+                            iterationDate = obj.optLong("iterationDate", 0L),
+                            completedAt = if (obj.has("completedAt")) obj.optLong("completedAt") else null,
+                            status = obj.optString("status", "COMPLETED"),
+                            subtasksCount = obj.optInt("subtasksCount", 0),
+                            subtasksCompleted = obj.optInt("subtasksCompleted", 0)
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                // Fallback
+            }
+        }
+        list.sortedByDescending { it.iterationDate }
+    }
+
     Surface(modifier = Modifier.fillMaxSize(), color = bgColor, contentColor = textColor) {
-        LazyColumn(Modifier.fillMaxSize().padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(16.dp), contentPadding = PaddingValues(top = 48.dp, bottom = 48.dp)) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(top = 48.dp, bottom = 48.dp)
+        ) {
+            // Header Bar
             item {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = textColor) }
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = textColor)
+                    }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         IconButton(onClick = { onEdit(t.id) }) { Icon(Icons.Default.Edit, "Edit", tint = textColor) }
                         IconButton(onClick = { confirmDelete = true }) { Icon(Icons.Default.Delete, "Delete", tint = MaterialTheme.colorScheme.error) }
@@ -133,12 +211,17 @@ fun TaskDetailScreen(onBack: () -> Unit, onEdit: (Long) -> Unit, viewModel: Task
                 Text(t.title, style = MaterialTheme.typography.headlineMedium, color = textColor, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(4.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Badge(containerColor = when(t.priority) {
-                        TaskPriority.HIGH -> Color(0xFFD32F2F)
-                        TaskPriority.MEDIUM -> Color(0xFFFBC02D)
-                        TaskPriority.LOW -> Color(0xFF388E3C)
+                    Badge(containerColor = when (t.priority) {
+                        TaskPriority.HIGH -> Color(0xFFFF1744)
+                        TaskPriority.MEDIUM -> Color(0xFFFFEA00)
+                        TaskPriority.LOW -> Color(0xFF00E676)
                     }) {
-                        Text(t.priority.name, color = Color.White, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                        Text(
+                            t.priority.name,
+                            color = if (t.priority == TaskPriority.MEDIUM) Color.Black else Color.White,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
                     }
                     if (t.repeatType != RepeatType.NONE) {
                         Text("• Repeats: ${t.repeatType.name}", color = textColor.copy(alpha = 0.6f))
@@ -163,25 +246,38 @@ fun TaskDetailScreen(onBack: () -> Unit, onEdit: (Long) -> Unit, viewModel: Task
                 }
             }
 
+            // Current Task Status Card
             item {
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Task Status & Schedule", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        Text("Status: ${if (t.completed) "Completed ✓" else "Pending ⏳"}", color = if (t.completed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary)
+                        Text(
+                            text = "Status: ${if (t.completed) "Completed ✓" else "Pending ⏳"}",
+                            color = if (t.completed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
+                            fontWeight = FontWeight.Bold
+                        )
                         t.dueDate?.let {
-                            Text("Due: ${SimpleDateFormat("EEE, d MMM yyyy HH:mm", Locale.getDefault()).format(Date(it))}", color = textColor.copy(alpha = 0.7f))
+                            Text(
+                                text = "Current Due: ${SimpleDateFormat("EEE, d MMM yyyy HH:mm", Locale.getDefault()).format(Date(it))}",
+                                color = textColor.copy(alpha = 0.8f)
+                            )
                         }
                     }
                 }
             }
 
+            // Checklist & Subtasks
             if (!t.subtasks.isNullOrEmpty()) {
                 item {
                     Text("Checklist & Subtasks", style = MaterialTheme.typography.titleLarge, color = textColor, fontWeight = FontWeight.Bold)
                 }
                 items(t.subtasks.orEmpty(), key = { it.id }) { subtask ->
                     Card(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                        Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                        Row(
+                            Modifier.fillMaxWidth().padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                                 Checkbox(checked = subtask.completed, onCheckedChange = { viewModel.toggleSubtask(t, subtask.id) })
                                 Spacer(Modifier.width(8.dp))
@@ -194,11 +290,66 @@ fun TaskDetailScreen(onBack: () -> Unit, onEdit: (Long) -> Unit, viewModel: Task
 
             item {
                 Spacer(Modifier.height(8.dp))
-                Button(onClick = { viewModel.toggleTask(t) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
-                    Text(if (t.completed) "Mark Incomplete (-4 Points)" else "Complete Task (+4 Points)")
+                Button(
+                    onClick = { viewModel.toggleTask(t) },
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = if (t.completed) "Mark Incomplete (-3 Points)" else "Complete Task (+3 Points)",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium
+                    )
                 }
             }
 
+            // Historical Iterations Section for Repeatable Tasks
+            if (t.repeatType != RepeatType.NONE && historicalIterations.isNotEmpty()) {
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text = "HISTORICAL ITERATIONS LOG",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Black,
+                            color = textColor.copy(alpha = 0.5f),
+                            letterSpacing = 2.sp
+                        )
+
+                        historicalIterations.forEach { iter ->
+                            val iterDueDateStr = SimpleDateFormat("EEE, d MMM yyyy", Locale.getDefault()).format(Date(iter.iterationDate))
+                            val iterCompletedDateStr = iter.completedAt?.let {
+                                SimpleDateFormat("d MMM yyyy, HH:mm", Locale.getDefault()).format(Date(it))
+                            }
+
+                            Card(
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f)),
+                                border = BorderStroke(1.dp, textColor.copy(alpha = 0.08f)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                        Text("Iteration Due: $iterDueDateStr", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                                        Text(
+                                            text = if (iter.completedAt != null) "Completed ✓" else "Missed ⏳",
+                                            color = if (iter.completedAt != null) MaterialTheme.colorScheme.primary else Color(0xFFFF3131),
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                    if (iterCompletedDateStr != null) {
+                                        Text("Completed at: $iterCompletedDateStr", style = MaterialTheme.typography.bodySmall, color = textColor.copy(alpha = 0.6f))
+                                    }
+                                    if (iter.subtasksCount > 0) {
+                                        Text("Subtasks: ${iter.subtasksCompleted}/${iter.subtasksCount} completed", style = MaterialTheme.typography.bodySmall, color = textColor.copy(alpha = 0.6f))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Task Calendar Chronology Log
             item {
                 Spacer(Modifier.height(8.dp))
                 TaskCalendar(task = t, transactions = transactions, textColor = textColor)
@@ -210,22 +361,31 @@ fun TaskDetailScreen(onBack: () -> Unit, onEdit: (Long) -> Unit, viewModel: Task
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
             title = { Text("Delete task?") },
-            text = { Text("Deleting a task costs 5 Elite Points.", color = Color.Red) },
-            confirmButton = { TextButton(onClick = { viewModel.delete(t.id) { onBack() } }) { Text("Delete", color = Color.Red) } },
-            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } }
+            text = { Text("Deleting an incomplete task costs 5 Elite Points.", color = Color.Red) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.delete(t.id) { onBack() } }) {
+                    Text("Delete", color = Color.Red, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }) { Text("Cancel") }
+            }
         )
     }
 }
 
+// -----------------------------------------------------------------------------
+// Task Chronology Log Calendar
+// Precedence: Main Task Completion > Subtask Completion > Overdue Date > Due Date
+// -----------------------------------------------------------------------------
 @Composable
-// Handles the task calendar logic for this component without modifying runtime behavior.
-// Manages the task calendar flow without changing runtime behavior.
 private fun TaskCalendar(
     task: TaskEntity,
     transactions: List<PointTransactionEntity>,
     textColor: Color
 ) {
     var currentMonth by remember { mutableStateOf(LocalDate.now().withDayOfMonth(1)) }
+    val today = LocalDate.now()
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(
@@ -243,8 +403,8 @@ private fun TaskCalendar(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { currentMonth = currentMonth.minusMonths(1) }) {
                     Icon(
-                        Icons.Default.ArrowBack,
-                        null,
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        "Previous Month",
                         Modifier.size(20.dp),
                         tint = textColor
                     )
@@ -255,12 +415,10 @@ private fun TaskCalendar(
                     fontWeight = FontWeight.Black,
                     letterSpacing = 1.sp
                 )
-                IconButton(onClick = {
-                    currentMonth = currentMonth.plusMonths(1)
-                }) {
+                IconButton(onClick = { currentMonth = currentMonth.plusMonths(1) }) {
                     Icon(
-                        Icons.Default.ArrowBack,
-                        null,
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        "Next Month",
                         Modifier.size(20.dp).graphicsLayer(rotationZ = 180f),
                         tint = textColor
                     )
@@ -293,29 +451,56 @@ private fun TaskCalendar(
                         val date = currentMonth.withDayOfMonth(dayOfMonth)
                         val dayStart = date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
                         val dayEnd = date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli() - 1
-                        val completedOnDate = transactions.any { it.timestamp in dayStart..dayEnd && it.amount > 0 }
-                        val active = if (task.repeatType == RepeatType.NONE) {
-                            val due = task.dueDate?.let { Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate() }
-                            due == null || due == date
-                        } else {
-                            ScheduleEngine.isActiveOnDate(task, date)
+
+                        val mainTaskCompletedOnDate = transactions.any {
+                            it.timestamp in dayStart..dayEnd && it.type == com.example.ringapp.data.local.entities.TransactionType.TASK_COMPLETE
+                        } || (task.completed && task.completedAt != null && task.completedAt in dayStart..dayEnd)
+
+                        val subtaskCompletedOnDate = task.updatedAt in dayStart..dayEnd && (task.subtasks?.any { it.completed } == true)
+
+                        val dueDateObj = task.dueDate?.let {
+                            Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
+                        }
+                        val isExactDueDate = dueDateObj == date
+                        val isPastOverdue = dueDateObj != null && date.isAfter(dueDateObj) && date.isBefore(today) && !task.completed
+
+                        val isScheduledFuture = date.isAfter(today) && ScheduleEngine.isActiveOnDate(task, date)
+
+                        // Precedence Rule: Main Task Completion > Subtask Completion > Overdue Date > Due Date
+                        val (borderColor, textColorForDate, bgColor) = when {
+                            mainTaskCompletedOnDate -> {
+                                Triple(Color(0xFF4CAF50), Color.White, Color(0xFF4CAF50).copy(alpha = 0.18f))
+                            }
+                            subtaskCompletedOnDate -> {
+                                Triple(Color(0xFF2196F3), Color.White, Color(0xFF2196F3).copy(alpha = 0.18f))
+                            }
+                            isPastOverdue -> {
+                                Triple(Color(0xFFFF3131), Color.White, Color(0xFF8B0000).copy(alpha = 0.6f))
+                            }
+                            isExactDueDate -> {
+                                Triple(Color(0xFFFF3131), Color.White, Color(0xFFFF3131).copy(alpha = 0.18f))
+                            }
+                            isScheduledFuture -> {
+                                Triple(Color(0xFF2196F3), Color.White, Color(0xFF2196F3).copy(alpha = 0.15f))
+                            }
+                            else -> {
+                                Triple(Color.White.copy(alpha = 0.2f), Color.White, Color.Transparent)
+                            }
                         }
 
-                        val color = when {
-                            date.isAfter(LocalDate.now()) -> Color.Gray.copy(alpha = 0.1f)
-                            completedOnDate -> CyberNeonGreen
-                            active -> MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                            else -> Color.Transparent
-                        }
                         Box(
-                            Modifier.size(34.dp).clip(CircleShape).background(color),
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .background(bgColor)
+                                .border(1.5.dp, borderColor, CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                dayOfMonth.toString(),
+                                text = dayOfMonth.toString(),
                                 style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Black,
-                                color = if (completedOnDate) Color.Black else if (color == Color.Transparent) textColor else textColor.copy(alpha = 0.8f)
+                                fontWeight = FontWeight.Bold,
+                                color = textColorForDate
                             )
                         }
                     } else {

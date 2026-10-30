@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------
 // Project: Ring 2
 // File: data\src\main\java\com\example\ringapp\data\local\entities\TaskEntity.kt
-// Purpose: This file contains the application logic and is documented for clarity without changing behavior.
+// Purpose: Entity representing a task with subtasks, reminders, and historical repeat iterations.
 // -----------------------------------------------------------------------------
 
 package com.example.ringapp.data.local.entities
@@ -21,8 +21,6 @@ import androidx.room.PrimaryKey
     )],
     indices = [Index("parentTaskId")]
 )
-// Handles the task entity logic for this component without modifying runtime behavior.
-// Represents the task entity structure used by the application.
 data class TaskEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val title: String,
@@ -36,6 +34,7 @@ data class TaskEntity(
     val repeatDayOfMonth: Int? = null,
     val repeatMonth: Int? = null,
     val repeatEndDate: Long? = null,
+    val repeatHistory: String? = null,
     val completed: Boolean = false,
     val completedAt: Long? = null,
     val reminderEnabled: Boolean = false,

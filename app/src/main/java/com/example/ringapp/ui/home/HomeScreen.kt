@@ -449,9 +449,9 @@ private fun categoryIcon(iconName: String): ImageVector = when (iconName.lowerca
 
 @Composable private fun HomeTaskCard(task: TaskEntity, textColor: Color, onToggle: () -> Unit, onClick: () -> Unit) { 
     val priorityColor = when (task.priority) {
-        TaskPriority.HIGH -> Color(0xFFFF3131)
-        TaskPriority.MEDIUM -> Color(0xFFFFD600)
-        TaskPriority.LOW -> CyberNeonGreen
+        TaskPriority.HIGH -> Color(0xFFFF1744)
+        TaskPriority.MEDIUM -> Color(0xFFFFEA00)
+        TaskPriority.LOW -> Color(0xFF00E676)
     }
     val isDark = isSystemInDarkTheme()
     
