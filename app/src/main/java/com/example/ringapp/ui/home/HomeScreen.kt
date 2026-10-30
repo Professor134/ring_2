@@ -491,10 +491,12 @@ private fun ProgressDialog(
     var value by remember(progress) { mutableStateOf((progress?.actual ?: 0.0).toInt().toString()) }
     var note by remember(progress) { mutableStateOf(progress?.note.orEmpty()) }
 
+    val isDark = isSystemInDarkTheme()
+    val dialogBg = if (isDark) Color(0xFF20232A) else Color(0xFFF0F2F5)
+
     AlertDialog(
         onDismissRequest = onDismiss, 
-        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.60f),
-        modifier = Modifier.blur(16.dp),
+        containerColor = dialogBg,
         title = { Text("Today's Progress", fontWeight = FontWeight.Bold) }, 
         text = { 
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { 

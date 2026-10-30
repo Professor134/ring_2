@@ -1029,10 +1029,10 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
         color: Color = MaterialTheme.colorScheme.primary,
         onPointTap: (LinePoint) -> Unit = {}
     ) {
-        if (points.isEmpty() || points.all { it.score == 0 }) {
+        if (points.isEmpty()) {
             Box(modifier, contentAlignment = Alignment.Center) {
                 Text(
-                    "Create Habit",
+                    "NO METRIC DATA",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Black,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
@@ -1046,12 +1046,17 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
             animatable.snapTo(0f)
             animatable.animateTo(
                 targetValue = 1f,
-                animationSpec = tween(durationMillis = 2000, easing = FastOutSlowInEasing)
+                animationSpec = tween(durationMillis = 1200, easing = FastOutSlowInEasing)
             )
         }
         val progress = animatable.value
-
         val primaryColor = color
+
+        val actualValues = points.map { it.actual }
+        val minVal = actualValues.minOrNull() ?: 0.0
+        val maxVal = actualValues.maxOrNull() ?: 100.0
+        val valRange = (maxVal - minVal).let { if (it <= 0.0) 10.0 else it }
+
         Canvas(modifier.pointerInput(points) {
             detectTapGestures { position ->
                 if (points.isNotEmpty()) {
@@ -1061,18 +1066,19 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
                 }
             }
         }) {
-            val left = 20f
+            val left = 24f
             val bottom = size.height - 24f
-            val top = 12f
-            val width = size.width - left - 8f
+            val top = 16f
+            val width = size.width - left - 12f
+            val height = bottom - top
 
-            repeat(5) { i ->
-                val y = top + (bottom - top) * i / 4f
+            repeat(4) { i ->
+                val y = top + (height * i / 3f)
                 drawLine(
-                    Color.LightGray.copy(alpha = .1f),
+                    Color.LightGray.copy(alpha = 0.12f),
                     Offset(left, y),
-                    Offset(size.width, y),
-                    1f
+                    Offset(size.width - 8f, y),
+                    1.dp.toPx()
                 )
             }
 
@@ -1080,24 +1086,34 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
 
             clipRect(left = 0f, top = 0f, right = clipRight, bottom = size.height) {
                 val path = Path()
+                val pointOffsets = mutableListOf<Offset>()
+
                 points.forEachIndexed { index, point ->
-                    val x =
-                        if (points.size > 1) left + width * index.toFloat() / points.lastIndex else left + width / 2
-                    val y = bottom - (bottom - top) * point.score / 100f
+                    val x = if (points.size > 1) left + width * index.toFloat() / points.lastIndex else left + width / 2f
+                    val normalizedY = ((point.actual - minVal) / valRange).toFloat().coerceIn(0f, 1f)
+                    val y = bottom - (height * normalizedY)
+                    val offset = Offset(x, y)
+                    pointOffsets.add(offset)
+
                     if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
-                    drawCircle(primaryColor, 10f, Offset(x, y))
                 }
+
                 if (points.size > 1) {
                     drawPath(
                         path,
                         primaryColor,
-                        style = androidx.compose.ui.graphics.drawscope.Stroke(6f)
+                        style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
                     )
                     drawPath(
                         path,
                         primaryColor.copy(alpha = 0.25f),
-                        style = androidx.compose.ui.graphics.drawscope.Stroke(14f)
+                        style = Stroke(width = 7.dp.toPx(), cap = StrokeCap.Round)
                     )
+                }
+
+                pointOffsets.forEach { offset ->
+                    drawCircle(Color.Black, radius = 5.dp.toPx(), center = offset)
+                    drawCircle(primaryColor, radius = 4.dp.toPx(), center = offset)
                 }
             }
         }
@@ -1252,18 +1268,24 @@ fun DualCircularProgressIndicator(
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.size(170.dp)
+            modifier = Modifier.size(180.dp)
         ) {
             Canvas(modifier = Modifier.fillMaxSize()) {
-                val strokeOuter = 12.dp.toPx()
+                val strokeOuter = 10.dp.toPx()
                 val strokeInner = 8.dp.toPx()
+                val gap = 8.dp.toPx()
 
-                val outerRadius = (size.minDimension / 2f) - strokeOuter
-                val innerRadius = outerRadius - strokeOuter - 6.dp.toPx()
+                val maxRadius = (size.minDimension / 2f)
+                val outerRadius = maxRadius - (strokeOuter / 2f) - 4.dp.toPx()
+                val innerRadius = outerRadius - (strokeOuter / 2f) - gap - (strokeInner / 2f)
+
+                // Dynamic color intensity based on progress (mild at 0% to bright at 100%)
+                val outerColor = baseColor.copy(alpha = (0.4f + 0.6f * animatedOuterProgress).coerceIn(0.4f, 1f))
+                val innerColor = baseColor.copy(alpha = (0.4f + 0.6f * animatedInnerProgress).coerceIn(0.4f, 1f))
 
                 // Outer Track
                 drawCircle(
-                    color = baseColor.copy(alpha = 0.15f),
+                    color = baseColor.copy(alpha = 0.12f),
                     radius = outerRadius,
                     style = Stroke(width = strokeOuter, cap = StrokeCap.Round)
                 )
@@ -1271,29 +1293,40 @@ fun DualCircularProgressIndicator(
                 if (!isSingleSetRep) {
                     // Inner Track
                     drawCircle(
-                        color = baseColor.copy(alpha = 0.10f),
+                        color = baseColor.copy(alpha = 0.08f),
                         radius = innerRadius,
                         style = Stroke(width = strokeInner, cap = StrokeCap.Round)
                     )
                 }
 
                 // Outer Ring (Completed Sets)
+                val outerRect = androidx.compose.ui.geometry.Rect(
+                    Offset(center.x - outerRadius, center.y - outerRadius),
+                    androidx.compose.ui.geometry.Size(outerRadius * 2, outerRadius * 2)
+                )
                 drawArc(
-                    color = baseColor,
+                    color = outerColor,
                     startAngle = -90f,
                     sweepAngle = 360f * animatedOuterProgress,
                     useCenter = false,
+                    topLeft = outerRect.topLeft,
+                    size = outerRect.size,
                     style = Stroke(width = strokeOuter, cap = StrokeCap.Round)
                 )
 
                 // Inner Ring (Current Set Reps)
                 if (!isSingleSetRep) {
-                    val innerColor = baseColor.copy(alpha = 0.85f)
+                    val innerRect = androidx.compose.ui.geometry.Rect(
+                        Offset(center.x - innerRadius, center.y - innerRadius),
+                        androidx.compose.ui.geometry.Size(innerRadius * 2, innerRadius * 2)
+                    )
                     drawArc(
                         color = innerColor,
                         startAngle = -90f,
                         sweepAngle = 360f * animatedInnerProgress,
                         useCenter = false,
+                        topLeft = innerRect.topLeft,
+                        size = innerRect.size,
                         style = Stroke(width = strokeInner, cap = StrokeCap.Round)
                     )
                 }
@@ -1350,7 +1383,6 @@ fun BmiAnalyticsScreen(
     profile: ProfileEntity?,
     onBack: () -> Unit
 ) {
-    var filter by remember { mutableStateOf("BMI") } // "BMI", "Weight", "Height"
     var showUpdateDialog by remember { mutableStateOf(false) }
     var selectedPoint by remember { mutableStateOf<BmiMeasurement?>(null) }
 
@@ -1504,53 +1536,27 @@ fun BmiAnalyticsScreen(
                 }
             }
 
-            // Metric Graph Filters (BMI, Weight, Height)
+            // Line Chart for BMI Historical Measurements (Plotting BMI over time)
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = "HISTORICAL METRIC GRAPH",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Black,
-                        color = textColor.copy(alpha = 0.5f),
-                        letterSpacing = 2.sp
-                    )
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        listOf("BMI", "Weight", "Height").forEach { option ->
-                            FilterChip(
-                                selected = filter == option,
-                                onClick = { filter = option },
-                                label = { Text(option.uppercase()) },
-                                shape = RoundedCornerShape(12.dp),
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = orangeColor,
-                                    selectedLabelColor = Color.White
-                                )
-                            )
-                        }
-                    }
-                }
+                Text(
+                    text = "HISTORICAL BMI GRAPH",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Black,
+                    color = textColor.copy(alpha = 0.5f),
+                    letterSpacing = 2.sp
+                )
             }
 
-            // Line Chart for selected metric (BMI, Weight, Height)
             item {
                 val chartPoints = measurements.map { m ->
-                    val valToDisplay = when (filter) {
-                        "Weight" -> m.weightKg
-                        "Height" -> m.heightCm
-                        else -> m.bmi
-                    }
                     val dateLabel = SimpleDateFormat("d MMM", Locale.getDefault()).format(Date(m.date))
                     val dateObj = Instant.ofEpochMilli(m.date).atZone(ZoneId.systemDefault()).toLocalDate()
 
                     LinePoint(
                         label = dateLabel,
-                        score = valToDisplay.toInt(),
-                        actual = valToDisplay,
-                        target = when (filter) { "Weight" -> 100.0; "Height" -> 200.0; else -> 30.0 },
+                        score = (m.bmi * 10).toInt(),
+                        actual = m.bmi,
+                        target = 25.0,
                         completed = true,
                         date = dateObj,
                         isActive = true
@@ -1578,7 +1584,7 @@ fun BmiAnalyticsScreen(
                             modifier = Modifier.fillMaxWidth().height(180.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("No measurements recorded for this graph", color = textColor.copy(alpha = 0.5f))
+                            Text("No BMI measurements recorded yet", color = textColor.copy(alpha = 0.5f))
                         }
                     }
                 }

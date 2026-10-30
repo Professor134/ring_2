@@ -163,8 +163,12 @@ fun BmiMeasurementDialog(
     var height by remember(profile) { mutableStateOf(profile?.heightCm?.toString().orEmpty()) }
     var error by remember { mutableStateOf<String?>(null) }
 
+    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val dialogBg = if (isDark) androidx.compose.ui.graphics.Color(0xFF20232A) else androidx.compose.ui.graphics.Color(0xFFF0F2F5)
+
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = dialogBg,
         title = { Text("Update BMI Measurements") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {

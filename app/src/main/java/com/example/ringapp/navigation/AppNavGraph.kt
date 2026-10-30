@@ -181,16 +181,16 @@ private fun AdaptiveNavigationScaffold(
                 bottomBar = {
                     NavigationBar(
                         modifier = Modifier
-                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
                             .clip(RoundedCornerShape(22.dp))
-                            .blur(16.dp)
                             .border(
-                                BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f)),
+                                BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)),
                                 RoundedCornerShape(22.dp)
                             )
                             .semantics { contentDescription = "Main navigation" },
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.10f),
-                        tonalElevation = 0.dp
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f),
+                        tonalElevation = 0.dp,
+                        windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0)
                     ) {
                         NavigationDestination.entries.forEach { destination ->
                             NavigationBarItem(
@@ -198,7 +198,15 @@ private fun AdaptiveNavigationScaffold(
                                 onClick = { navController.navigateTo(destination) },
                                 modifier = Modifier.animateContentSize(),
                                 icon = { NavigationMarker(destination) },
-                                label = { androidx.compose.material3.Text(destination.label) },
+                                label = {
+                                    androidx.compose.material3.Text(
+                                        text = destination.label,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        maxLines = 1,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                    )
+                                },
+                                alwaysShowLabel = true,
                                 colors = NavigationBarItemDefaults.colors(
                                     selectedIconColor = MaterialTheme.colorScheme.primary,
                                     selectedTextColor = MaterialTheme.colorScheme.primary,
