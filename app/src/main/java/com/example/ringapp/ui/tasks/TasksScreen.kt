@@ -148,6 +148,6 @@ fun TasksScreen(onAddTask: () -> Unit, onTaskClick: (Long) -> Unit, viewModel: T
 }
 // Handles the priority color logic for this component without modifying runtime behavior.
 // Manages the priority color flow without changing runtime behavior.
-private fun priorityColor(priority: TaskPriority) = when (priority) { TaskPriority.HIGH -> Color(0xFFFF1744); TaskPriority.MEDIUM -> Color(0xFFFFEA00); TaskPriority.LOW -> Color(0xFF00E676) }
+private fun priorityColor(priority: TaskPriority) = when (priority) { TaskPriority.HIGH -> Color(0xFFFF1744); TaskPriority.MEDIUM -> Color(0xFFFFEA00); TaskPriority.LOW -> Color(0xFF00A84F) }
 // Manages the start of day flow without changing runtime behavior.
 private fun startOfDay(time: Long): Long = Calendar.getInstance().apply { timeInMillis = time; set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }.timeInMillis

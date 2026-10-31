@@ -16,7 +16,7 @@ object CategoryConstants {
     // Highly bright, vibrant electric color palette for habit categories
     val ALL_CATEGORIES = listOf(
         FixedCategory(GYM, 0xFFFF1744.toInt(), "fitness"),       // Vibrant Bright Electric Red
-        FixedCategory(HEALTH, 0xFF00E676.toInt(), "self"),       // Vibrant Bright Electric Green
+        FixedCategory(HEALTH, 0xFF00A84F.toInt(), "self"),       // Base Theme Green
         FixedCategory(STUDY, 0xFF00B0FF.toInt(), "school"),      // Vibrant Bright Electric Blue
         FixedCategory(PERSONAL, 0xFFFFEA00.toInt(), "person"),   // Vibrant Bright Electric Yellow
         FixedCategory(WORK, 0xFFD500F9.toInt(), "work")          // Vibrant Bright Electric Magenta

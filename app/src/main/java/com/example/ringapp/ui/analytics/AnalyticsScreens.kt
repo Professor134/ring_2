@@ -304,6 +304,7 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
         var range by remember { mutableStateOf("Days") }
         var selected by remember { mutableStateOf<LinePoint?>(null) }
         var confirmDelete by remember { mutableStateOf(false) }
+        var editingDate by remember { mutableStateOf<LocalDate?>(null) }
 
         val displayedPoints by animateIntAsState(
             targetValue = state.points,
@@ -646,6 +647,11 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
                     }
                     item {
                         HabitCalendar(habit, state.progress, textColor) { date ->
+                            val habitStart = Instant.ofEpochMilli(habit.startDate).atZone(ZoneId.systemDefault()).toLocalDate()
+                            val isEditable = !date.isBefore(habitStart) && !date.isAfter(LocalDate.now()) && com.example.ringapp.domain.engine.ScheduleEngine.isActiveOnDate(habit, date)
+                            if (isEditable && !isSteps) {
+                                editingDate = date
+                            }
                             val record = state.progress.firstOrNull { it.date == dayStart(date) }
                             val score = ((record?.actual ?: 0.0) * 100 / dynamicCeiling).toInt()
                                 .coerceIn(0, 100)
@@ -680,6 +686,21 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
                     }
                 }
         }
+        if (editingDate != null) {
+            val recordForEditing = state.progress.firstOrNull { it.date == dayStart(editingDate!!) }
+            AnalyticsProgressDialog(
+                habit = habit,
+                progress = recordForEditing,
+                editingDate = editingDate!!,
+                onDismiss = { editingDate = null },
+                onSave = { value, note ->
+                    val dateMillis = editingDate!!.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                    viewModel.recordProgress(habit, dateMillis, value, note)
+                    editingDate = null
+                }
+            )
+        }
+
         if (confirmDelete) AlertDialog(
             onDismissRequest = { confirmDelete = false },
             title = { Text("Terminate Habit?") },
@@ -1256,7 +1277,7 @@ fun DualCircularProgressIndicator(
     val isSingleSetRep = (safeSets == 1 && safeReps == 1) || target <= 1.0
 
     val actualInt = progressActual.toInt()
-    val completedSets = if (safeReps > 0) (actualInt / safeReps).coerceAtMost(safeSets) else 0
+    val completedSets = if (safeReps > 0) (actualInt / safeReps) else 0
     val currentSetReps = if (safeReps > 0) (actualInt % safeReps) else 0
 
     val outerTargetProgress = (completedSets.toFloat() / safeSets.toFloat()).coerceIn(0f, 1f)
@@ -1264,13 +1285,13 @@ fun DualCircularProgressIndicator(
 
     val animatedOuterProgress by animateFloatAsState(
         targetValue = outerTargetProgress,
-        animationSpec = spring(stiffness = Spring.StiffnessVeryLow),
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessVeryLow),
         label = "outerProgress"
     )
 
     val animatedInnerProgress by animateFloatAsState(
         targetValue = innerTargetProgress,
-        animationSpec = spring(stiffness = Spring.StiffnessVeryLow),
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessVeryLow),
         label = "innerProgress"
     )
 
@@ -1373,7 +1394,7 @@ fun DualCircularProgressIndicator(
                     )
                     if (!isSingleSetRep) {
                         Text(
-                            text = "Set ${minOf(completedSets + 1, safeSets)} / $safeSets",
+                            text = "Sets: $completedSets / $safeSets",
                             style = MaterialTheme.typography.labelSmall,
                             color = baseColor,
                             fontWeight = FontWeight.ExtraBold
@@ -1682,4 +1703,95 @@ fun BmiAnalyticsScreen(
     if (showUpdateDialog) {
         BmiMeasurementDialog(onDismiss = { showUpdateDialog = false })
     }
+}
+
+@Composable
+private fun AnalyticsProgressDialog(
+    habit: HabitEntity,
+    progress: HabitProgressEntity?,
+    editingDate: java.time.LocalDate,
+    onDismiss: () -> Unit,
+    onSave: (Double, String?) -> Unit
+) {
+    val dateStr = editingDate.format(java.time.format.DateTimeFormatter.ofPattern("EEE, d MMM yyyy", Locale.getDefault()))
+    val todayTarget = habit.getTargetForDate(editingDate)
+    val sets = habit.sets.coerceAtLeast(1)
+    val repsPerSet = habit.repsPerSet.coerceAtLeast(1)
+
+    var value by remember(progress) { mutableStateOf((progress?.actual ?: 0.0).toInt().toString()) }
+    var note by remember(progress) { mutableStateOf(progress?.note.orEmpty()) }
+
+    val isDark = isSystemInDarkTheme()
+    val dialogBg = if (isDark) Color(0xFF20232A) else Color(0xFFF0F2F5)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = dialogBg,
+        title = { Text("Progress for $dateStr", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "Target: ${todayTarget.toInt()} ${habit.unit.orEmpty()} ($sets sets × $repsPerSet reps)",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                OutlinedTextField(
+                    value = value,
+                    onValueChange = { input ->
+                        value = input.filter { c -> c.isDigit() || c == '.' }
+                    },
+                    label = { Text("Total Recorded Progress (${habit.unit.orEmpty()})") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                val currentVal = value.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0
+                val totalReps = currentVal.toInt()
+                val completeSets = if (repsPerSet > 0) totalReps / repsPerSet else 0
+                val remReps = if (repsPerSet > 0) totalReps % repsPerSet else 0
+
+                val setBreakdownStr = if (remReps > 0) {
+                    "$completeSets complete sets + $remReps reps"
+                } else {
+                    "$completeSets complete sets"
+                }
+
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text(
+                        text = "Set Preview: $setBreakdownStr",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(10.dp)
+                    )
+                }
+
+                OutlinedTextField(
+                    value = note,
+                    onValueChange = { note = it },
+                    label = { Text("Note (Optional)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                val numericVal = value.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0
+                onSave(numericVal, note.ifBlank { null })
+            }) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }

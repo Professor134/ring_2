@@ -214,7 +214,7 @@ fun TaskDetailScreen(
                     Badge(containerColor = when (t.priority) {
                         TaskPriority.HIGH -> Color(0xFFFF1744)
                         TaskPriority.MEDIUM -> Color(0xFFFFEA00)
-                        TaskPriority.LOW -> Color(0xFF00E676)
+                        TaskPriority.LOW -> Color(0xFF00A84F)
                     }) {
                         Text(
                             t.priority.name,

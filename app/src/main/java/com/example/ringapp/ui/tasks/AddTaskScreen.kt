@@ -324,7 +324,7 @@ fun AddTaskScreen(
                             label = { Text(option.name.lowercase().replaceFirstChar { it.uppercase() }) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = when (option) {
-                                    TaskPriority.LOW -> Color(0xFF00E676)
+                                    TaskPriority.LOW -> Color(0xFF00A84F)
                                     TaskPriority.MEDIUM -> Color(0xFFFFEA00)
                                     TaskPriority.HIGH -> Color(0xFFFF1744)
                                 },

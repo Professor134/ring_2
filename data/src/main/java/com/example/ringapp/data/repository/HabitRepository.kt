@@ -193,24 +193,10 @@ class HabitRepository @Inject constructor(
         } else {
             // Measurable Habit Points & Reconciliation
             val fullReward = if (effectiveStreak > 0) Math.round((1.5 * effectiveStreak) + 3).toInt() else 3
-            val firstIncompleteReward = if (effectiveStreak > 0) (2 * effectiveStreak) + 3 else 3
 
-            // 1. First-recorded-incomplete reward (granted once per habit-day)
-            if (actual > 0.0 && actual < habit.target) {
-                pointRepository.record(
-                    type = TransactionType.HABIT_COMPLETE,
-                    amount = firstIncompleteReward,
-                    reference = "habit-first-incomplete-${habit.id}-$dateStr",
-                    description = "First recorded incomplete progress",
-                    habitId = habit.id,
-                    timestamp = now
-                )
-            }
-
-            // 2. Partial vs Full Completion Reward Reconciliation
             if (completed) {
                 if (prevPartial) {
-                    // Reverse partial completion reward
+                    // Reverse partial completion reward (-1 pt)
                     pointRepository.record(
                         type = TransactionType.HABIT_UNCOMPLETE,
                         amount = -1,
@@ -229,7 +215,7 @@ class HabitRepository @Inject constructor(
                     habitId = habit.id,
                     timestamp = now
                 )
-            } else if (actual > 0.0) { // Partial completion state
+            } else if (actual > 0.0) { // Partial completion state: EXACTLY 1 point
                 if (prevCompleted) {
                     // Reverse full completion reward
                     pointRepository.record(
@@ -241,7 +227,7 @@ class HabitRepository @Inject constructor(
                         timestamp = now
                     )
                 }
-                // Check if partial reward has already been awarded on this date
+                // Award partial completion reward (1 pt) if not already active
                 val alreadyPartial = pointDao.findByReference("habit-partial-${habit.id}-$dateStr") != null
                 if (!alreadyPartial || prevCompleted) {
                     pointRepository.record(
