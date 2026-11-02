@@ -1,293 +1,230 @@
-# Ring 2
+# RING 2 — Android Habit & Task Management Ecosystem
 
-Ring 2 is a productivity and habit-tracking Android application built with Kotlin, Jetpack Compose, Hilt, Room, and DataStore. The application focuses on habit consistency, task management, progress tracking, analytics, gamified engagement, and personalized user experience.
+**RING 2** is a futuristic, high-performance Android productivity application engineered with **Kotlin**, **Jetpack Compose**, **Room Database**, **Hilt Dependency Injection**, **DataStore**, and **WorkManager**. 
 
-This repository was documented file-by-file with explanatory comments only; no application logic was changed during the documentation pass.
+It provides an integrated ecosystem combining **habit consistency tracking**, **task management**, **gamified Elite Points economy**, **biological metric tracking (BMI)**, **step counting**, and **Neural Alerts**.
 
-## 1. Project overview
+---
 
-Ring 2 is designed as a personal growth assistant that combines three major workflows:
+## 1. Executive Summary & App Versioning
 
-- Habit tracking and streak progression
-- Task management and reminders
-- Profile, analytics, and gamification systems
+- **Application Name**: RING
+- **App Version Name**: `1.0.0.0`
+- **Build Code**: `versionCode = 1`
+- **Room Database Schema**: `Version 9` (Supports automated incremental migrations 1 → 9)
+- **Target SDK**: `API 35` (Android 15)
+- **Min SDK**: `API 24` (Android 7.0 Nougat+)
+- **Kotlin Version**: `2.0.21`
+- **Android Gradle Plugin**: `8.5.2`
 
-The app encourages users to maintain routines, complete daily tasks, and accumulate points through productive behavior.
+---
 
-## 2. Product goals
+## 2. Feature & Architecture Breakdown
 
-The main goals of the application are:
+### 2.1 Persistent Onboarding & First-Launch Experience
+- **Animated Splash Screen**: Custom glowing logo rotation (`ic_launcher_foreground`) with smooth spring transition.
+- **3-Screen Sequence**:
+  1. **Screen 1 (Welcome)**: Introduction to the RING neural productivity paradigm.
+  2. **Screen 2 (User Profile)**: Name entry, Gender selection, Date of Birth picker with real-time automated age calculation and confirmation step.
+  3. **Screen 3 (Physical Metrics)**: Initial weight (kg) and height (cm) setup.
+- **DataStore & Room Persistence**: Sets `onboardingComplete = true`. Subsequent app launches bypass onboarding and navigate directly to the main dashboard.
 
-- Help users build and maintain healthy routines
-- Track daily progress with consistency and measurable goals
-- Turn productivity into a motivating system using points, streaks, and levels
-- Offer lightweight analytics for individual habits and broader activity trends
-- Provide reminders and background maintenance so the app actively supports daily usage
+---
 
-## 3. Technology stack
+### 2.2 Elite Points Economy & Gamification Rules
+Users start with a baseline balance of **500 Elite Points** upon first launch.
 
-- Language: Kotlin
-- UI: Jetpack Compose
-- Navigation: Navigation Compose
-- Dependency injection: Hilt
-- Local persistence: Room database
-- Preferences: DataStore
-- Background work: WorkManager
-- Architecture: MVVM + repository + use case pattern
-- Testing: JUnit and Compose UI test support
-- Build system: Gradle (Kotlin DSL)
+| Event / Action | Point Value / Adjustment | Rules & Idempotency Notes |
+| :--- | :--- | :--- |
+| **Habit Creation** | `-25 Pts` | Requires minimum 25 points balance before creation. |
+| **Task Creation** | `-1 Pt` | Requires minimum 1 point balance before creation. |
+| **Task Completion** | `+3 Pts` | Awarded upon marking task completed. |
+| **Reverting Task Completion** | `-3 Pts` | Revokes points if task is unmarked incomplete. |
+| **Task Deletion (Incomplete)** | `-5 Pts` | Charged when deleting an unfinished task. |
+| **Task Deletion (Completed)** | `0 Pts` | Free deletion for completed tasks. |
+| **Habit Deletion** | `-30 Pts` | Charged when terminating a habit. |
+| **Lowering Habit Target** | `-10 Pts` | Penalizes reducing target requirements. |
+| **Increasing Habit Target** | `0 Pts` | Free to increase target difficulty. |
+| **Yes/No Habit Complete** | `+3 Pts` | Awarded on completion; `-3 Pts` if reverted. |
+| **Measurable Partial Progress** | `+1 Pt` | Awarded when `0 < actual < target`. Reconciled cleanly upon state change. |
+| **Measurable Full Completion** | `(1.5 × streak) + 3` | Awarded when `actual >= target` (or `3 Pts` if streak == 0). Reconciles previous partial rewards. |
+| **Step Tracking Rewards** | `+1 Pt / 1,000 steps × streak` | Calculated dynamically per 1,000 step milestone multiplied by active streak (`maxOf(1, streak)`). |
+| **Skipped-Day Step Penalty** | `-10 Pts` | Deducted for missed step goals on past days (`checkDate < today`) starting ON OR AFTER app installation date. Never penalizes days prior to launch or today. |
+| **Overdue Task Penalty** | `-2 Pts` | Deducted once per overdue task occurrence (`task-overdue-penalty-$taskId`). Stored state prevents duplicate deductions. |
 
-## 4. Project structure
+*Note: Elite Points balance is enforced with a zero floor (`balance >= 0`). Every point change is recorded as a `PointTransactionEntity` for full transparency in Transaction Logs.*
+
+---
+
+### 2.3 Habit System & Configuration Order
+
+#### Field Ordering in Add Habit Screen:
+1. **Habit Name** (e.g. "Morning Pushups")
+2. **Description / Protocol Note**
+3. **Category Selector**:
+   - **Gym** (`0xFFFF1744` - Vibrant Electric Red)
+   - **Health** (`0xFF00A84F` - Base Theme Green)
+   - **Study** (`0xFF00B0FF` - Vibrant Electric Blue)
+   - **Personal** (`0xFFFFEA00` - Vibrant Electric Yellow)
+   - **Work** (`0xFFD500F9` - Vibrant Electric Magenta)
+4. **Repeat Schedule**:
+   - `Daily`, `Weekly`, `Even Days`, `Odd Days`, `Monthly`, `Yearly`, `Custom N Days`.
+5. **Weekday Selector** (Weekly schedule only - Mon through Sun).
+6. **Habit Type**:
+   - **Symmetric Weekly**: Same daily target across all selected days.
+   - **Asymmetric Weekly**: Independent daily target table per weekday.
+7. **Unit & Target Configuration Table**:
+   - `Active Days` | `Reps` | `Sets`
+   - Habits configured with 1 rep & 1 set automatically assign `HabitType.YES_NO`.
+
+#### Card Interaction & Direct Analytics Navigation:
+- Clicking any habit card on the Home or Habit List screen navigates directly to `PersonalAnalyticsScreen`, bypassing intermediate detail views.
+- Long habit titles truncate (`TextOverflow.Ellipsis`) without overlapping streak counters (`🔥 X`).
+
+---
+
+### 2.4 Task Creation, Repeat Schedules & Chronology
+
+#### Add Task Screen Ordering:
+1. **Task Name**
+2. **Description / Note**
+3. **Priority Selector**: `Low` (`0xFF00A84F`), `Medium` (`0xFFFFEA00`), `High` (`0xFFFF1744`)
+4. **Reminder Settings**: Switch + Trigger Date & Time picker
+5. **Repeat Settings**: `None`, `Daily`, `Weekly`, `Monthly`, `Yearly`, `Custom`
+6. **Due Date & Due Time Controls**:
+   - **Default Schedule Behavior**: If no due date/time is selected, automatically schedules due date to **7 days after task creation at 20:00**, communicated clearly to the user.
+7. **Subtask & Checklist Section**: Interactive checklist input with completion checkboxes.
+
+#### Repeatable Tasks & Historical Iteration Records:
+- Repeatable tasks **do not** create duplicate task entities in Room DB.
+- On completion, the existing `TaskEntity` record advances its due date to the next scheduled date (`ScheduleEngine.getNextActiveDueDate`).
+- Historical completion records, subtask states, and penalties are archived into `repeatHistory` JSON strings and displayed in the **Historical Iterations Log** section on `TaskDetailScreen`.
+
+---
+
+### 2.5 Chronology Logs & 7 Date States
+
+The `HabitCalendar` and `TaskCalendar` render monthly grid logs using strict date-state color rules:
+
+1. **Pre-installation / Start Date (`date < startDate`)**: Gray border (`0x808080`), faded gray background.
+2. **Inactive Dates**: White border (`0x80FFFFFF`), faded gray background.
+3. **Future Inactive Dates**: White border (`0x80FFFFFF`), faded gray background.
+4. **Future Active Scheduled Dates**: Blue border (`0xFF2196F3`), faded blue background.
+5. **Active Zero Progress**: Red border (`0xFFFF3131`), faded red background.
+6. **Active Partial Progress (`0 < actual < target`)**: Orange border (`0xFFFF9800`), faded orange background.
+7. **Active Completed Progress (`actual >= target`)**: Green border (`0xFF00A84F`), faded green background.
+
+*Editing Historical Progress*: Users can tap any past active date cell in the Chronology Log (`date >= habitStartDate` AND `date <= today` AND `isActive`) to open `ProgressDialog` and update or record historical progress. Updates recalculate streaks and reconcile Elite Points.
+
+---
+
+### 2.6 Dual Circular Progress Indicator
+Custom-drawn concentric rings in `PersonalAnalyticsScreen`:
+- **Outer Ring**: Completed sets relative to target sets (`completedSets / targetSets`).
+- **Inner Ring**: Repetitions within current set relative to `repsPerSet`.
+- **Center Element**: Opaque round button displaying current progress, total target, and set count (e.g. `Sets: 0 / 4`, `Sets: 1 / 4`, or `Sets: 5 / 4` for over-achievement).
+- **Dynamic Color Intensity**: Arc opacity smoothly scales from `0.4f` at 0% to `1.0f` at 100% progress.
+- **Viewport-Aware Bounce Animation**: Progress rings execute a slow, bouncy spring loading animation (`Spring.DampingRatioMediumBouncy`) upon entering view.
+
+---
+
+### 2.7 BMI Special Tracking Feature
+- **Special Habit Entity**: `id = 2L`, Name: `BMI`, Category: `Health`, Dedicated Bright Orange Theme (`0xFFFF6D00`).
+- **Gamification Exclusion**: Informational health feature (0 points, no streak penalties, no missed day penalties).
+- **Initialization**: Automatically populated from onboarding weight & height.
+- **Historical Persistence**: Appends measurements to `bodyMeasurements` JSON array without overwriting past entries.
+- **30-Day Reminder Notifications**: Schedules 30-day recurring update reminder notifications via `BmiReminderScheduler` and `BmiReminderReceiver`, rescheduled on device reboot via `ReminderRescheduleWorker`.
+- **BMI-Only Line Chart**: `BmiAnalyticsScreen` plots historical BMI over actual measurement dates with dynamic Y-axis scaling.
+
+---
+
+### 2.8 Neural Alerts Control Center (`NotificationsScreen.kt`)
+Comprehensive notification management in Profile:
+- **System Alerts Main Switch**: Global notification delivery pause/resume.
+- **Audio & Signal Protocols**: Displays Custom Notification Tone status (`res/raw/ring_notification.mp3` or System Default fallback) and Haptic Vibration toggle (`vibrationEnabled`).
+- **Feature Alert Toggles**:
+  - Daily Motivation Quotes toggle (`MotivationWorker`)
+  - BMI 30-Day Health Alert toggle (`BmiReminderReceiver`)
+  - Habit Schedule Reminders toggle
+  - Task Reminders list & per-task toggle controls
+
+---
+
+### 2.9 Custom Notification Tone & Fallback Architecture
+- **Raw Sound Location**: `app/src/main/res/raw/ring_notification.mp3` (or `.ogg` / `.wav`).
+- **Dynamic Lookup**: `context.resources.getIdentifier("ring_notification", "raw", context.packageName)`.
+- **Fallback Mechanism**: If custom file is absent in `res/raw/`, `ReminderAlarmReceiver`, `MotivationWorker`, and `BmiReminderReceiver` automatically fall back to `RingtoneManager.TYPE_NOTIFICATION`.
+
+---
+
+### 2.10 Offline Local Storage & Backup/Restore Architecture
+- **Room Database (`AppDatabase.kt`)**: Schema Version 9. Stores habits, progress, tasks, profile, point transactions, categories, and achievements.
+- **JSON Backup & Restore (`BackupRestoreService.kt`)**:
+  - Exports complete app snapshot (Habits, Tasks, Categories, Profile, Point History, Progress) into a single JSON file.
+  - Validates and restores snapshot data with atomic database transactions.
+
+---
+
+## 3. Project Directory Structure
 
 ```text
 ring_2/
 ├── app/
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/com/example/ringapp/
-│   │   │   │   ├── data/
-│   │   │   │   ├── di/
-│   │   │   │   ├── domain/
-│   │   │   │   ├── navigation/
-│   │   │   │   ├── ui/
-│   │   │   │   ├── widget/
-│   │   │   │   ├── work/
-│   │   │   │   ├── MainActivity.kt
-│   │   │   │   ├── Navigation.kt
-│   │   │   │   └── RingApplication.kt
-│   │   │   ├── AndroidManifest.xml
-│   │   │   └── res/
-│   │   ├── test/
-│   │   └── androidTest/
-│   └── build.gradle.kts
-├── core/
-│   └── src/main/java/com/example/ringapp/core
+│   ├── src/main/java/com/example/ringapp/
+│   │   ├── data/
+│   │   │   ├── PreferencesDataStore.kt
+│   │   │   ├── BackupRestoreService.kt
+│   │   │   ├── FirstLaunchInitializer.kt
+│   │   │   └── ResetUserDataService.kt
+│   │   ├── navigation/
+│   │   │   ├── AppNavGraph.kt
+│   │   │   ├── Screen.kt
+│   │   │   └── NavigationDestination.kt
+│   │   ├── ui/
+│   │   │   ├── analytics/ (AnalyticsScreens.kt, BmiTracking.kt, AnalyticsViewModel.kt)
+│   │   │   ├── habits/ (AddHabitScreen.kt, HabitListScreen.kt, HabitDetailScreen.kt)
+│   │   │   ├── home/ (HomeScreen.kt, HomeViewModel.kt)
+│   │   │   ├── onboarding/ (OnboardingScreen.kt, RingSplashScreen.kt)
+│   │   │   ├── profile/ (ProfileScreen.kt, NotificationsScreen.kt, AppearanceScreen.kt, BackupRestoreScreen.kt)
+│   │   │   ├── tasks/ (AddTaskScreen.kt, TaskDetailScreen.kt, TasksScreen.kt)
+│   │   │   └── theme/ (Color.kt, RingTheme.kt, AppBackground.kt)
+│   │   ├── work/ (WorkScheduler.kt, DailyMaintenanceWorker.kt, MotivationWorker.kt, ReminderAlarmReceiver.kt, BmiReminderReceiver.kt)
+│   │   └── MainActivity.kt
+│   └── src/main/res/
+│       ├── drawable/ (ic_launcher_foreground.xml, ic_profile_avatar.xml, ring_leaf_wallpaper.jpg)
+│       └── raw/ (ring_notification_readme.txt)
 ├── data/
-│   └── src/main/java/com/example/ringapp/data
+│   └── src/main/java/com/example/ringapp/data/
+│       ├── db/ (AppDatabase.kt, Converters.kt, Migrations.kt)
+│       ├── local/dao/ (HabitDao.kt, TaskDao.kt, PointDao.kt, ProfileDao.kt, etc.)
+│       ├── local/entities/ (HabitEntity.kt, TaskEntity.kt, PointTransactionEntity.kt, ProfileEntity.kt, etc.)
+│       └── repository/ (HabitRepository.kt, TaskRepository.kt, PointRepository.kt, ProfileRepository.kt, etc.)
 ├── domain/
-│   └── src/main/java/com/example/ringapp/domain
-├── build.gradle.kts
-├── settings.gradle.kts
-├── gradlew
-├── gradlew.bat
-├── gradle.properties
-└── README.md
+│   └── src/main/java/com/example/ringapp/domain/
+│       ├── engine/ (ScheduleEngine.kt, StreakEngine.kt, AnalyticsEngine.kt, GamificationEngine.kt, AchievementEngine.kt)
+│       └── usecase/ (CreateHabitUseCase.kt, CompleteTaskUseCase.kt, RecordHabitProgressUseCase.kt, etc.)
+├── core/
+└── build.gradle.kts
 ```
 
-## 5. Module responsibilities
+---
 
-### app module
-The app module is the user-facing layer and contains the Compose UI, navigation, lifecycle integration, Hilt configuration, and background workers.
-
-Main folders:
-
-- `ui/` – screens, view models, theme, shared UI components
-- `navigation/` – app routing and destination definitions
-- `work/` – recurring maintenance, reminders, schedulers, and worker factory logic
-- `data/` – app-level initialization, preferences, backup, reset handling
-- `widget/` – home screen widget provider
-- `di/` – dependency injection modules
-
-### data module
-The data module stores database entities, DAO interfaces, repository implementations, and migration logic.
-
-This module is responsible for:
-
-- Room database setup and migration support
-- Habit, task, profile, point, and analytics storage
-- Repository layer access patterns used by the app and domain layers
-- Background data persistence and local transaction state
-
-### domain module
-The domain module holds the business rules and engine logic that define the app's behavior.
-
-This includes:
-
-- Use cases for creating, updating, completing, and observing habits/tasks
-- Progress calculation engines for streaks, analytics, and rewards
-- Scheduling logic for recurring habits and tasks
-
-### core module
-The core module is a small foundation layer for shared application-level definitions and supporting functionality.
-
-## 6. Main application flow
-
-The project follows a layered pattern:
-
-1. UI layer displays screens and collects interactions.
-2. ViewModels expose state and transform app events.
-3. Use cases coordinate domain logic.
-4. Repositories handle data access and transactional updates.
-5. Room database and DataStore persist application state.
-6. WorkManager / alarm infrastructure triggers reminders and maintenance tasks.
-
-This keeps the code organized and separated by responsibility.
-
-## 7. Key classes and responsibilities
-
-### Application bootstrap
-
-- `MainActivity.kt` – application entry point, permission checks, startup seeding, and lifecycle setup
-- `RingApplication.kt` – Hilt application bootstrap and WorkManager configuration
-- `Navigation.kt` – entry point used to render the navigation graph
-
-### Navigation
-
-- `navigation/AppNavGraph.kt` – central Compose navigation graph
-- `navigation/Screen.kt` – screen route definitions
-- `navigation/NavigationDestination.kt` – navigation destinations for the tab-based UI
-- `navigation/BottomNavigationItem.kt` – bottom navigation item definitions
-
-### Core UI state
-
-- `ui/AppViewModel.kt` – global app state for onboarding, theme, sync configuration, and initialization
-- `ui/theme/*` – color palette, typography, shapes, spacing, themes, and view-specific styling
-- `ui/home/*` – home dashboard with habits, tasks, points, and progress summary
-- `ui/tasks/*` – task creation, viewing, editing, and list management
-- `ui/habits/*` – habit creation, detail views, list management, and habit scheduling
-- `ui/profile/*` – user profile settings, notifications, backup/restore, and UI personalization
-- `ui/analytics/*` – analytics screens and BMI/progress tracking
-- `ui/onboarding/OnboardingScreen.kt` – first-run onboarding experience
-
-### Data layer
-
-- `data/PreferencesDataStore.kt` – persistent user preferences and app initialization state
-- `data/FirstLaunchInitializer.kt` – first-run initialization logic
-- `data/BackupRestoreService.kt` – backup and restore service
-- `data/ResetUserDataService.kt` – data reset logic
-- `data/db/AppDatabase.kt` – Room database definition and migration configuration
-- `data/db/Converters.kt` – type conversion logic for database-backed values
-- `data/db/Migrations.kt` – upgrade/migration definitions for schema changes
-
-### Repositories
-
-The repository directory contains the access points for core data operations:
-
-- `HabitRepository.kt`
-- `TaskRepository.kt`
-- `CategoryRepository.kt`
-- `ProfileRepository.kt`
-- `UserDataRepository.kt`
-- `UserProgressRepository.kt`
-- `AchievementRepository.kt`
-- `PointRepository.kt`
-
-These classes centralize database queries and transactional updates, allowing the UI and domain layers to work with cleaner abstractions.
-
-### Domain engine and business logic
-
-- `domain/engine/AnalyticsEngine.kt` – analytics computations
-- `domain/engine/GamificationEngine.kt` – scoring, achievements, and progression systems
-- `domain/engine/ScheduleEngine.kt` – recurring-time logic for activity scheduling
-- `domain/engine/StreakEngine.kt` – streak tracking and milestone logic
-- `domain/engine/AchievementEngine.kt` – achievement evaluation
-
-### Use cases
-
-The domain use-case layer is responsible for actions like:
-
-- creating or updating habits/tasks
-- tracking progress completion
-- observing categories, profile data, and daily progress
-- toggling habits and completing tasks
-- updating profile and user progress state
-
-Examples include:
-
-- `CreateHabitUseCase.kt`
-- `UpdateHabitUseCase.kt`
-- `CreateTaskUseCase.kt`
-- `CompleteTaskUseCase.kt`
-- `ObserveTodayDataUseCase.kt`
-- `ObserveUserProgressUseCase.kt`
-- `RecordHabitProgressUseCase.kt`
-
-### Background workers and reminders
-
-- `work/WorkScheduler.kt` – scheduler for recurring maintenance tasks
-- `work/DailyMaintenanceWorker.kt` – daily maintenance tasks
-- `work/MotivationWorker.kt` – motivational reminder generation
-- `work/ReminderAlarmReceiver.kt` – reminder alert handling
-- `work/ReminderRescheduleWorker.kt` – rescheduling of reminders
-- `work/TaskReminderScheduler.kt` – task reminder scheduling
-- `work/BootReceiver.kt` – runtime startup work trigger
-- `work/RingWorkerFactory.kt` – custom WorkManager factory for DI-backed workers
-
-### Widget and OS integration
-
-- `widget/RingWidgetProvider.kt` – app widget provider for lightweight glance-like home widget information
-
-## 8. Data model overview
-
-The app uses a Room database with a rich set of entities for core app content.
-
-Primary entities include:
-
-- `HabitEntity` – habit definition, recurrence, target metrics, and streak metadata
-- `TaskEntity` – task information with recurrence and due date rules
-- `ProfileEntity` – user profile information
-- `UserProgressEntity` – persistent user progression state
-- `UserAchievementEntity` – achievement ownership and unlock state
-- `PointTransactionEntity` – points history and reward adjustments
-- `HabitProgressEntity` – daily or periodic habit progress records
-- `CategoryEntity` – habit/task grouping categories
-- `AppSettingsEntity` – app-level configuration
-- `AnalyticsDailyEntity` – aggregated analytics records
-
-## 9. Features included
-
-- Habit creation, editing, toggling, completion, and analytics
-- Task management with reminders and due-date logic
-- User points and score tracking tied to behavior
-- Daily and long-term streak computation
-- Habit schedule types: daily, weekly, monthly, yearly, odd/even/custom patterns
-- Personal profile customization and appearance settings
-- Backup/restore workflow support
-- Onboarding and initialization flow
-- Notification-related reminders and background maintenance
-- Widget support for quick access to app information
-
-## 10. App behavior and UX notes
-
-The app uses a futuristic, neon-inspired visual style with a premium productivity aesthetic. Colors, cards, glow effects, dark theme support, and smooth animations are implemented to make daily planning feel visually engaging without sacrificing clarity.
-
-The design encourages users to see progress, streaks, and points as tangible feedback to maintain momentum.
-
-## 11. Setup instructions
+## 4. Build & Testing Instructions
 
 ### Prerequisites
-
-- Android Studio
+- Android Studio Ladybug or newer
 - JDK 17
-- Android SDK with API level 35 configured
-- Gradle wrapper included in the repository
+- Android SDK Platform API 35
 
-### Steps
-
-1. Open the project in Android Studio.
-2. Let Gradle sync complete.
-3. Select an Android emulator or connected device.
-4. Run the application from the `app` module.
-
-### Build commands
+### Commands
 
 ```bash
-./gradlew build
+# Clean and assemble debug APK
 ./gradlew :app:assembleDebug
-./gradlew :app:compileDebugKotlin
+
+# Run unit tests
 ./gradlew test
+
+# Synchronize Gradle
+./gradlew --refresh-dependencies
 ```
-
-## 12. Validation note
-
-The app was verified to compile successfully after the documentation pass. Only explanatory comments were added; code logic remains unchanged.
-
-## 13. Summary
-
-Ring 2 is a practical Android habit and productivity app with a strong focus on progress visibility, personalization, and daily accountability. The architecture is modular and organized by responsibility: UI, navigation, domain rules, repository access, and persistent local storage.
-
-The project is well suited for extension with additional features such as cloud sync, calendar integration, AI-based suggestions, richer analytics, or stronger onboarding flows.
-
-## 14. File documentation status
-
-All source and resource files in the repository have been annotated with file-level documentation comments to make the project easier to understand while preserving the original behavior.
