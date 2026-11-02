@@ -51,7 +51,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ringapp.data.local.entities.*
 import com.example.ringapp.domain.engine.ScheduleEngine
-import com.example.ringapp.ui.theme.CyberNeonGreen
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -148,7 +147,7 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
     val categoryNames =
         listOf(null to "All Categories") + filteredCategories.map { it.id to it.name }
 
-    val isDark = isSystemInDarkTheme()
+    val isDark = com.example.ringapp.ui.theme.isAppDarkTheme()
     val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
     val textColor = if (isDark) Color.White else MaterialTheme.colorScheme.onBackground
 
@@ -412,7 +411,7 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
             CategoryConstants.getColorForCategory(categoryName)
         )
 
-        val isDark = isSystemInDarkTheme()
+        val isDark = com.example.ringapp.ui.theme.isAppDarkTheme()
     val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
         val textColor = if (isDark) Color.White else MaterialTheme.colorScheme.onBackground
 
@@ -810,10 +809,17 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
                     color = textColor
                 )
             }
+            val targetProgress = if (target > 0.0) (completed / target).toFloat().coerceAtLeast(0f) else 0f
+            val animatedProgress by animateFloatAsState(
+                targetValue = targetProgress.coerceAtMost(1f),
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessLow
+                ),
+                label = "analytics-linear-progress"
+            )
             LinearProgressIndicator(
-                progress = {
-                    if (target > 0.0) (completed / target).toFloat().coerceIn(0f, 1f) else 0f
-                },
+                progress = { animatedProgress },
                 modifier = Modifier.fillMaxWidth().height(10.dp).clip(CircleShape),
                 color = color,
                 trackColor = color.copy(alpha = 0.15f)
@@ -1241,14 +1247,22 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
                     Text("${tasks.size}", fontWeight = FontWeight.Black)
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Completed", color = CyberNeonGreen)
-                    Text("$completed", fontWeight = FontWeight.Black, color = CyberNeonGreen)
+                    Text("Completed", color = MaterialTheme.colorScheme.primary)
+                    Text("$completed", fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
                 }
                 val rate = if (tasks.isEmpty()) 0 else completed * 100 / tasks.size
+                val animatedRate by animateFloatAsState(
+                    targetValue = rate / 100f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
+                    ),
+                    label = "analytics-task-progress"
+                )
                 LinearProgressIndicator(
-                    progress = { rate / 100f },
+                    progress = { animatedRate },
                     modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
-                    color = CyberNeonGreen
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
@@ -1282,6 +1296,13 @@ fun DualCircularProgressIndicator(
 
     val outerTargetProgress = (completedSets.toFloat() / safeSets.toFloat()).coerceIn(0f, 1f)
     val innerTargetProgress = if (completedSets >= safeSets) 1f else (currentSetReps.toFloat() / safeReps.toFloat()).coerceIn(0f, 1f)
+    val progressRatio = if (target > 0.0) (progressActual / target).toFloat() else 0f
+    val overflowProgress = if (progressRatio > 1f) {
+        val nextTargetProgress = (progressRatio - 1f) % 1f
+        if (nextTargetProgress == 0f) 1f else nextTargetProgress
+    } else {
+        0f
+    }
 
     val animatedOuterProgress by animateFloatAsState(
         targetValue = outerTargetProgress,
@@ -1293,6 +1314,11 @@ fun DualCircularProgressIndicator(
         targetValue = innerTargetProgress,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessVeryLow),
         label = "innerProgress"
+    )
+    val animatedOverflowProgress by animateFloatAsState(
+        targetValue = overflowProgress,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessVeryLow),
+        label = "overflowProgress"
     )
 
     Column(
@@ -1312,6 +1338,7 @@ fun DualCircularProgressIndicator(
                 val maxRadius = (size.minDimension / 2f)
                 val outerRadius = maxRadius - (strokeOuter / 2f) - 4.dp.toPx()
                 val innerRadius = outerRadius - (strokeOuter / 2f) - gap - (strokeInner / 2f)
+                val overflowRadius = maxRadius - strokeOuter / 2f
 
                 // Dynamic color intensity based on progress (mild at 0% to bright at 100%)
                 val outerColor = baseColor.copy(alpha = (0.4f + 0.6f * animatedOuterProgress).coerceIn(0.4f, 1f))
@@ -1323,6 +1350,13 @@ fun DualCircularProgressIndicator(
                     radius = outerRadius,
                     style = Stroke(width = strokeOuter, cap = StrokeCap.Round)
                 )
+                if (overflowProgress > 0f) {
+                    drawCircle(
+                        color = baseColor.copy(alpha = 0.12f),
+                        radius = overflowRadius,
+                        style = Stroke(width = 4.dp.toPx(), cap = StrokeCap.Round)
+                    )
+                }
 
                 if (!isSingleSetRep) {
                     // Inner Track
@@ -1347,6 +1381,21 @@ fun DualCircularProgressIndicator(
                     size = outerRect.size,
                     style = Stroke(width = strokeOuter, cap = StrokeCap.Round)
                 )
+                if (animatedOverflowProgress > 0f) {
+                    val overflowRect = androidx.compose.ui.geometry.Rect(
+                        Offset(center.x - overflowRadius, center.y - overflowRadius),
+                        androidx.compose.ui.geometry.Size(overflowRadius * 2, overflowRadius * 2)
+                    )
+                    drawArc(
+                        color = baseColor,
+                        startAngle = -90f,
+                        sweepAngle = 360f * animatedOverflowProgress,
+                        useCenter = false,
+                        topLeft = overflowRect.topLeft,
+                        size = overflowRect.size,
+                        style = Stroke(width = 4.dp.toPx(), cap = StrokeCap.Round)
+                    )
+                }
 
                 // Inner Ring (Current Set Reps)
                 if (!isSingleSetRep) {
@@ -1381,13 +1430,13 @@ fun DualCircularProgressIndicator(
                     modifier = Modifier.padding(6.dp)
                 ) {
                     Text(
-                        text = if (actualInt == progressActual.toInt()) "$actualInt" else "%.1f".format(Locale.US, progressActual),
-                        style = MaterialTheme.typography.titleLarge,
+                        text = if (progressActual == actualInt.toDouble()) "$actualInt / ${target.toInt()}" else String.format(Locale.US, "%.1f / %.1f", progressActual, target),
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Black,
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
-                        text = "of ${target.toInt()} $unit",
+                        text = unit,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
@@ -1421,7 +1470,7 @@ fun BmiAnalyticsScreen(
     var selectedPoint by remember { mutableStateOf<BmiMeasurement?>(null) }
 
     val orangeColor = Color(0xFFFF6D00)
-    val isDark = isSystemInDarkTheme()
+    val isDark = com.example.ringapp.ui.theme.isAppDarkTheme()
     val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
     val textColor = if (isDark) Color.White else MaterialTheme.colorScheme.onBackground
 
@@ -1659,7 +1708,7 @@ fun BmiAnalyticsScreen(
                     measurements.reversed().forEach { m ->
                         Card(
                             shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f)),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
                             border = BorderStroke(1.dp, textColor.copy(alpha = 0.05f))
                         ) {
                             Row(
@@ -1721,7 +1770,7 @@ private fun AnalyticsProgressDialog(
     var value by remember(progress) { mutableStateOf((progress?.actual ?: 0.0).toInt().toString()) }
     var note by remember(progress) { mutableStateOf(progress?.note.orEmpty()) }
 
-    val isDark = isSystemInDarkTheme()
+    val isDark = com.example.ringapp.ui.theme.isAppDarkTheme()
     val dialogBg = if (isDark) Color(0xFF20232A) else Color(0xFFF0F2F5)
 
     AlertDialog(

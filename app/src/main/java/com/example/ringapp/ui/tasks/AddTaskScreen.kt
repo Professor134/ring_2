@@ -199,7 +199,7 @@ fun AddTaskScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
 
-    val isDark = isSystemInDarkTheme()
+    val isDark = com.example.ringapp.ui.theme.isAppDarkTheme()
     val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
     val textColor = if (isDark) Color.White else MaterialTheme.colorScheme.onBackground
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -502,7 +502,7 @@ fun AddTaskScreen(
                     // Communication of Default Due Date behavior
                     val isDefaultUsed = dueDate == null || dueTime == null
                     Surface(
-                        color = if (isDefaultUsed) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f),
+                        color = if (isDefaultUsed) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surfaceContainerLow,
                         shape = RoundedCornerShape(10.dp),
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
                     ) {
@@ -546,7 +546,7 @@ fun AddTaskScreen(
 
                     subtasks.forEachIndexed { index, subtask ->
                         Surface(
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f),
+                            color = MaterialTheme.colorScheme.surfaceContainerLow,
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {

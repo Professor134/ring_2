@@ -15,7 +15,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -48,8 +47,8 @@ import com.example.ringapp.data.local.entities.*
 import com.example.ringapp.data.local.entities.CategoryConstants
 import com.example.ringapp.domain.engine.ScheduleEngine
 import com.example.ringapp.ui.theme.CyberNeonBlue
-import com.example.ringapp.ui.theme.CyberNeonGreen
 import com.example.ringapp.ui.theme.SpaceBlack
+import com.example.ringapp.ui.theme.isAppDarkTheme
 import com.example.ringapp.ui.theme.rememberViewportAnimationTrigger
 import com.example.ringapp.ui.onboarding.RingSplashScreen
 import java.time.LocalDate
@@ -79,8 +78,8 @@ fun HomeScreen(
         label = "elite-points"
     )
     
-    val isDark = isSystemInDarkTheme()
-    val bgColor = if (isDark) MaterialTheme.colorScheme.background else Color(0xFFF0F2F5)
+    val isDark = isAppDarkTheme()
+    val bgColor = MaterialTheme.colorScheme.background
     val textColor = MaterialTheme.colorScheme.onBackground
 
     if (state.isLoading) { 
@@ -144,7 +143,7 @@ fun HomeScreen(
 
                         Surface(
                             modifier = pointsVisibility.modifier,
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f),
+                            color = MaterialTheme.colorScheme.surfaceContainerLow,
                             shape = RoundedCornerShape(16.dp), 
                             tonalElevation = 0.dp,
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = glowAlpha))
@@ -218,10 +217,9 @@ fun HomeScreen(
 }
 
 @Composable private fun EmptyState(title: String, message: String?, action: (() -> Unit)?, textColor: Color) { 
-    val isDark = isSystemInDarkTheme()
     Card(
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         border = BorderStroke(1.dp, textColor.copy(alpha = 0.05f))
     ) { 
         Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) { 
@@ -246,6 +244,7 @@ fun HomeScreen(
     val isSteps = habit.isStepsHabit()
     val isBmi = habit.isBmiHabit()
     val categoryName = if (isSteps) "System" else if (isBmi) "Health" else (category?.name ?: "Personal")
+    val todayTarget = habit.getTargetForDate(LocalDate.now())
     
     val baseColorInt = when {
         isSteps -> HabitEntity.PLATINUM_COLOR
@@ -257,7 +256,6 @@ fun HomeScreen(
     val isCompleted = progress?.completed == true
     val isPartial = (progress?.actual ?: 0.0) > 0.0 && !isCompleted
     
-    val isDark = isSystemInDarkTheme()
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(if (isPressed) 0.97f else 1f, label = "scale")
@@ -278,16 +276,12 @@ fun HomeScreen(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .scale(scale)
-            .graphicsLayer {
-                shadowElevation = if (isSteps) 12f else 4f
-                spotShadowColor = baseColor
-            },
+            .scale(scale),
         onClick = onHabitClick,
         interactionSource = interactionSource,
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f)),
-        border = BorderStroke(if (isSteps) 2.dp else 1.dp, if (isSteps) baseColor else baseColor.copy(alpha = 0.15f))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
     ) { 
         Column(Modifier.padding(18.dp)) { 
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { 
@@ -333,9 +327,15 @@ fun HomeScreen(
                             Text("$steps", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black, color = textColor)
                             Text(" STEPS", style = MaterialTheme.typography.labelSmall, color = textColor.copy(alpha = 0.5f), modifier = Modifier.padding(bottom = 4.dp, start = 4.dp))
                             Spacer(Modifier.width(12.dp))
-                            Text("+$points PTS", color = CyberNeonGreen, fontWeight = FontWeight.Black, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(bottom = 4.dp))
+                            Text("+$points PTS", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(bottom = 4.dp))
                         }
                     } else {
+                        Text(
+                            String.format(Locale.US, "%.0f / %.0f %s", progress?.actual ?: 0.0, todayTarget, habit.unit.orEmpty()).trim(),
+                            color = textColor.copy(alpha = 0.72f),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Medium
+                        )
                         Box(Modifier.fillMaxWidth().height(10.dp).clip(CircleShape).background(baseColor.copy(alpha = 0.1f))) {
                             Box(Modifier.fillMaxWidth(animatedProgress).fillMaxHeight().clip(CircleShape).background(
                                 Brush.horizontalGradient(listOf(baseColor.copy(alpha = 0.7f), baseColor))
@@ -347,7 +347,7 @@ fun HomeScreen(
                 val buttonColor = when {
                     isCompleted -> baseColor
                     isPartial -> baseColor.copy(alpha = 0.6f)
-                    else -> if (isDark) Color(0xFF252932) else Color(0xFFF0F2F5)
+                    else -> MaterialTheme.colorScheme.surfaceVariant
                 }
 
                 IconButton(
@@ -453,12 +453,10 @@ private fun categoryIcon(iconName: String): ImageVector = when (iconName.lowerca
         TaskPriority.MEDIUM -> Color(0xFFFFEA00)
         TaskPriority.LOW -> Color(0xFF00A84F)
     }
-    val isDark = isSystemInDarkTheme()
-    
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         border = BorderStroke(1.dp, textColor.copy(alpha = 0.05f))
     ) { 
         Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) { 
@@ -491,12 +489,9 @@ private fun ProgressDialog(
     var value by remember(progress) { mutableStateOf((progress?.actual ?: 0.0).toInt().toString()) }
     var note by remember(progress) { mutableStateOf(progress?.note.orEmpty()) }
 
-    val isDark = isSystemInDarkTheme()
-    val dialogBg = if (isDark) Color(0xFF20232A) else Color(0xFFF0F2F5)
-
     AlertDialog(
         onDismissRequest = onDismiss, 
-        containerColor = dialogBg,
+        containerColor = MaterialTheme.colorScheme.surface,
         title = { Text("Today's Progress", fontWeight = FontWeight.Bold) }, 
         text = { 
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { 

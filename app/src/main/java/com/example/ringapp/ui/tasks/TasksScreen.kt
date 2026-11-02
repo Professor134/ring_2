@@ -29,7 +29,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ringapp.data.local.entities.*
-import com.example.ringapp.ui.theme.CyberNeonGreen
 import com.example.ringapp.ui.theme.SpaceBlack
 import java.text.SimpleDateFormat
 import java.util.*
@@ -52,7 +51,7 @@ fun TasksScreen(onAddTask: () -> Unit, onTaskClick: (Long) -> Unit, viewModel: T
         } 
     }
     
-    val isDark = isSystemInDarkTheme()
+    val isDark = com.example.ringapp.ui.theme.isAppDarkTheme()
     val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
     val textColor = if (isDark) Color.White else MaterialTheme.colorScheme.onBackground
 
@@ -122,13 +121,13 @@ fun TasksScreen(onAddTask: () -> Unit, onTaskClick: (Long) -> Unit, viewModel: T
         SimpleDateFormat("d MMM, HH:mm", Locale.getDefault()).format(calendar.time)
     } ?: "Indefinite"
 
-    val isDark = isSystemInDarkTheme()
+    val isDark = com.example.ringapp.ui.theme.isAppDarkTheme()
     val priorityColor = priorityColor(task.priority)
 
     Card(
         onClick = onClick,
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         border = BorderStroke(1.dp, textColor.copy(alpha = 0.05f))
     ) {
         Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -139,7 +138,7 @@ fun TasksScreen(onAddTask: () -> Unit, onTaskClick: (Long) -> Unit, viewModel: T
             }
             IconButton(
                 onClick = onToggle, 
-                modifier = Modifier.size(40.dp).background(if (task.completed) CyberNeonGreen else textColor.copy(alpha = 0.05f), CircleShape)
+                modifier = Modifier.size(40.dp).background(if (task.completed) MaterialTheme.colorScheme.primary else textColor.copy(alpha = 0.05f), CircleShape)
             ) {
                 Icon(Icons.Default.Check, null, tint = if (task.completed) SpaceBlack else textColor.copy(alpha = 0.2f))
             }

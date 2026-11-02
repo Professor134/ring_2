@@ -30,6 +30,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -188,7 +189,7 @@ private fun AdaptiveNavigationScaffold(
                                 RoundedCornerShape(22.dp)
                             )
                             .semantics { contentDescription = "Main navigation" },
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f),
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                         tonalElevation = 0.dp,
                         windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0)
                     ) {
@@ -209,10 +210,10 @@ private fun AdaptiveNavigationScaffold(
                                 alwaysShowLabel = true,
                                 colors = NavigationBarItemDefaults.colors(
                                     selectedIconColor = MaterialTheme.colorScheme.primary,
-                                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                                    selectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                     unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                     unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+                                    indicatorColor = Color.Transparent
                                 )
                             )
                         }

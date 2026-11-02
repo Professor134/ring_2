@@ -58,6 +58,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -72,6 +73,7 @@ import com.example.ringapp.data.local.entities.TaskEntity
 import com.example.ringapp.domain.usecase.ObserveTasksUseCase
 import com.example.ringapp.domain.usecase.UpdateTaskUseCase
 import com.example.ringapp.ui.theme.AppBackground
+import com.example.ringapp.work.BmiReminderScheduler
 import com.example.ringapp.work.TaskReminderScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -97,10 +99,20 @@ import kotlinx.coroutines.launch
 data class NotificationSettingsUiState(
     val tasks: List<TaskEntity> = emptyList(),
     val remindersEnabled: Boolean = true,
+    val habitRemindersEnabled: Boolean = true,
+    val bmiRemindersEnabled: Boolean = true,
+    val motivationEnabled: Boolean = true,
     val loading: Boolean = true,
     val loadError: String? = null,
     val actionError: String? = null
 )
+private data class NotificationPreferencesState(
+    val taskReminders: Boolean,
+    val habitReminders: Boolean,
+    val bmiReminders: Boolean,
+    val motivation: Boolean
+)
+
 @HiltViewModel
 // Handles the notification settings view model logic for this component without modifying runtime behavior.
 // Represents the notification settings view model structure used by the application.
@@ -124,16 +136,46 @@ class NotificationSettingsViewModel @Inject constructor(
         loadError.value = error.message ?: "Unable to load notification preferences."
         emit(true)
     }
+    private val habitReminderPreferenceFlow = preferences.habitRemindersEnabled.catch { error ->
+        if (error is CancellationException) throw error
+        Log.e("NotificationSettings", "Unable to load habit reminder preference", error)
+        loadError.value = error.message ?: "Unable to load habit reminder settings."
+        emit(true)
+    }
+    private val bmiReminderPreferenceFlow = preferences.bmiRemindersEnabled.catch { error ->
+        if (error is CancellationException) throw error
+        Log.e("NotificationSettings", "Unable to load BMI reminder preference", error)
+        loadError.value = error.message ?: "Unable to load BMI reminder settings."
+        emit(true)
+    }
+    private val motivationPreferenceFlow = preferences.motivationEnabled.catch { error ->
+        if (error is CancellationException) throw error
+        Log.e("NotificationSettings", "Unable to load motivation preference", error)
+        loadError.value = error.message ?: "Unable to load motivation settings."
+        emit(true)
+    }
+
+    private val preferencesFlow = combine(
+        reminderPreferenceFlow,
+        habitReminderPreferenceFlow,
+        bmiReminderPreferenceFlow,
+        motivationPreferenceFlow
+    ) { taskReminders, habitReminders, bmiReminders, motivation ->
+        NotificationPreferencesState(taskReminders, habitReminders, bmiReminders, motivation)
+    }
 
     val state: StateFlow<NotificationSettingsUiState> = combine(
         taskFlow,
-        reminderPreferenceFlow,
+        preferencesFlow,
         loadError,
         actionError
-    ) { tasks, remindersEnabled, loadFailure, actionFailure ->
+    ) { tasks, settings, loadFailure, actionFailure ->
         NotificationSettingsUiState(
             tasks = tasks.filterNot { it.completed },
-            remindersEnabled = remindersEnabled,
+            remindersEnabled = settings.taskReminders,
+            habitRemindersEnabled = settings.habitReminders,
+            bmiRemindersEnabled = settings.bmiReminders,
+            motivationEnabled = settings.motivation,
             loading = false,
             loadError = loadFailure,
             actionError = actionFailure
@@ -153,6 +195,48 @@ class NotificationSettingsViewModel @Inject constructor(
             if (error is CancellationException) throw error
             Log.e("NotificationSettings", "Unable to update global reminder setting", error)
             actionError.value = error.message ?: "Unable to update reminders. Please try again."
+        }
+    }
+
+    fun setHabitRemindersEnabled(enabled: Boolean) = viewModelScope.launch {
+        actionError.value = null
+        try {
+            preferences.setHabitRemindersEnabled(enabled)
+        } catch (error: Exception) {
+            if (error is CancellationException) throw error
+            Log.e("NotificationSettings", "Unable to update habit reminders", error)
+            actionError.value = error.message ?: "Unable to update habit reminders."
+        }
+    }
+
+    fun setBmiRemindersEnabled(enabled: Boolean) = viewModelScope.launch {
+        actionError.value = null
+        try {
+            if (enabled) {
+                BmiReminderScheduler.scheduleBmiReminder(
+                    context,
+                    System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000
+                )
+                preferences.setBmiRemindersEnabled(true)
+            } else {
+                BmiReminderScheduler.cancel(context)
+                preferences.setBmiRemindersEnabled(false)
+            }
+        } catch (error: Exception) {
+            if (error is CancellationException) throw error
+            Log.e("NotificationSettings", "Unable to update BMI reminders", error)
+            actionError.value = error.message ?: "Unable to update BMI reminders."
+        }
+    }
+
+    fun setMotivationEnabled(enabled: Boolean) = viewModelScope.launch {
+        actionError.value = null
+        try {
+            preferences.setMotivationEnabled(enabled)
+        } catch (error: Exception) {
+            if (error is CancellationException) throw error
+            Log.e("NotificationSettings", "Unable to update motivation notifications", error)
+            actionError.value = error.message ?: "Unable to update motivation notifications."
         }
     }
 
@@ -203,6 +287,18 @@ private sealed interface ReminderPermissionAction {
     data class SetTask(val task: TaskEntity, val enabled: Boolean) : ReminderPermissionAction {
         override val enablesReminders = enabled
     }
+
+    data class SetHabits(val enabled: Boolean) : ReminderPermissionAction {
+        override val enablesReminders = enabled
+    }
+
+    data class SetBmi(val enabled: Boolean) : ReminderPermissionAction {
+        override val enablesReminders = enabled
+    }
+
+    data class SetMotivation(val enabled: Boolean) : ReminderPermissionAction {
+        override val enablesReminders = enabled
+    }
 }
 @Composable
 // Handles the notifications screen logic for this component without modifying runtime behavior.
@@ -222,6 +318,9 @@ fun NotificationsScreen(
         when (action) {
             is ReminderPermissionAction.SetGlobal -> viewModel.setRemindersEnabled(action.enabled)
             is ReminderPermissionAction.SetTask -> viewModel.setTaskReminder(action.task, action.enabled)
+            is ReminderPermissionAction.SetHabits -> viewModel.setHabitRemindersEnabled(action.enabled)
+            is ReminderPermissionAction.SetBmi -> viewModel.setBmiRemindersEnabled(action.enabled)
+            is ReminderPermissionAction.SetMotivation -> viewModel.setMotivationEnabled(action.enabled)
         }
     }
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -288,7 +387,7 @@ fun NotificationsScreen(
                         }
                         Column(Modifier.weight(1f)) {
                             Text("Notifications", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                            Text("Manage your task reminders", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Manage task, habit, health and motivation alerts.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -296,7 +395,7 @@ fun NotificationsScreen(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.1f))
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(18.dp),
@@ -329,7 +428,7 @@ fun NotificationsScreen(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.1f))
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
                     ) {
                         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Text("REMINDER OVERVIEW", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -347,29 +446,28 @@ fun NotificationsScreen(
                     }
                 }
                 item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFF6D00).copy(alpha = 0.1f)),
-                        border = BorderStroke(1.dp, Color(0xFFFF6D00).copy(alpha = 0.25f))
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.NotificationsActive,
-                                contentDescription = null,
-                                tint = Color(0xFFFF6D00),
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                Text("BMI 30-Day Health Reminder", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFFFF6D00))
-                                Text("Scheduled 30 days after latest height & weight update", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                    }
+                    NotificationToggleCard(
+                        title = "Habit check-in",
+                        description = "A daily reminder when scheduled habits still need progress.",
+                        checked = state.habitRemindersEnabled,
+                        onCheckedChange = { requestAction(ReminderPermissionAction.SetHabits(it)) }
+                    )
+                }
+                item {
+                    NotificationToggleCard(
+                        title = "BMI health reminder",
+                        description = "Remind you to update measurements every 30 days.",
+                        checked = state.bmiRemindersEnabled,
+                        onCheckedChange = { requestAction(ReminderPermissionAction.SetBmi(it)) }
+                    )
+                }
+                item {
+                    NotificationToggleCard(
+                        title = "Daily motivation",
+                        description = "Receive a short daily motivation notification.",
+                        checked = state.motivationEnabled,
+                        onCheckedChange = { requestAction(ReminderPermissionAction.SetMotivation(it)) }
+                    )
                 }
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -424,6 +522,35 @@ private fun OverviewMetric(label: String, value: String, modifier: Modifier = Mo
         }
     }
 }
+
+@Composable
+private fun NotificationToggleCard(
+    title: String,
+    description: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    icon: ImageVector = Icons.Default.NotificationsActive
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Switch(checked = checked, onCheckedChange = onCheckedChange)
+        }
+    }
+}
 @Composable
 // Handles the task reminder card logic for this component without modifying runtime behavior.
 // Manages the task reminder card flow without changing runtime behavior.
@@ -438,7 +565,7 @@ private fun TaskReminderCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.1f))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
     ) {
         Column(Modifier.padding(start = 16.dp, top = 14.dp, end = 10.dp, bottom = 12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

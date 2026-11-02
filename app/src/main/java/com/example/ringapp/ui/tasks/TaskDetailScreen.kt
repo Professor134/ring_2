@@ -145,7 +145,7 @@ fun TaskDetailScreen(
     val task by viewModel.task.collectAsStateWithLifecycle()
     val transactions by viewModel.transactions.collectAsStateWithLifecycle()
     val errorMsg by viewModel.errorMessage.collectAsStateWithLifecycle()
-    val isDark = isSystemInDarkTheme()
+    val isDark = com.example.ringapp.ui.theme.isAppDarkTheme()
     val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
     val textColor = if (isDark) Color.White else MaterialTheme.colorScheme.onBackground
     var confirmDelete by remember { mutableStateOf(false) }
@@ -323,7 +323,7 @@ fun TaskDetailScreen(
 
                             Card(
                                 shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
                                 border = BorderStroke(1.dp, textColor.copy(alpha = 0.08f)),
                                 modifier = Modifier.fillMaxWidth()
                             ) {

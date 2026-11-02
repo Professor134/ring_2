@@ -16,6 +16,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.ringapp.data.db.AppDatabase
 import com.example.ringapp.data.local.entities.TaskEntity
 import com.example.ringapp.work.TaskReminderScheduler
+import com.example.ringapp.work.WorkScheduler
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -93,12 +94,14 @@ class BackupRestoreService @Inject constructor(
         try {
             preferences.replaceSnapshot(settings)
         } catch (failure: Exception) {
+            WorkScheduler.rescheduleReminders(context)
             throw IOException(
                 "Your data was restored, but some app settings could not be restored.",
                 failure
             )
         }
         refreshTaskReminders(oldReminders, database.taskDao().activeReminders())
+        WorkScheduler.rescheduleReminders(context)
     }
 
     // Documentation note: this declaration is part of the application's structure and behavior remains unchanged.

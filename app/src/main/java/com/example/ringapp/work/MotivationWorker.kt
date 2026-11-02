@@ -13,6 +13,7 @@ import android.media.AudioAttributes
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
+import kotlinx.coroutines.flow.first
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -20,7 +21,11 @@ import com.example.ringapp.R
 import kotlin.random.Random
 
 class MotivationWorker(context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
+    lateinit var preferences: com.example.ringapp.data.PreferencesDataStore
+
     override suspend fun doWork(): Result {
+        if (!preferences.motivationEnabled.first()) return Result.success()
+
         val quotes = listOf(
             "\"I never go back on my word. That’s my ninja way.\" – Naruto Uzumaki",
             "\"Hard work can overcome natural talent.\" – Rock Lee",

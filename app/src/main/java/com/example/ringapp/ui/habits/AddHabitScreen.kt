@@ -321,7 +321,7 @@ fun AddHabitScreen(
         viewModel.save(existing, fields, onSaved) { error = it }
     }
 
-    val isDark = isSystemInDarkTheme()
+    val isDark = com.example.ringapp.ui.theme.isAppDarkTheme()
     val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
     val textColor = if (isDark) Color.White else MaterialTheme.colorScheme.onBackground
 
@@ -567,7 +567,7 @@ fun AddHabitScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f)
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                         ),
                         border = BorderStroke(1.dp, textColor.copy(alpha = 0.1f))
                     ) {

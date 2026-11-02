@@ -9,7 +9,9 @@ package com.example.ringapp.work
 import android.content.Context
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import java.util.concurrent.TimeUnit
@@ -19,6 +21,7 @@ import java.util.concurrent.TimeUnit
 object WorkScheduler {
     private const val DAILY_MAINTENANCE = "daily_maintenance"
     private const val MOTIVATION_WORK = "motivation_work"
+    private const val HABIT_REMINDER_WORK = "habit_reminder_work"
 
 // Manages the schedule daily maintenance flow without changing runtime behavior.
     fun scheduleDailyMaintenance(context: Context) {
@@ -40,8 +43,24 @@ object WorkScheduler {
             ExistingPeriodicWorkPolicy.UPDATE,
             motivationRequest
         )
+
+        val habitReminderRequest = PeriodicWorkRequestBuilder<HabitReminderWorker>(24, TimeUnit.HOURS)
+            .build()
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            HABIT_REMINDER_WORK,
+            ExistingPeriodicWorkPolicy.UPDATE,
+            habitReminderRequest
+        )
     }
 
 // Manages the schedule sync flow without changing runtime behavior.
     fun scheduleSync(context: Context) = scheduleDailyMaintenance(context)
+
+    fun rescheduleReminders(context: Context) {
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            "restored_reminder_reschedule",
+            ExistingWorkPolicy.REPLACE,
+            OneTimeWorkRequestBuilder<ReminderRescheduleWorker>().build()
+        )
+    }
 }

@@ -8,9 +8,9 @@ package com.example.ringapp.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Premium High-Tech Palette
-val CyberNeonGreen = Color(0xFF39FF14)
-val CyberNeonGreenBright = Color(0xFF00FF41)
+// Theme accents use the same restrained green across screens.
+val CyberNeonGreen = Color(0xFF2E8B57)
+val CyberNeonGreenBright = CyberNeonGreen
 val CyberNeonBlue = Color(0xFF00F3FF)
 val CyberNeonPurple = Color(0xFFBC00FF)
 val CyberNeonPink = Color(0xFFFF00D6)
@@ -22,9 +22,9 @@ val DarkSurface = Color(0xFF12141A)
 val GlassSurface = Color(0xCC1A1D23)
 val CardBackground = Color(0xFF161920)
 
-val RingGreen = Color(0xFF00FF41)
-val RingGreenBright = Color(0xFF39FF14)
-val RingDeepGreen = Color(0xFF003810)
+val RingGreen = Color(0xFF2E8B57)
+val RingGreenBright = RingGreen
+val RingDeepGreen = Color(0xFF174A30)
 val RingBlue = Color(0xFF00F3FF)
 val RingYellow = Color(0xFFFFF01F)
 val RingRed = Color(0xFFFF3131)

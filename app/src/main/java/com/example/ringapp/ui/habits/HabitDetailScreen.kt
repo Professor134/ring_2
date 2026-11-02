@@ -76,7 +76,7 @@ private fun HabitDetailContent(
     val completedCount = data.progress.count { it.completed }
     val average = if (activeDays > 0) (completedCount * 100 / activeDays).coerceIn(0, 100) else 0
     
-    val isDark = isSystemInDarkTheme()
+    val isDark = com.example.ringapp.ui.theme.isAppDarkTheme()
     val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
     val textColor = if (isDark) Color.White else MaterialTheme.colorScheme.onBackground
 

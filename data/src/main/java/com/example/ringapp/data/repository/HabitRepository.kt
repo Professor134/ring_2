@@ -293,13 +293,18 @@ class HabitRepository @Inject constructor(
 
             val progress = dao.progressForDate(stepHabit.id, pastDateMillis)
             if (progress == null || progress.actual < 1000.0) {
+                val skippedDayEnd = checkDate.plusDays(1)
+                    .atStartOfDay(ZoneId.systemDefault())
+                    .minusNanos(1)
+                    .toInstant()
+                    .toEpochMilli()
                 pointRepository.record(
                     type = TransactionType.MISSED_TARGET,
                     amount = -10,
                     reference = "steps-skipped-penalty-$pastDateStr",
                     description = "Skipped step tracking goal on $pastDateStr",
                     habitId = stepHabit.id,
-                    timestamp = System.currentTimeMillis()
+                    timestamp = skippedDayEnd
                 )
             }
             checkDate = checkDate.plusDays(1)

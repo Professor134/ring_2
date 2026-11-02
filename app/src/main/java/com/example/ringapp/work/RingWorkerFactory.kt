@@ -29,7 +29,16 @@ class RingWorkerFactory(
             it.habitRepository = habitRepository
             it.taskRepository = taskRepository
         }
-        MotivationWorker::class.java.name -> MotivationWorker(appContext, workerParameters)
+        MotivationWorker::class.java.name -> MotivationWorker(appContext, workerParameters).also {
+            it.preferences = preferences
+        }
+        HabitReminderWorker::class.java.name -> HabitReminderWorker(appContext, workerParameters).also {
+            it.preferences = preferences
+            it.habitRepository = habitRepository
+        }
+        ReminderRescheduleWorker::class.java.name -> ReminderRescheduleWorker(appContext, workerParameters).also {
+            it.preferences = preferences
+        }
         else -> null
     }
 }

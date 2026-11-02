@@ -12,6 +12,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 
 private val RingDarkColors = darkColorScheme(
     primary = CyberNeonGreen,
@@ -24,14 +25,14 @@ private val RingDarkColors = darkColorScheme(
     error = RingError,
     background = MidnightNavy,
     onBackground = Color.White,
-    surface = CardBackground.copy(alpha = 0.14f),
+    surface = CardBackground,
     onSurface = Color.White,
-    surfaceVariant = Color(0xFF1E222D).copy(alpha = 0.14f),
-    surfaceContainerLowest = Color(0xFF11141A).copy(alpha = 0.12f),
-    surfaceContainerLow = Color(0xFF171B22).copy(alpha = 0.14f),
-    surfaceContainer = Color(0xFF1E222D).copy(alpha = 0.14f),
-    surfaceContainerHigh = Color(0xFF262B36).copy(alpha = 0.16f),
-    surfaceContainerHighest = Color(0xFF303642).copy(alpha = 0.18f),
+    surfaceVariant = Color(0xFF1E222D),
+    surfaceContainerLowest = Color(0xFF11141A),
+    surfaceContainerLow = Color(0xFF171B22),
+    surfaceContainer = Color(0xFF1E222D),
+    surfaceContainerHigh = Color(0xFF262B36),
+    surfaceContainerHighest = Color(0xFF303642),
     onSurfaceVariant = Color(0xFFB0B3C1)
 )
 
@@ -45,14 +46,14 @@ private val RingLightColors = lightColorScheme(
     error = Color(0xFFBA1A1A),
     background = Color(0xFFF0F5F2),
     onBackground = Color(0xFF191C1E),
-    surface = Color.White.copy(alpha = 0.14f),
+    surface = Color.White,
     onSurface = Color(0xFF191C1E),
-    surfaceVariant = Color(0xFFDEE5DD).copy(alpha = 0.14f),
-    surfaceContainerLowest = Color.White.copy(alpha = 0.12f),
-    surfaceContainerLow = Color(0xFFF9FCF8).copy(alpha = 0.14f),
-    surfaceContainer = Color(0xFFF0F5F2).copy(alpha = 0.14f),
-    surfaceContainerHigh = Color(0xFFE7ECE7).copy(alpha = 0.16f),
-    surfaceContainerHighest = Color(0xFFDEE5DD).copy(alpha = 0.18f),
+    surfaceVariant = Color(0xFFDEE5DD),
+    surfaceContainerLowest = Color.White,
+    surfaceContainerLow = Color(0xFFF9FCF8),
+    surfaceContainer = Color(0xFFF0F5F2),
+    surfaceContainerHigh = Color(0xFFE7ECE7),
+    surfaceContainerHighest = Color(0xFFDEE5DD),
     onSurfaceVariant = Color(0xFF424942)
 )
 
@@ -65,6 +66,7 @@ fun RingTheme(theme: String, content: @Composable () -> Unit) {
         "LIGHT" -> false
         else -> isSystemInDarkTheme()
     }
+
     MaterialTheme(
         colorScheme = if (dark) RingDarkColors else RingLightColors,
         typography = RingTypography,
@@ -72,3 +74,6 @@ fun RingTheme(theme: String, content: @Composable () -> Unit) {
         content = content
     )
 }
+
+@Composable
+fun isAppDarkTheme(): Boolean = MaterialTheme.colorScheme.background.luminance() < 0.5f

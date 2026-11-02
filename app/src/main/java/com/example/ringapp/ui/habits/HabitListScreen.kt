@@ -14,7 +14,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -101,10 +100,11 @@ import com.example.ringapp.domain.usecase.ObserveProgressRangeUseCase
 import com.example.ringapp.domain.usecase.ObserveUserProgressUseCase
 import com.example.ringapp.domain.usecase.RecordHabitProgressUseCase
 import com.example.ringapp.domain.usecase.ToggleHabitUseCase
-import com.example.ringapp.ui.theme.CyberNeonGreen
+import com.example.ringapp.ui.theme.isAppDarkTheme
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalDate
 import java.time.ZoneId
+import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -166,8 +166,7 @@ fun HabitListScreen(
         matchesQuery && matchesCategory
     }
 
-    val isDark = isSystemInDarkTheme()
-    val bgColor = if (isDark) MaterialTheme.colorScheme.background else Color(0xFFF0F2F5)
+    val bgColor = MaterialTheme.colorScheme.background
     val textColor = MaterialTheme.colorScheme.onBackground
 
     Surface(modifier = Modifier.fillMaxSize(), color = bgColor) {
@@ -210,8 +209,8 @@ fun HabitListScreen(
                             unfocusedTextColor = textColor,
                             focusedBorderColor = MaterialTheme.colorScheme.primary,
                             unfocusedBorderColor = textColor.copy(alpha = 0.1f),
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f),
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f)
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow
                         )
                     )
 
@@ -355,7 +354,6 @@ private fun HabitRow(
     val isCompleted = todayProgress?.completed == true
     val isPartial = (todayProgress?.actual ?: 0.0) > 0.0 && !isCompleted
 
-    val isDark = isSystemInDarkTheme()
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(if (isPressed) 0.98f else 1f, label = "scale")
@@ -376,16 +374,12 @@ private fun HabitRow(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .scale(scale)
-            .graphicsLayer {
-                shadowElevation = if (isSteps) 10f else 2f
-                spotShadowColor = baseColor
-            },
+            .scale(scale),
         onClick = { onHabitClick(habit.id) },
         interactionSource = interactionSource,
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f)),
-        border = BorderStroke(if (isSteps) 2.dp else 1.dp, if (isSteps) baseColor else baseColor.copy(alpha = 0.1f))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
     ) {
         Column(Modifier.padding(18.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -447,9 +441,15 @@ private fun HabitRow(
                             Text("$steps", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black, color = textColor)
                             Text(" STEPS", style = MaterialTheme.typography.labelSmall, color = textColor.copy(alpha = 0.5f), modifier = Modifier.padding(bottom = 4.dp, start = 4.dp))
                             Spacer(Modifier.width(12.dp))
-                            Text("+$points PTS", color = CyberNeonGreen, fontWeight = FontWeight.Black, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(bottom = 4.dp))
+                            Text("+$points PTS", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(bottom = 4.dp))
                         }
                     } else {
+                        Text(
+                            String.format(Locale.US, "%.0f / %.0f %s", todayProgress?.actual ?: 0.0, todayTarget, habit.unit.orEmpty()).trim(),
+                            color = textColor.copy(alpha = 0.72f),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Medium
+                        )
                         Box(Modifier.fillMaxWidth().height(8.dp).clip(CircleShape).background(baseColor.copy(alpha = 0.1f))) {
                             Box(
                                 Modifier
@@ -475,7 +475,7 @@ private fun HabitRow(
                 val buttonColor = when {
                     isCompleted -> baseColor
                     isPartial -> baseColor.copy(alpha = 0.6f)
-                    else -> if (isDark) Color(0xFF252932) else Color(0xFFF0F2F5)
+                    else -> MaterialTheme.colorScheme.surfaceVariant
                 }
 
                 IconButton(
@@ -583,12 +583,9 @@ private fun ProgressDialog(
     var value by remember(progress) { mutableStateOf((progress?.actual ?: 0.0).toInt().toString()) }
     var note by remember(progress) { mutableStateOf(progress?.note.orEmpty()) }
 
-    val isDark = isSystemInDarkTheme()
-    val dialogBg = if (isDark) Color(0xFF20232A) else Color(0xFFF0F2F5)
-
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = dialogBg,
+        containerColor = MaterialTheme.colorScheme.surface,
         title = { Text("Today's Progress", fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {

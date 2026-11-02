@@ -91,7 +91,6 @@ fun OnboardingScreen(
     var name by remember { mutableStateOf("") }
     var dateOfBirth by remember { mutableStateOf<Long?>(null) }
     var gender by remember { mutableStateOf("") }
-    var isConfirmed by remember { mutableStateOf(false) }
 
     var weight by remember { mutableStateOf("") }
     var height by remember { mutableStateOf("") }
@@ -180,9 +179,7 @@ fun OnboardingScreen(
                             calculatedAge = calculatedAge,
                             onDobChange = { dateOfBirth = it; validationMessage = null },
                             gender = gender,
-                            onGenderChange = { gender = it; validationMessage = null },
-                            isConfirmed = isConfirmed,
-                            onConfirmChange = { isConfirmed = it; validationMessage = null }
+                            onGenderChange = { gender = it; validationMessage = null }
                         )
                         3 -> OnboardingScreenThree(
                             weight = weight,
@@ -265,9 +262,6 @@ fun OnboardingScreen(
                                     }
                                     gender.trim().isBlank() -> {
                                         validationMessage = "Please select your gender."
-                                    }
-                                    !isConfirmed -> {
-                                        validationMessage = "Please confirm your personal information."
                                     }
                                     else -> {
                                         currentStep = 3
@@ -385,7 +379,7 @@ private fun OnboardingScreenOne() {
 }
 
 // -----------------------------------------------------------------------------
-// Screen 2: Personal Information (Name, DOB, Calculated Age, Gender, Confirmation)
+// Screen 2: Personal Information (Name, DOB, Calculated Age, Gender)
 // -----------------------------------------------------------------------------
 @Composable
 private fun OnboardingScreenTwo(
@@ -395,9 +389,7 @@ private fun OnboardingScreenTwo(
     calculatedAge: Int?,
     onDobChange: (Long) -> Unit,
     gender: String,
-    onGenderChange: (String) -> Unit,
-    isConfirmed: Boolean,
-    onConfirmChange: (Boolean) -> Unit
+    onGenderChange: (String) -> Unit
 ) {
     val context = LocalContext.current
     val selectedDate = dateOfBirth?.let {
@@ -435,7 +427,7 @@ private fun OnboardingScreenTwo(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f)
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
             ),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f))
         ) {
@@ -542,50 +534,6 @@ private fun OnboardingScreenTwo(
                     }
                 }
 
-                // Confirmation Card & Checkbox
-                Surface(
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
-                    shape = RoundedCornerShape(14.dp),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            text = "CONFIRM INFORMATION",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        Text(
-                            text = "• Name: ${if (name.isBlank()) "Not set" else name}\n" +
-                                    "• DOB: ${selectedDate?.toString() ?: "Not set"}" +
-                                    "${calculatedAge?.let { " ($it yrs)" } ?: ""}\n" +
-                                    "• Gender: ${if (gender.isBlank()) "Not set" else gender}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Checkbox(
-                                checked = isConfirmed,
-                                onCheckedChange = onConfirmChange
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "I confirm the entered personal information is correct.",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-                }
             }
         }
     }
@@ -638,7 +586,7 @@ private fun OnboardingScreenThree(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f)
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
             ),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f))
         ) {

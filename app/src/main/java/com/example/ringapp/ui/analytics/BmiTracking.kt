@@ -30,6 +30,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.room.withTransaction
 import com.example.ringapp.data.db.AppDatabase
+import com.example.ringapp.data.PreferencesDataStore
 import com.example.ringapp.data.local.dao.HabitDao
 import com.example.ringapp.data.local.dao.ProfileDao
 import com.example.ringapp.data.local.entities.HabitEntity
@@ -63,7 +64,8 @@ class BmiTrackingViewModel @Inject constructor(
     @ApplicationContext private val appContext: Context,
     private val database: AppDatabase,
     private val profileDao: ProfileDao,
-    private val habitDao: HabitDao
+    private val habitDao: HabitDao,
+    private val preferences: PreferencesDataStore
 ) : ViewModel() {
     val profile: StateFlow<ProfileEntity?> = profileDao.observeCurrent()
         .catch { error ->
@@ -142,8 +144,10 @@ class BmiTrackingViewModel @Inject constructor(
             }
 
             // Schedule 30-day reminder relative to the new measurement date
-            val nextReminderTime = now + (30L * 24 * 60 * 60 * 1000L)
-            BmiReminderScheduler.scheduleBmiReminder(appContext, nextReminderTime)
+            if (preferences.bmiRemindersEnabled.first()) {
+                val nextReminderTime = now + (30L * 24 * 60 * 60 * 1000L)
+                BmiReminderScheduler.scheduleBmiReminder(appContext, nextReminderTime)
+            }
 
             onSaved()
         } catch (error: Exception) {
@@ -163,7 +167,7 @@ fun BmiMeasurementDialog(
     var height by remember(profile) { mutableStateOf(profile?.heightCm?.toString().orEmpty()) }
     var error by remember { mutableStateOf<String?>(null) }
 
-    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val isDark = com.example.ringapp.ui.theme.isAppDarkTheme()
     val dialogBg = if (isDark) androidx.compose.ui.graphics.Color(0xFF20232A) else androidx.compose.ui.graphics.Color(0xFFF0F2F5)
 
     AlertDialog(

@@ -40,6 +40,9 @@ class PreferencesDataStore @Inject constructor(
     val stepsBase: Flow<Int> = dataStore.data.map { it[STEPS_BASE] ?: -1 }
     val stepsDay: Flow<String> = dataStore.data.map { it[STEPS_DAY] ?: "" }
     val taskRemindersEnabled: Flow<Boolean> = dataStore.data.map { it[TASK_REMINDERS_ENABLED] ?: true }
+    val habitRemindersEnabled: Flow<Boolean> = dataStore.data.map { it[HABIT_REMINDERS_ENABLED] ?: true }
+    val bmiRemindersEnabled: Flow<Boolean> = dataStore.data.map { it[BMI_REMINDERS_ENABLED] ?: true }
+    val motivationEnabled: Flow<Boolean> = dataStore.data.map { it[MOTIVATION_ENABLED] ?: true }
 
     suspend fun setTheme(value: String) = dataStore.edit { it[THEME] = value }
     suspend fun setLanguage(value: String) = dataStore.edit { it[LANGUAGE] = value }
@@ -52,6 +55,9 @@ class PreferencesDataStore @Inject constructor(
     suspend fun setStepsBase(value: Int) = dataStore.edit { it[STEPS_BASE] = value }
     suspend fun setStepsDay(value: String) = dataStore.edit { it[STEPS_DAY] = value }
     suspend fun setTaskRemindersEnabled(value: Boolean) = dataStore.edit { it[TASK_REMINDERS_ENABLED] = value }
+    suspend fun setHabitRemindersEnabled(value: Boolean) = dataStore.edit { it[HABIT_REMINDERS_ENABLED] = value }
+    suspend fun setBmiRemindersEnabled(value: Boolean) = dataStore.edit { it[BMI_REMINDERS_ENABLED] = value }
+    suspend fun setMotivationEnabled(value: Boolean) = dataStore.edit { it[MOTIVATION_ENABLED] = value }
 
     suspend fun exportSnapshot(): Map<String, Any> {
         val snapshot = linkedMapOf<String, Any>()
@@ -72,7 +78,10 @@ class PreferencesDataStore @Inject constructor(
             DYNAMIC_COLOR.name,
             STEPS_BASE.name,
             STEPS_DAY.name,
-            TASK_REMINDERS_ENABLED.name
+            TASK_REMINDERS_ENABLED.name,
+            HABIT_REMINDERS_ENABLED.name,
+            BMI_REMINDERS_ENABLED.name,
+            MOTIVATION_ENABLED.name
         )
         require(snapshot.keys.all { it in knownKeys }) { "The backup contains an unsupported app setting." }
 
@@ -103,6 +112,12 @@ class PreferencesDataStore @Inject constructor(
                         ?: throw IllegalArgumentException("Invalid step date in backup.")
                     TASK_REMINDERS_ENABLED.name -> preferences[TASK_REMINDERS_ENABLED] = value as? Boolean
                         ?: throw IllegalArgumentException("Invalid reminder setting in backup.")
+                    HABIT_REMINDERS_ENABLED.name -> preferences[HABIT_REMINDERS_ENABLED] = value as? Boolean
+                        ?: throw IllegalArgumentException("Invalid habit reminder setting in backup.")
+                    BMI_REMINDERS_ENABLED.name -> preferences[BMI_REMINDERS_ENABLED] = value as? Boolean
+                        ?: throw IllegalArgumentException("Invalid BMI reminder setting in backup.")
+                    MOTIVATION_ENABLED.name -> preferences[MOTIVATION_ENABLED] = value as? Boolean
+                        ?: throw IllegalArgumentException("Invalid motivation setting in backup.")
                 }
             }
         }
@@ -120,5 +135,8 @@ class PreferencesDataStore @Inject constructor(
         val STEPS_BASE = androidx.datastore.preferences.core.intPreferencesKey("steps_base")
         val STEPS_DAY = stringPreferencesKey("steps_day")
         val TASK_REMINDERS_ENABLED = booleanPreferencesKey("task_reminders_enabled")
+        val HABIT_REMINDERS_ENABLED = booleanPreferencesKey("habit_reminders_enabled")
+        val BMI_REMINDERS_ENABLED = booleanPreferencesKey("bmi_reminders_enabled")
+        val MOTIVATION_ENABLED = booleanPreferencesKey("motivation_enabled")
     }
 }

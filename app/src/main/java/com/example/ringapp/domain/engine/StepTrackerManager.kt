@@ -56,12 +56,10 @@ class StepTrackerManager @Inject constructor(
             
             stepSensor?.let {
                 val registered = sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
-                Log.d("StepTracker", "Step counter sensor registered: $registered")
             } ?: Log.e("StepTracker", "Step counter sensor not available")
 
             detectorSensor?.let {
                 val registered = sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
-                Log.d("StepTracker", "Step detector sensor registered: $registered")
             }
 
             accelSensor?.let {
@@ -115,7 +113,6 @@ class StepTrackerManager @Inject constructor(
                 val date = todayTimestamp()
                 val existing = habitRepository.getProgressForDate(current?.id ?: 0, date)
                 val newSteps = (existing?.actual?.toInt() ?: 0) + 1
-                Log.d("StepTracker", "Incrementing steps to $newSteps")
                 habitRepository.recordSteps(newSteps)
             } catch (e: Exception) {
                 Log.e("StepTracker", "Error with manual increment", e)
@@ -143,7 +140,6 @@ class StepTrackerManager @Inject constructor(
                 }
 
                 val dailySteps = (totalStepsSinceReboot - baseSteps).coerceAtLeast(0)
-                Log.d("StepTracker", "Steps update (Counter): Total=$totalStepsSinceReboot, Base=$baseSteps, Daily=$dailySteps")
                 habitRepository.recordSteps(dailySteps)
             } catch (e: Exception) {
                 Log.e("StepTracker", "Error processing step sensor change", e)

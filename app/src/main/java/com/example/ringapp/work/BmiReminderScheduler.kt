@@ -24,11 +24,7 @@ object BmiReminderScheduler {
         )
 
         val alarmManager = context.getSystemService(AlarmManager::class.java)
-        try {
-            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, reminderTime, pendingIntent)
-        } catch (e: Exception) {
-            android.util.Log.e("BmiReminderScheduler", "Unable to schedule BMI alarm", e)
-        }
+        alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, reminderTime, pendingIntent)
     }
 
     fun cancel(context: Context) {

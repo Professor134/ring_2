@@ -6,54 +6,45 @@
 
 package com.example.ringapp.work
 
-import android.app.AlarmManager
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.ringapp.data.db.AppDatabase
+import kotlinx.coroutines.flow.first
 import org.json.JSONArray
 
 class ReminderRescheduleWorker(appContext: Context, workerParams: WorkerParameters) : CoroutineWorker(appContext, workerParams) {
+    lateinit var preferences: com.example.ringapp.data.PreferencesDataStore
+
     override suspend fun doWork(): Result {
-        val alarmManager = applicationContext.getSystemService(AlarmManager::class.java)
         val database = AppDatabase.getDatabase(applicationContext)
 
-        // Reschedule active task reminders
+        val taskRemindersEnabled = preferences.taskRemindersEnabled.first()
         database.taskDao().activeReminders().forEach { task ->
-            val time = task.reminderTime ?: return@forEach
-            val intent = Intent(applicationContext, ReminderAlarmReceiver::class.java)
-                .putExtra("taskId", task.id)
-                .putExtra("title", task.title)
-            val pendingIntent = PendingIntent.getBroadcast(
-                applicationContext,
-                task.id.toInt(),
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, time, pendingIntent)
+            TaskReminderScheduler.sync(applicationContext, task, taskRemindersEnabled)
         }
 
         // Reschedule BMI 30-day reminder relative to latest measurement date
         val profile = database.profileDao().getCurrent()
-        if (profile != null) {
-            val measurementsStr = profile.bodyMeasurements
-            if (!measurementsStr.isNullOrBlank()) {
-                try {
-                    val array = JSONArray(measurementsStr)
-                    var latestDate = profile.createdAt
-                    for (i in 0 until array.length()) {
-                        val obj = array.getJSONObject(i)
-                        val date = obj.optLong("date", 0L)
-                        if (date > latestDate) latestDate = date
-                    }
-                    val reminderTime = latestDate + (30L * 24 * 60 * 60 * 1000L)
-                    BmiReminderScheduler.scheduleBmiReminder(applicationContext, reminderTime)
-                } catch (e: Exception) {
-                    android.util.Log.e("ReminderRescheduleWorker", "Error processing BMI measurements", e)
+        val bmiRemindersEnabled = preferences.bmiRemindersEnabled.first()
+        if (!bmiRemindersEnabled || profile == null || profile.bodyMeasurements.isNullOrBlank()) {
+            BmiReminderScheduler.cancel(applicationContext)
+        } else {
+            val latestDate = try {
+                val array = JSONArray(profile.bodyMeasurements)
+                var latest = profile.createdAt
+                for (i in 0 until array.length()) {
+                    val date = array.getJSONObject(i).optLong("date", 0L)
+                    if (date > latest) latest = date
                 }
+                latest
+            } catch (error: Exception) {
+                android.util.Log.e("ReminderRescheduleWorker", "Error processing BMI measurements", error)
+                BmiReminderScheduler.cancel(applicationContext)
+                return Result.failure()
             }
+            val reminderTime = latestDate + (30L * 24 * 60 * 60 * 1000L)
+            BmiReminderScheduler.scheduleBmiReminder(applicationContext, reminderTime)
         }
 
         return Result.success()
