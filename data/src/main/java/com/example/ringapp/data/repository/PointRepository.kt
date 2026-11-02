@@ -49,19 +49,9 @@ class PointRepository @Inject constructor(
         val oldLevel = current.level
         val newLevel = calculateLevel(newLifetime)
 
-        var totalPointsDelta = amount
-        var finalLifetime = newLifetime
-
-        if (newLevel > oldLevel) {
-            val levelDiff = newLevel - oldLevel
-            val rewardPoints = levelDiff * 15
-            totalPointsDelta += rewardPoints
-            finalLifetime += rewardPoints
-        }
-
         val inserted = pointDao.insert(
             PointTransactionEntity(
-                amount = totalPointsDelta,
+                amount = amount,
                 type = type,
                 description = description,
                 habitId = habitId,
@@ -73,11 +63,26 @@ class PointRepository @Inject constructor(
         )
         if (inserted == -1L) return@withTransaction false
 
-        val updatedCurrentPoints = (current.currentPoints + totalPointsDelta).coerceAtLeast(0)
+        val levelRewardPoints = (oldLevel + 1..newLevel).sumOf { reachedLevel ->
+            val rewardInserted = pointDao.insert(
+                PointTransactionEntity(
+                    amount = LEVEL_UP_REWARD_POINTS,
+                    type = TransactionType.LEVEL_UP_REWARD,
+                    description = "Reached level $reachedLevel",
+                    habitId = habitId,
+                    taskId = taskId,
+                    uniqueReference = "level-up-$reachedLevel",
+                    timestamp = timestamp,
+                    createdAt = timestamp
+                )
+            )
+            if (rewardInserted == -1L) 0 else LEVEL_UP_REWARD_POINTS
+        }
+        val updatedCurrentPoints = (current.currentPoints + amount + levelRewardPoints).coerceAtLeast(0)
         progressDao.insert(
             current.copy(
                 currentPoints = updatedCurrentPoints,
-                lifetimePoints = finalLifetime,
+                lifetimePoints = newLifetime + levelRewardPoints,
                 level = newLevel,
                 updatedAt = timestamp
             )
@@ -99,5 +104,9 @@ class PointRepository @Inject constructor(
             currentNeeded *= 1.25
         }
         return total.toLong()
+    }
+
+    private companion object {
+        const val LEVEL_UP_REWARD_POINTS = 15
     }
 }

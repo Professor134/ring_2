@@ -386,6 +386,7 @@ private fun TaskCalendar(
 ) {
     var currentMonth by remember { mutableStateOf(LocalDate.now().withDayOfMonth(1)) }
     val today = LocalDate.now()
+    val isDark = com.example.ringapp.ui.theme.isAppDarkTheme()
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(
@@ -469,22 +470,22 @@ private fun TaskCalendar(
                         // Precedence Rule: Main Task Completion > Subtask Completion > Overdue Date > Due Date
                         val (borderColor, textColorForDate, bgColor) = when {
                             mainTaskCompletedOnDate -> {
-                                Triple(Color(0xFF4CAF50), Color.White, Color(0xFF4CAF50).copy(alpha = 0.18f))
+                                Triple(Color(0xFF4CAF50), if (isDark) Color.White else Color.Black, Color(0xFF4CAF50).copy(alpha = 0.18f))
                             }
                             subtaskCompletedOnDate -> {
-                                Triple(Color(0xFF2196F3), Color.White, Color(0xFF2196F3).copy(alpha = 0.18f))
+                                Triple(Color(0xFF2196F3), if (isDark) Color.White else Color.Black, Color(0xFF2196F3).copy(alpha = 0.18f))
                             }
                             isPastOverdue -> {
-                                Triple(Color(0xFFFF3131), Color.White, Color(0xFF8B0000).copy(alpha = 0.6f))
+                                Triple(Color(0xFFFF3131), if (isDark) Color.White else Color.Black, Color(0xFF8B0000).copy(alpha = 0.6f))
                             }
                             isExactDueDate -> {
-                                Triple(Color(0xFFFF3131), Color.White, Color(0xFFFF3131).copy(alpha = 0.18f))
+                                Triple(Color(0xFFFF3131), if (isDark) Color.White else Color.Black, Color(0xFFFF3131).copy(alpha = 0.18f))
                             }
                             isScheduledFuture -> {
-                                Triple(Color(0xFF2196F3), Color.White, Color(0xFF2196F3).copy(alpha = 0.15f))
+                                Triple(Color(0xFF2196F3), if (isDark) Color.White else Color.Black, Color(0xFF2196F3).copy(alpha = 0.15f))
                             }
                             else -> {
-                                Triple(Color.White.copy(alpha = 0.2f), Color.White, Color.Transparent)
+                                Triple(textColor.copy(alpha = 0.2f), if (isDark) Color.White else Color.Black, Color.Transparent)
                             }
                         }
 

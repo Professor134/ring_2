@@ -300,6 +300,15 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
         viewModel: PersonalAnalyticsViewModel = hiltViewModel()
     ) {
         val state by viewModel.state.collectAsStateWithLifecycle()
+        val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+        var ringAnimationKey by remember { mutableIntStateOf(0) }
+        DisposableEffect(lifecycleOwner) {
+            val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+                if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) ringAnimationKey++
+            }
+            lifecycleOwner.lifecycle.addObserver(observer)
+            onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+        }
         var range by remember { mutableStateOf("Days") }
         var selected by remember { mutableStateOf<LinePoint?>(null) }
         var confirmDelete by remember { mutableStateOf(false) }
@@ -541,7 +550,8 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
                                 target = todayTarget,
                                 baseColor = habitColor,
                                 unit = habit.unit.orEmpty(),
-                                modifier = Modifier.padding(vertical = 12.dp)
+                                modifier = Modifier.padding(vertical = 12.dp),
+                                animationKey = ringAnimationKey
                             )
                         }
                     }
@@ -835,6 +845,8 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
         textColor: Color,
         onDateClick: (LocalDate) -> Unit
     ) {
+        val isDark = com.example.ringapp.ui.theme.isAppDarkTheme()
+        val dateNumberColor = if (isDark) Color.White else Color.Black
         var currentMonth by remember { mutableStateOf(LocalDate.now().withDayOfMonth(1)) }
         val habitStart = java.time.Instant.ofEpochMilli(habit.startDate).atZone(ZoneId.systemDefault()).toLocalDate()
         val today = LocalDate.now()
@@ -910,31 +922,31 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
                             val (borderColor, textColorForDate, bgColor) = when {
                                 // 1. Pre-installation / habit start
                                 date.isBefore(habitStart) -> {
-                                    Triple(Color.Gray.copy(alpha = 0.5f), Color.White, Color.Gray.copy(alpha = 0.15f))
+                                    Triple(Color.Gray.copy(alpha = 0.5f), dateNumberColor, Color.Gray.copy(alpha = 0.15f))
                                 }
                                 // 2. Future dates that are scheduled as active
                                 date.isAfter(today) && active -> {
-                                    Triple(Color(0xFF2196F3), Color.White, Color(0xFF2196F3).copy(alpha = 0.18f))
+                                    Triple(Color(0xFF2196F3), dateNumberColor, Color(0xFF2196F3).copy(alpha = 0.18f))
                                 }
                                 // 3. Future dates that are inactive
                                 date.isAfter(today) -> {
-                                    Triple(Color.White.copy(alpha = 0.5f), Color.White, Color.Gray.copy(alpha = 0.15f))
+                                    Triple(textColor.copy(alpha = 0.5f), dateNumberColor, Color.Gray.copy(alpha = 0.15f))
                                 }
                                 // 4. Past/today dates that are inactive
                                 !active -> {
-                                    Triple(Color.White.copy(alpha = 0.5f), Color.White, Color.Gray.copy(alpha = 0.15f))
+                                    Triple(textColor.copy(alpha = 0.5f), dateNumberColor, Color.Gray.copy(alpha = 0.15f))
                                 }
                                 // 5. Active past/today dates with COMPLETED progress
                                 record != null && record.actual >= dayTarget && dayTarget > 0.0 -> {
-                                    Triple(Color(0xFF4CAF50), Color.White, Color(0xFF4CAF50).copy(alpha = 0.18f))
+                                    Triple(Color(0xFF4CAF50), dateNumberColor, Color(0xFF4CAF50).copy(alpha = 0.18f))
                                 }
                                 // 6. Active past/today dates with PARTIAL progress (> 0 but < target)
                                 record != null && record.actual > 0.0 -> {
-                                    Triple(Color(0xFFFF9800), Color.White, Color(0xFFFF9800).copy(alpha = 0.18f))
+                                    Triple(Color(0xFFFF9800), dateNumberColor, Color(0xFFFF9800).copy(alpha = 0.18f))
                                 }
                                 // 7. Active past/today dates with ZERO progress
                                 else -> {
-                                    Triple(Color(0xFFFF3131), Color.White, Color(0xFFFF3131).copy(alpha = 0.18f))
+                                    Triple(Color(0xFFFF3131), dateNumberColor, Color(0xFFFF3131).copy(alpha = 0.18f))
                                 }
                             }
 
@@ -1283,7 +1295,8 @@ fun DualCircularProgressIndicator(
     baseColor: Color,
     unit: String,
     modifier: Modifier = Modifier,
-    onRecordTap: (() -> Unit)? = null
+    onRecordTap: (() -> Unit)? = null,
+    animationKey: Int = 0
 ) {
     val safeSets = sets.coerceAtLeast(1)
     val safeReps = repsPerSet.coerceAtLeast(1)
@@ -1304,22 +1317,9 @@ fun DualCircularProgressIndicator(
         0f
     }
 
-    val animatedOuterProgress by animateFloatAsState(
-        targetValue = outerTargetProgress,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessVeryLow),
-        label = "outerProgress"
-    )
-
-    val animatedInnerProgress by animateFloatAsState(
-        targetValue = innerTargetProgress,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessVeryLow),
-        label = "innerProgress"
-    )
-    val animatedOverflowProgress by animateFloatAsState(
-        targetValue = overflowProgress,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessVeryLow),
-        label = "overflowProgress"
-    )
+    val animatedOuterProgress by animateProgressOnEntry(outerTargetProgress, animationKey)
+    val animatedInnerProgress by animateProgressOnEntry(innerTargetProgress, animationKey)
+    val animatedOverflowProgress by animateProgressOnEntry(overflowProgress, animationKey)
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -1336,7 +1336,7 @@ fun DualCircularProgressIndicator(
                 val gap = 8.dp.toPx()
 
                 val maxRadius = (size.minDimension / 2f)
-                val outerRadius = maxRadius - (strokeOuter / 2f) - 4.dp.toPx()
+                val outerRadius = maxRadius - (strokeOuter / 2f) - 10.dp.toPx()
                 val innerRadius = outerRadius - (strokeOuter / 2f) - gap - (strokeInner / 2f)
                 val overflowRadius = maxRadius - strokeOuter / 2f
 
@@ -1453,6 +1453,21 @@ fun DualCircularProgressIndicator(
             }
         }
     }
+}
+
+@Composable
+private fun animateProgressOnEntry(
+    target: Float,
+    animationKey: Int
+): androidx.compose.runtime.State<Float> {
+    val progress = remember(animationKey) { Animatable(0f) }
+    LaunchedEffect(animationKey, target) {
+        progress.animateTo(
+            targetValue = target,
+            animationSpec = tween(durationMillis = 850, easing = FastOutSlowInEasing)
+        )
+    }
+    return androidx.compose.runtime.derivedStateOf { progress.value }
 }
 
 // -----------------------------------------------------------------------------

@@ -8,12 +8,12 @@ class AchievementEngineTest {
     @Test
     fun profileProgressCreatesFourIncreasingTiersForEachAchievement() {
         val progress = AchievementEngine.buildProfileProgress(
-            longestStreak = 7,
-            habitsCreated = 5,
-            completedTasks = 10,
-            lifetimePoints = 500,
-            level = 5,
-            habitCompletions = 20
+            longestStreak = 21,
+            habitsCreated = 20,
+            completedTasks = 25,
+            lifetimePoints = 1_500,
+            level = 8,
+            habitCompletions = 100
         )
 
         assertEquals(6, progress.size)
@@ -25,9 +25,56 @@ class AchievementEngineTest {
             assertTrue(achievement.tiers.zipWithNext().all { (lower, higher) -> higher.target > lower.target })
         }
         assertEquals(1f, progress.first().tiers[2].progress)
-        assertEquals(7, progress.first().value)
+        assertEquals(21, progress.first().value)
         assertEquals(1f, progress[2].tiers[1].progress)
-        assertEquals(0.25f, progress[3].tiers[2].progress, 0.001f)
+        assertEquals(1f, progress[3].tiers[1].progress)
+        assertEquals(listOf(20, 50, 100, 200), progress[1].tiers.map { it.target })
+        assertEquals(listOf(10, 25, 50, 100), progress[1].tiers.map { it.rewardPoints })
+    }
+
+    @Test
+    fun laterTiersStayLockedUntilThePreviousThresholdIsReached() {
+        val progress = AchievementEngine.buildProfileProgress(
+            longestStreak = 0,
+            habitsCreated = 19,
+            completedTasks = 0,
+            lifetimePoints = 0,
+            level = 1,
+            habitCompletions = 0
+        ).first { it.id == "habit-builder" }
+
+        assertTrue(progress.tiers[0].unlocked)
+        assertTrue(progress.tiers[1].unlocked.not())
+        assertTrue(progress.tiers[1].progress == 0f)
+
+        val atFirstThreshold = AchievementEngine.buildProfileProgress(
+            longestStreak = 0,
+            habitsCreated = 20,
+            completedTasks = 0,
+            lifetimePoints = 0,
+            level = 1,
+            habitCompletions = 0
+        ).first { it.id == "habit-builder" }
+        assertTrue(atFirstThreshold.tiers[0].progress == 1f)
+        assertTrue(atFirstThreshold.tiers[1].unlocked)
+    }
+
+    @Test
+    fun earnedTiersStayEarnedWhenCurrentProgressDrops() {
+        val earned = AchievementEngine.buildProfileProgress(
+            longestStreak = 0,
+            habitsCreated = 0,
+            completedTasks = 0,
+            lifetimePoints = 0,
+            level = 1,
+            habitCompletions = 0,
+            earnedTierReferences = setOf("achievement-habit-builder-newbie")
+        ).first { it.id == "habit-builder" }
+
+        assertTrue(earned.tiers[0].earned)
+        assertTrue(earned.tiers[0].unlocked)
+        assertEquals(1f, earned.tiers[0].progress)
+        assertTrue(earned.tiers[1].unlocked)
     }
 
     @Test

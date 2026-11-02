@@ -221,7 +221,7 @@ fun ProfileScreen(appViewModel: AppViewModel, onEdit: () -> Unit, onAppearance: 
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     ActionButton("Visual Protocol", Icons.Default.Palette, onAppearance, textColor)
-                    ActionButton("Neural Alerts", Icons.Default.Notifications, onNotifications, textColor)
+                    ActionButton("Notifications", Icons.Default.Notifications, onNotifications, textColor)
                     ActionButton("Backup & Restore", Icons.Default.CloudUpload, onBackup, textColor)
                     ActionButton("Transaction Logs", Icons.Default.History, onPointHistory, textColor)
                 }
@@ -294,21 +294,51 @@ private fun AchievementTierRing(tier: AchievementTierProgress, modifier: Modifie
     ) {
         Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(
-                progress = { animatedProgress },
+                progress = { if (tier.unlocked) animatedProgress else 0f },
                 modifier = Modifier.fillMaxSize(),
-                color = color,
+                color = if (tier.unlocked) color else MaterialTheme.colorScheme.outlineVariant,
                 trackColor = color.copy(alpha = 0.18f),
                 strokeWidth = 4.dp
             )
+            if (tier.unlocked) {
+                Text(
+                    "${tier.current}/${tier.target}",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            } else {
+                Icon(
+                    Icons.Default.Lock,
+                    contentDescription = "Locked",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        }
+        Text(
+            tier.tier.label,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (tier.unlocked) color else MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1
+        )
+        if (!tier.unlocked) {
             Text(
-                "${tier.current}/${tier.target}",
+                "Target ${tier.target}",
                 style = MaterialTheme.typography.labelSmall,
                 fontSize = 8.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1
             )
         }
-        Text(tier.tier.label, style = MaterialTheme.typography.labelSmall, color = color, maxLines = 1)
+        Text(
+            "+${tier.rewardPoints} pts",
+            style = MaterialTheme.typography.labelSmall,
+            fontSize = 8.sp,
+            color = if (tier.earned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1
+        )
     }
 }
 
@@ -348,7 +378,19 @@ private fun totalThreshold(level: Int): Int {
 fun EditProfileScreen(onBack: () -> Unit, viewModel: ProfileViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle(); val profile = state.profile ?: return; val context = LocalContext.current
     var name by remember(profile) { mutableStateOf(profile.name) }; var photoUri by remember(profile) { mutableStateOf(profile.photoUri) }; var dob by remember(profile) { mutableStateOf(profile.dateOfBirth) }; var gender by remember(profile) { mutableStateOf(profile.gender.orEmpty()) }
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let { context.contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION); photoUri = it.toString() } }
+    var photoError by remember { mutableStateOf<String?>(null) }
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let {
+            try {
+                context.contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                photoUri = it.toString()
+                photoError = null
+            } catch (failure: SecurityException) {
+                android.util.Log.e("EditProfileScreen", "Unable to keep access to the selected profile image", failure)
+                photoError = "This image provider did not allow saved access. Choose another image."
+            }
+        }
+    }
     
     val textColor = MaterialTheme.colorScheme.onBackground
     val bgColor = MaterialTheme.colorScheme.background
@@ -364,7 +406,8 @@ fun EditProfileScreen(onBack: () -> Unit, viewModel: ProfileViewModel = hiltView
                 if (photoUri != null) AsyncImage(Uri.parse(photoUri), "Profile photo", Modifier.fillMaxSize())
                 else Image(painterResource(R.drawable.ic_profile_avatar), "Default profile avatar", Modifier.fillMaxSize())
             }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) { Button(onClick = { picker.launch(arrayOf("image/*")) }, Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) { Text("UPDATE") }; OutlinedButton(onClick = { photoUri = null }, Modifier.weight(1f), enabled = photoUri != null, shape = RoundedCornerShape(12.dp)) { Text("REMOVE", color = textColor) } }
+            photoError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) { Button(onClick = { picker.launch(arrayOf("image/png", "image/*")) }, Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) { Text("UPDATE") }; OutlinedButton(onClick = { photoUri = null }, Modifier.weight(1f), enabled = photoUri != null, shape = RoundedCornerShape(12.dp)) { Text("REMOVE", color = textColor) } }
             OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth(), label = { Text("NAME") }, singleLine = true, shape = RoundedCornerShape(16.dp), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = textColor, unfocusedTextColor = textColor))
             Text("DATA OF BIRTH", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = textColor.copy(alpha = 0.5f), letterSpacing = 2.sp); OutlinedButton(onClick = { val now = Calendar.getInstance(); DatePickerDialog(context, { _, year, month, day -> dob = Calendar.getInstance().apply { set(year, month, day, 0, 0, 0) }.timeInMillis }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH)).show() }, Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) { Text(dob?.let { SimpleDateFormat("d MMMM yyyy", Locale.getDefault()).format(Date(it)) } ?: "NOT SET", color = textColor) }
             Text("GENDER", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = textColor.copy(alpha = 0.5f), letterSpacing = 2.sp); Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { listOf("Male", "Female", "Other").forEach { option -> FilterChip(gender == option, { gender = option }, label = { Text(option.uppercase()) }, shape = RoundedCornerShape(10.dp), colors = FilterChipDefaults.filterChipColors(labelColor = textColor.copy(alpha = 0.6f), selectedLabelColor = Color.White, selectedContainerColor = MaterialTheme.colorScheme.primary)) } }

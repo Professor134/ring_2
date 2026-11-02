@@ -132,7 +132,7 @@ fun BackupRestoreScreen(
 
                 ActionCard(
                     title = "Export a backup",
-                    description = "Save your habits, progress, tasks, points, profile and health measurements, and app preferences to a portable JSON file.",
+                    description = "Save your habits, tasks, progress, points, profile photo, health measurements, and app preferences to a portable JSON file.",
                     buttonLabel = "Choose backup location",
                     enabled = !state.busy,
                     icon = { Icon(Icons.Default.CloudUpload, contentDescription = null) },
@@ -149,7 +149,7 @@ fun BackupRestoreScreen(
                     onClick = { restorePicker.launch(arrayOf("application/json", "text/json")) }
                 )
                 Text(
-                    "Backup files include personal profile and health data. They are stored wherever you choose in Android’s file picker. Keep the file somewhere safe; restoring replaces current local RING data.",
+                    "Backup files include personal profile, photo, and health data. They are stored wherever you choose in Android’s file picker. Keep the file somewhere safe; restoring replaces current local RING data.",
                     modifier = Modifier.padding(horizontal = 4.dp),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant

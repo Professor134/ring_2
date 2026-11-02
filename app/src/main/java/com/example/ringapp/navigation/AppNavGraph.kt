@@ -61,7 +61,8 @@ import com.example.ringapp.ui.profile.ProfileScreen
 import com.example.ringapp.ui.profile.EditProfileScreen
 import com.example.ringapp.ui.profile.AppearanceScreen
 import com.example.ringapp.ui.profile.PointHistoryScreen
-import com.example.ringapp.ui.profile.ProfileInfoScreen
+import com.example.ringapp.ui.profile.NotificationsScreen
+import com.example.ringapp.ui.profile.BackupRestoreScreen
 import com.example.ringapp.ui.analytics.PersonalAnalyticsScreen
 
 @Composable
@@ -135,8 +136,15 @@ fun AppNavGraph(viewModel: AppViewModel = hiltViewModel()) {
         composable(Screen.EditProfile) { EditProfileScreen(onBack = { navController.popBackStack() }) }
         composable(Screen.Appearance) { AppearanceScreen(viewModel) }
         composable(Screen.PointHistory) { PointHistoryScreen(onBack = { navController.popBackStack() }) }
-        composable(Screen.Notifications) { ProfileInfoScreen("Notifications", "Task reminders and local notifications are managed on this device.") { navController.popBackStack() } }
-        composable(Screen.Backup) { ProfileInfoScreen("Backup & Restore", "Use the local database backup tools to export or restore RING data.") { navController.popBackStack() } }
+        composable(Screen.Notifications) {
+            NotificationsScreen(
+                onBack = { navController.popBackStack() },
+                onEditTask = { navController.navigate(Screen.editTask(it)) }
+            )
+        }
+        composable(Screen.Backup) {
+            BackupRestoreScreen(onBack = { navController.popBackStack() })
+        }
         composable(Screen.PersonalAnalytics) { PersonalAnalyticsScreen() }
         NavigationDestination.entries.forEach { destination ->
             composable(destination.route) {

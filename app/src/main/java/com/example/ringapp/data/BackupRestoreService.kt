@@ -19,11 +19,16 @@ import com.example.ringapp.work.TaskReminderScheduler
 import com.example.ringapp.work.WorkScheduler
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.nio.charset.StandardCharsets
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -49,6 +54,7 @@ class BackupRestoreService @Inject constructor(
             }
             tableData.put(table, rows)
         }
+        val profileImage = exportProfileImage(tableData)
 
         val settings = JSONObject()
         preferences.exportSnapshot().forEach { (key, value) -> settings.put(key, value) }
@@ -62,6 +68,7 @@ class BackupRestoreService @Inject constructor(
             })
             .put("preferences", settings)
             .put("tables", tableData)
+        profileImage?.let { backup.put(PROFILE_IMAGE_KEY, it) }
         val contents = backup.toString().toByteArray(StandardCharsets.UTF_8)
         if (contents.size > MAX_BACKUP_BYTES) {
             throw IOException("This backup is too large to export as one file.")
@@ -88,17 +95,41 @@ class BackupRestoreService @Inject constructor(
         val tableData = parseAndValidateTables(database.openHelper.readableDatabase, tables)
         val settings = parseAndValidateSettings(backup.optJSONObject("preferences")
             ?: throw IOException("The backup is missing its app settings."))
+        val profileImage = parseProfileImage(backup)
+        val restoredImageFile = profileImage?.let(::writeProfileImage)
+        val restoredTables = try {
+            restoredImageFile?.let { withProfileImage(tableData, it) } ?: tableData
+        } catch (failure: Exception) {
+            restoredImageFile?.delete()
+            throw failure
+        }
         val oldReminders = database.taskDao().activeReminders()
+        val oldTables = readTableData(database.openHelper.readableDatabase)
+        val oldSettings = preferences.exportSnapshot()
 
-        replaceDatabase(tableData)
         try {
+            replaceDatabase(restoredTables)
             preferences.replaceSnapshot(settings)
         } catch (failure: Exception) {
-            WorkScheduler.rescheduleReminders(context)
-            throw IOException(
-                "Your data was restored, but some app settings could not be restored.",
-                failure
-            )
+            val rollbackFailure = withContext(NonCancellable) {
+                try {
+                    replaceDatabase(oldTables)
+                    preferences.replaceSnapshot(oldSettings)
+                    null
+                } catch (error: Exception) {
+                    error
+                }
+            }
+            if (rollbackFailure != null) {
+                failure.addSuppressed(rollbackFailure)
+                WorkScheduler.rescheduleReminders(context)
+            }
+            if (rollbackFailure == null) restoredImageFile?.delete()
+            if (failure is CancellationException) throw failure
+            if (rollbackFailure != null) {
+                throw IOException("Restore failed and the previous data could not be fully recovered.", failure)
+            }
+            throw IOException("Restore failed. Your previous data and settings were preserved.", failure)
         }
         refreshTaskReminders(oldReminders, database.taskDao().activeReminders())
         WorkScheduler.rescheduleReminders(context)
@@ -211,6 +242,109 @@ class BackupRestoreService @Inject constructor(
             }
         }
         return result
+    }
+
+    private fun readTableData(db: SupportSQLiteDatabase): Map<String, List<JSONObject>> =
+        tableNames(db).associateWith { table ->
+            val rows = mutableListOf<JSONObject>()
+            db.query("SELECT * FROM ${quoteIdentifier(table)}").use { cursor ->
+                while (cursor.moveToNext()) rows += cursor.toJsonObject()
+            }
+            rows
+        }
+
+    private fun exportProfileImage(tables: JSONObject): String? {
+        val profiles = tables.optJSONArray("profile")
+            ?: throw IOException("The profile data could not be exported.")
+        val profile = profiles.optJSONObject(0)
+            ?: throw IOException("The profile data could not be exported.")
+        val photoUri = profile.opt("photoUri") as? String ?: return null
+        if (photoUri.isBlank()) return null
+        val uri = try {
+            Uri.parse(photoUri)
+        } catch (failure: IllegalArgumentException) {
+            throw IOException("The profile image location is invalid; update or remove the profile image before exporting.", failure)
+        }
+        val input = context.contentResolver.openInputStream(uri)
+            ?: throw IOException("The profile image could not be opened for backup. Update or remove it and try again.")
+        val bytes = input.use(::readProfileImageBytes)
+        return Base64.encodeToString(bytes, Base64.NO_WRAP)
+    }
+
+    private fun parseProfileImage(backup: JSONObject): ByteArray? {
+        if (!backup.has(PROFILE_IMAGE_KEY)) return null
+        val encoded = backup.opt(PROFILE_IMAGE_KEY) as? String
+            ?: throw IOException("The backup contains invalid profile image data.")
+        val maximumEncodedSize = ((MAX_PROFILE_IMAGE_BYTES + 2) / 3) * 4
+        if (encoded.length > maximumEncodedSize) {
+            throw IOException("The profile image in this backup is too large.")
+        }
+        val bytes = try {
+            Base64.decode(encoded, Base64.DEFAULT)
+        } catch (failure: IllegalArgumentException) {
+            throw IOException("The backup contains invalid profile image data.", failure)
+        }
+        if (bytes.isEmpty() || bytes.size > MAX_PROFILE_IMAGE_BYTES) {
+            throw IOException("The backup contains an invalid profile image.")
+        }
+        return bytes
+    }
+
+    private fun writeProfileImage(bytes: ByteArray): File {
+        val directory = File(context.filesDir, PROFILE_IMAGE_DIRECTORY)
+        if (!directory.exists() && !directory.mkdirs()) {
+            throw IOException("The profile image could not be prepared for restore.")
+        }
+        val imageFile = File(directory, "profile-${UUID.randomUUID()}.${profileImageExtension(bytes)}")
+        try {
+            FileOutputStream(imageFile).use { it.write(bytes) }
+        } catch (failure: IOException) {
+            imageFile.delete()
+            throw IOException("The profile image could not be restored.", failure)
+        }
+        return imageFile
+    }
+
+    private fun profileImageExtension(bytes: ByteArray): String = when {
+        bytes.size >= 8 && bytes.copyOfRange(0, 8).contentEquals(
+            byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
+        ) -> "png"
+        bytes.size >= 3 && bytes[0] == 0xFF.toByte() &&
+            bytes[1] == 0xD8.toByte() && bytes[2] == 0xFF.toByte() -> "jpg"
+        bytes.size >= 12 &&
+            String(bytes, 0, 4, StandardCharsets.US_ASCII) == "RIFF" &&
+            String(bytes, 8, 4, StandardCharsets.US_ASCII) == "WEBP" -> "webp"
+        bytes.size >= 6 && String(bytes, 0, 3, StandardCharsets.US_ASCII) == "GIF" -> "gif"
+        else -> "img"
+    }
+
+    private fun withProfileImage(
+        tables: Map<String, List<JSONObject>>,
+        imageFile: File
+    ): Map<String, List<JSONObject>> {
+        val profileRows = tables["profile"]
+            ?: throw IOException("The backup is missing profile data for its image.")
+        if (profileRows.isEmpty()) throw IOException("The backup is missing profile data for its image.")
+        val updatedRows = profileRows.map { row ->
+            JSONObject(row.toString()).put("photoUri", Uri.fromFile(imageFile).toString())
+        }
+        return tables + ("profile" to updatedRows)
+    }
+
+    private fun readProfileImageBytes(input: java.io.InputStream): ByteArray {
+        val output = ByteArrayOutputStream()
+        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+        var total = 0
+        while (true) {
+            val count = input.read(buffer)
+            if (count < 0) break
+            total += count
+            if (total > MAX_PROFILE_IMAGE_BYTES) {
+                throw IOException("The profile image is too large to include in a backup.")
+            }
+            output.write(buffer, 0, count)
+        }
+        return output.toByteArray()
     }
 
     // Documentation note: this declaration is part of the application's structure and behavior remains unchanged.
@@ -355,6 +489,9 @@ class BackupRestoreService @Inject constructor(
         const val FORMAT_NAME = "ring-backup"
         const val FORMAT_VERSION = 1
         const val MAX_BACKUP_BYTES = 100 * 1024 * 1024
+        const val MAX_PROFILE_IMAGE_BYTES = 20 * 1024 * 1024
         const val BLOB_MARKER = "__ring_blob_base64"
+        const val PROFILE_IMAGE_KEY = "profileImageBase64"
+        const val PROFILE_IMAGE_DIRECTORY = "profile_images"
     }
 }

@@ -19,7 +19,7 @@ enum class RepeatType { NONE, DAILY, WEEKLY, MONTHLY, YEARLY, CUSTOM }
 // Represents the transaction type structure used by the application.
 enum class TransactionType {
     STARTING_POINTS, TASK_CREATE, TASK_COMPLETE, TASK_UNCOMPLETE, HABIT_CREATE, HABIT_COMPLETE, HABIT_UNCOMPLETE,
-    STREAK_MILESTONE, MISSED_TARGET, CHANGE_TARGET, TASK_DELETE, HABIT_DELETE
+    STREAK_MILESTONE, MISSED_TARGET, CHANGE_TARGET, TASK_DELETE, HABIT_DELETE, ACHIEVEMENT_REWARD, LEVEL_UP_REWARD
 }
 // Handles the theme mode logic for this component without modifying runtime behavior.
 // Represents the theme mode structure used by the application.

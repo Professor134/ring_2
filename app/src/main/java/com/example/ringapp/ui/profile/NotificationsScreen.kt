@@ -70,6 +70,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ringapp.data.PreferencesDataStore
 import com.example.ringapp.data.local.entities.TaskEntity
+import com.example.ringapp.domain.usecase.ObserveProfileUseCase
 import com.example.ringapp.domain.usecase.ObserveTasksUseCase
 import com.example.ringapp.domain.usecase.UpdateTaskUseCase
 import com.example.ringapp.ui.theme.AppBackground
@@ -80,6 +81,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import org.json.JSONArray
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -118,6 +120,7 @@ private data class NotificationPreferencesState(
 // Represents the notification settings view model structure used by the application.
 class NotificationSettingsViewModel @Inject constructor(
     private val observeTasks: ObserveTasksUseCase,
+    private val observeProfile: ObserveProfileUseCase,
     private val updateTask: UpdateTaskUseCase,
     private val preferences: PreferencesDataStore,
     @ApplicationContext private val context: android.content.Context
@@ -187,15 +190,28 @@ class NotificationSettingsViewModel @Inject constructor(
 // Manages the set reminders enabled flow without changing runtime behavior.
     fun setRemindersEnabled(enabled: Boolean) = viewModelScope.launch {
         actionError.value = null
+    var previous: Boolean? = null
         try {
-            val tasks = observeTasks().first().filterNot { it.completed }
-            preferences.setTaskRemindersEnabled(enabled)
-            tasks.forEach { task -> TaskReminderScheduler.sync(context, task, enabled) }
-        } catch (error: Exception) {
-            if (error is CancellationException) throw error
-            Log.e("NotificationSettings", "Unable to update global reminder setting", error)
-            actionError.value = error.message ?: "Unable to update reminders. Please try again."
+        previous = preferences.taskRemindersEnabled.first()
+        val tasks = observeTasks().first().filterNot { it.completed }
+        preferences.setTaskRemindersEnabled(enabled)
+        tasks.forEach { task -> TaskReminderScheduler.sync(context, task, enabled) }
+    } catch (error: Exception) {
+        if (error is CancellationException) throw error
+        Log.e("NotificationSettings", "Unable to update global reminder setting", error)
+        previous?.let { previousValue ->
+            try {
+                preferences.setTaskRemindersEnabled(previousValue)
+                observeTasks().first().filterNot { it.completed }
+                    .forEach { task -> TaskReminderScheduler.sync(context, task, previousValue) }
+            } catch (rollbackError: Exception) {
+                if (rollbackError is CancellationException) throw rollbackError
+                error.addSuppressed(rollbackError)
+                Log.e("NotificationSettings", "Unable to restore the previous reminder setting", rollbackError)
+            }
         }
+        actionError.value = error.message ?: "Unable to update reminders. Please try again."
+    }
     }
 
     fun setHabitRemindersEnabled(enabled: Boolean) = viewModelScope.launch {
@@ -211,21 +227,57 @@ class NotificationSettingsViewModel @Inject constructor(
 
     fun setBmiRemindersEnabled(enabled: Boolean) = viewModelScope.launch {
         actionError.value = null
+        var previous: Boolean? = null
         try {
-            if (enabled) {
-                BmiReminderScheduler.scheduleBmiReminder(
-                    context,
-                    System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000
-                )
-                preferences.setBmiRemindersEnabled(true)
-            } else {
-                BmiReminderScheduler.cancel(context)
-                preferences.setBmiRemindersEnabled(false)
-            }
+            previous = preferences.bmiRemindersEnabled.first()
+            applyBmiReminderSetting(enabled)
         } catch (error: Exception) {
             if (error is CancellationException) throw error
             Log.e("NotificationSettings", "Unable to update BMI reminders", error)
+            previous?.let { previousValue ->
+                try {
+                    applyBmiReminderSetting(previousValue)
+                } catch (rollbackError: Exception) {
+                    if (rollbackError is CancellationException) throw rollbackError
+                    error.addSuppressed(rollbackError)
+                    Log.e("NotificationSettings", "Unable to restore the previous BMI reminder setting", rollbackError)
+                }
+            }
             actionError.value = error.message ?: "Unable to update BMI reminders."
+        }
+    }
+
+    private suspend fun applyBmiReminderSetting(enabled: Boolean) {
+        if (!enabled) {
+            preferences.setBmiRemindersEnabled(false)
+            BmiReminderScheduler.cancel(context)
+            return
+        }
+
+        val profile = observeProfile().first()
+        val measurementJson = profile?.bodyMeasurements
+        val latestMeasurement = if (measurementJson.isNullOrBlank()) {
+            null
+        } else {
+            val records = JSONArray(measurementJson)
+            (0 until records.length())
+                .mapNotNull { index ->
+                    records.optJSONObject(index)
+                        ?.takeIf { it.has("date") }
+                        ?.optLong("date", -1L)
+                        ?.takeIf { it > 0L }
+                }
+                .maxOrNull()
+        }
+
+        preferences.setBmiRemindersEnabled(true)
+        if (latestMeasurement == null) {
+            BmiReminderScheduler.cancel(context)
+        } else {
+            BmiReminderScheduler.scheduleBmiReminder(
+                context,
+                latestMeasurement + 30L * 24 * 60 * 60 * 1000
+            )
         }
     }
 
@@ -245,6 +297,7 @@ class NotificationSettingsViewModel @Inject constructor(
 // Manages the set task reminder flow without changing runtime behavior.
     fun setTaskReminder(task: TaskEntity, enabled: Boolean) = viewModelScope.launch {
         actionError.value = null
+        var updatedTask: TaskEntity? = null
         try {
             val reminderTime = if (enabled) TaskReminderScheduler.reminderTime(task.dueDate, task.dueTime) else task.reminderTime
             if (enabled && reminderTime == null) {
@@ -252,11 +305,22 @@ class NotificationSettingsViewModel @Inject constructor(
                 return@launch
             }
             val updated = task.copy(reminderEnabled = enabled, reminderTime = reminderTime)
+            updatedTask = updated
             updateTask(updated)
             TaskReminderScheduler.sync(context, updated, preferences.taskRemindersEnabled.first())
         } catch (error: Exception) {
             if (error is CancellationException) throw error
             Log.e("NotificationSettings", "Unable to update reminder for task ${task.id}", error)
+            updatedTask?.let {
+                try {
+                    updateTask(task)
+                    TaskReminderScheduler.sync(context, task, preferences.taskRemindersEnabled.first())
+                } catch (rollbackError: Exception) {
+                    if (rollbackError is CancellationException) throw rollbackError
+                    error.addSuppressed(rollbackError)
+                    Log.e("NotificationSettings", "Unable to restore reminder for task ${task.id}", rollbackError)
+                }
+            }
             actionError.value = error.message ?: "Unable to update this task reminder."
         }
     }
@@ -365,6 +429,9 @@ fun NotificationsScreen(
             task.reminderEnabled && reminderTime != null && reminderTime > System.currentTimeMillis()
         }
     } else 0
+    val notificationPermissionGranted =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
     AppBackground {
         Scaffold(
@@ -387,7 +454,29 @@ fun NotificationsScreen(
                         }
                         Column(Modifier.weight(1f)) {
                             Text("Notifications", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                            Text("Manage task, habit, health and motivation alerts.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Choose which reminders and updates RING can send.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+                if (!notificationPermissionGranted) {
+                    item {
+                        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Text("TASK REMINDERS", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                            Text("Pause all task alerts or review reminders saved on individual tasks.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(18.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                        ) {
+                            Text(
+                                "Android notifications are turned off. Enabling an alert below will ask for permission; alerts cannot be delivered until permission is granted.",
+                                modifier = Modifier.padding(16.dp),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
                         }
                     }
                 }
@@ -446,6 +535,12 @@ fun NotificationsScreen(
                     }
                 }
                 item {
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text("ROUTINE & WELLNESS", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                        Text("Independent controls for scheduled habits, health check-ins, and encouragement.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                item {
                     NotificationToggleCard(
                         title = "Habit check-in",
                         description = "A daily reminder when scheduled habits still need progress.",
@@ -455,8 +550,8 @@ fun NotificationsScreen(
                 }
                 item {
                     NotificationToggleCard(
-                        title = "BMI health reminder",
-                        description = "Remind you to update measurements every 30 days.",
+                        title = "BMI measurement reminder",
+                        description = "Remind you 30 days after your latest measurement. The schedule starts after your first measurement.",
                         checked = state.bmiRemindersEnabled,
                         onCheckedChange = { requestAction(ReminderPermissionAction.SetBmi(it)) }
                     )
@@ -470,9 +565,14 @@ fun NotificationsScreen(
                     )
                 }
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("Task controls", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text("INDIVIDUAL TASK ALERTS", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
                         Text("Choose which tasks may send a reminder.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("Task-specific controls", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     }
                 }
                 if (state.loading) {
