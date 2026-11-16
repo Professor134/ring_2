@@ -69,80 +69,12 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
     var range by remember { mutableStateOf("Days") }
     var category by remember { mutableStateOf<Long?>(null) }
 
-    val points = when (range) {
-        "Weeks" -> {
-            val today = LocalDate.now()
-            (6 downTo 0).map { w ->
-                val endDate = today.minusDays((w * 7).toLong())
-                val startDate = endDate.minusDays(6)
-                val weekPoints = (0..6).mapNotNull { offset ->
-                    aggregateDaily(
-                        state.habits,
-                        state.progress,
-                        startDate.plusDays(offset.toLong())
-                    )
-                }
-                val avgScore = if (weekPoints.isNotEmpty()) weekPoints.map { it.score }.average()
-                    .toInt() else 0
-                LinePoint(startDate.format(DateTimeFormatter.ofPattern("d MMM")), avgScore)
-            }
-        }
-
-        "Months" -> {
-            val today = LocalDate.now()
-            (6 downTo 0).map { m ->
-                val monthDate = today.minusMonths(m.toLong())
-                val startOfMonth = monthDate.withDayOfMonth(1)
-                val endOfMonth =
-                    if (m == 0) today else monthDate.withDayOfMonth(monthDate.lengthOfMonth())
-                var current = startOfMonth
-                val monthPoints = mutableListOf<AnalyticsPoint>()
-                while (!current.isAfter(endOfMonth)) {
-                    aggregateDaily(
-                        state.habits,
-                        state.progress,
-                        current
-                    )?.let { monthPoints.add(it) }
-                    current = current.plusDays(1)
-                }
-                val avgScore = if (monthPoints.isNotEmpty()) monthPoints.map { it.score }.average()
-                    .toInt() else 0
-                LinePoint(monthDate.format(DateTimeFormatter.ofPattern("MMM")), avgScore)
-            }
-        }
-
-        "Year" -> {
-            val today = LocalDate.now()
-            (11 downTo 0).map { m ->
-                val monthDate = today.minusMonths(m.toLong())
-                val startOfMonth = monthDate.withDayOfMonth(1)
-                val endOfMonth =
-                    if (m == 0) today else monthDate.withDayOfMonth(monthDate.lengthOfMonth())
-                var current = startOfMonth
-                val monthPoints = mutableListOf<AnalyticsPoint>()
-                while (!current.isAfter(endOfMonth)) {
-                    aggregateDaily(
-                        state.habits,
-                        state.progress,
-                        current
-                    )?.let { monthPoints.add(it) }
-                    current = current.plusDays(1)
-                }
-                val avgScore = if (monthPoints.isNotEmpty()) monthPoints.map { it.score }.average()
-                    .toInt() else 0
-                LinePoint(monthDate.format(DateTimeFormatter.ofPattern("MMM")), avgScore)
-            }
-        }
-
-        else -> {
-            (10 downTo 0).map { d ->
-                val date = LocalDate.now().minusDays(d.toLong())
-                val p = aggregateDaily(state.habits, state.progress, date)
-                LinePoint(date.format(dateFormatter), p?.score ?: 0)
-            }
+    val periods = analyticsPeriods(range, LocalDate.now())
+    val points = periods.mapNotNull { period ->
+        aggregatePeriodScore(state.habits, state.progress, period)?.let { score ->
+            LinePoint(period.label, score, actual = score.toDouble())
         }
     }
-    val dates = (10 downTo 0).map { LocalDate.now().minusDays(it.toLong()) }
     val filteredCategories = state.categories.filter { it.name.lowercase() != "habits" }
     val categoryNames =
         listOf(null to "All Categories") + filteredCategories.map { it.id to it.name }
@@ -196,6 +128,15 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
                                     style = MaterialTheme.typography.labelSmall
                                 )
                             }
+                        }
+                    }
+                    state.error?.let { error ->
+                        item {
+                            Text(
+                                text = "Unable to load all insight data: $error",
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
                         }
                     }
                     item {
@@ -282,7 +223,7 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
                         }
                     }
                     item {
-                        CategoryChart(state, category, dates, Modifier.fillMaxWidth(), textColor)
+                        CategoryChart(state, category, periods, Modifier.fillMaxWidth(), textColor)
                     }
                     item { Spacer(Modifier.height(12.dp)) }
                     item { TaskSummary(state.tasks, textColor) }
@@ -350,9 +291,15 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
             val date: LocalDate? = null
         )
 
-        // Filter ONLY active scheduled dates for graph points (Requirement 10: Inactive dates must not produce graph points or zero values)
+        val limitDays = when (range) {
+            "Weeks" -> 28
+            "Months" -> 90
+            "Year" -> 365
+            else -> 14
+        }
+        val periodStart = maxOf(habitStart, today.minusDays((limitDays - 1).toLong()))
         val activeDatesInPeriod = mutableListOf<LocalDate>()
-        var scanDate = habitStart
+        var scanDate = periodStart
         while (!scanDate.isAfter(today)) {
             if (ScheduleEngine.isActiveOnDate(habit, scanDate)) {
                 activeDatesInPeriod.add(scanDate)
@@ -360,38 +307,17 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
             scanDate = scanDate.plusDays(1)
         }
 
-        val limitCount = when (range) {
-            "Weeks" -> 28
-            "Months" -> 90
-            "Year" -> 365
-            else -> 14 // Days: past 14 active days
-        }
-        val selectedActiveDates = activeDatesInPeriod.takeLast(limitCount)
-
-        val periodPoints = if (selectedActiveDates.isNotEmpty()) {
-            selectedActiveDates.map { date ->
-                val record = state.progress.firstOrNull { it.date == dayStart(date) }
-                val actual = record?.actual ?: 0.0
-                val dayTarget = habit.getTargetForDate(date)
-                val completed = actual >= dayTarget && dayTarget > 0.0
-                PeriodPoint(
-                    label = date.format(dateFormatter),
-                    actual = actual,
-                    target = dayTarget,
-                    completed = completed,
-                    date = date
-                )
-            }
-        } else {
-            // Fallback for brand new habits
-            listOf(
-                PeriodPoint(
-                    label = today.format(dateFormatter),
-                    actual = 0.0,
-                    target = habit.getTargetForDate(today),
-                    completed = false,
-                    date = today
-                )
+        val periodPoints = activeDatesInPeriod.map { date ->
+            val record = state.progress.firstOrNull { it.date == dayStart(date) }
+            val actual = record?.actual ?: 0.0
+            val dayTarget = habit.getTargetForDate(date)
+            val completed = actual >= dayTarget && dayTarget > 0.0
+            PeriodPoint(
+                label = date.format(dateFormatter),
+                actual = actual,
+                target = dayTarget,
+                completed = completed,
+                date = date
             )
         }
 
@@ -556,6 +482,10 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
                         }
                     }
                     if (!isSteps) item { Targets(habit, state.progress, habitColor, textColor) }
+                    item { TimeFilters(range) {
+                        range = it
+                        selected = null
+                    } }
                     item {
                         Card(
                             shape = RoundedCornerShape(24.dp),
@@ -1105,16 +1035,26 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
         val primaryColor = color
 
         val actualValues = points.map { it.actual }
-        val minVal = actualValues.minOrNull() ?: 0.0
-        val maxVal = actualValues.maxOrNull() ?: 100.0
-        val valRange = (maxVal - minVal).let { if (it <= 0.0) 10.0 else it }
+        val dataMin = actualValues.minOrNull() ?: 0.0
+        val dataMax = actualValues.maxOrNull() ?: 100.0
+        val equalValueRange = maxOf(kotlin.math.abs(dataMax) * 0.1, 1.0)
+        val minVal = if (dataMax == dataMin) dataMin - equalValueRange / 2.0 else dataMin
+        val valRange = if (dataMax == dataMin) equalValueRange else dataMax - dataMin
 
         Canvas(modifier.pointerInput(points) {
             detectTapGestures { position ->
-                if (points.isNotEmpty()) {
-                    val index = ((position.x / size.width) * points.size).toInt()
-                        .coerceIn(0, points.lastIndex)
-                    onPointTap(points[index])
+                val left = 24f
+                val width = size.width - left - 12f
+                if (points.isNotEmpty() && width > 0f) {
+                    val index = points.indices.minByOrNull { index ->
+                        val pointX = if (points.size > 1) {
+                            left + width * index.toFloat() / points.lastIndex
+                        } else {
+                            left + width / 2f
+                        }
+                        kotlin.math.abs(pointX - position.x)
+                    }
+                    index?.let { onPointTap(points[it]) }
                 }
             }
         }) {
@@ -1177,7 +1117,7 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
     private fun CategoryChart(
         state: AnalyticsUiState,
         selected: Long?,
-        dates: List<LocalDate>,
+        periods: List<AnalyticsPeriod>,
         modifier: Modifier,
         textColor: Color
     ) {
@@ -1216,12 +1156,14 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
                         }
                         Spacer(Modifier.height(8.dp))
                         AnalyticsLineChart(
-                            dates.mapNotNull { date ->
-                                aggregateDaily(
+                            periods.mapNotNull { period ->
+                                aggregatePeriodScore(
                                     state.habits.filter { it.categoryId == category.id },
                                     state.progress,
-                                    date
-                                )?.let { LinePoint(it.date.format(dateFormatter), it.score) }
+                                    period
+                                )?.let { score ->
+                                    LinePoint(period.label, score, actual = score.toDouble())
+                                }
                             },
                             Modifier.fillMaxWidth().height(80.dp),
                             color = color

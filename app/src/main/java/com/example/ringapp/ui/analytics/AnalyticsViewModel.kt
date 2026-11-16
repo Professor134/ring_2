@@ -29,6 +29,7 @@ import com.example.ringapp.domain.usecase.RecordHabitProgressUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -45,6 +46,12 @@ data class AnalyticsPoint(
     val actual: Double = 0.0,
     val target: Double = 0.0,
     val completed: Boolean = false
+)
+
+data class AnalyticsPeriod(
+    val startDate: LocalDate,
+    val endDate: LocalDate,
+    val label: String
 )
 
 data class AnalyticsUiState(
@@ -78,7 +85,7 @@ class AnalyticsViewModel @Inject constructor(
     observeProgress: ObserveProgressRangeUseCase,
     observeUserProgress: ObserveUserProgressUseCase
 ) : ViewModel() {
-    private val from = startOfDay(LocalDate.now().minusDays(365))
+    private val from = startOfDay(LocalDate.now().minusMonths(11).withDayOfMonth(1))
     private val to = startOfDay(LocalDate.now().plusDays(1)) - 1
 
     val state: StateFlow<AnalyticsUiState> = combine(
@@ -165,4 +172,42 @@ fun aggregateDaily(habits: List<HabitEntity>, progress: List<HabitProgressEntity
         target = active.sumOf { it.target },
         completed = active.all { habit -> dayRecords.find { it.habitId == habit.id }?.completed == true }
     )
+}
+
+fun analyticsPeriods(range: String, today: LocalDate): List<AnalyticsPeriod> = when (range) {
+    "Weeks" -> (6 downTo 0).map { offset ->
+        val endDate = today.minusDays(offset * 7L)
+        val startDate = endDate.minusDays(6)
+        AnalyticsPeriod(startDate, endDate, startDate.format(java.time.format.DateTimeFormatter.ofPattern("d MMM")))
+    }
+    "Months" -> (6 downTo 0).map { offset ->
+        val month = today.minusMonths(offset.toLong())
+        val startDate = month.withDayOfMonth(1)
+        val endDate = if (offset == 0) today else month.withDayOfMonth(month.lengthOfMonth())
+        AnalyticsPeriod(startDate, endDate, month.format(java.time.format.DateTimeFormatter.ofPattern("MMM")))
+    }
+    "Year" -> (11 downTo 0).map { offset ->
+        val month = today.minusMonths(offset.toLong())
+        val startDate = month.withDayOfMonth(1)
+        val endDate = if (offset == 0) today else month.withDayOfMonth(month.lengthOfMonth())
+        AnalyticsPeriod(startDate, endDate, month.format(java.time.format.DateTimeFormatter.ofPattern("MMM")))
+    }
+    else -> (10 downTo 0).map { offset ->
+        val date = today.minusDays(offset.toLong())
+        AnalyticsPeriod(date, date, date.format(DateTimeFormatter.ofPattern("d MMM")))
+    }
+}
+
+fun aggregatePeriodScore(
+    habits: List<HabitEntity>,
+    progress: List<HabitProgressEntity>,
+    period: AnalyticsPeriod
+): Int? {
+    val dailyScores = mutableListOf<Int>()
+    var date = period.startDate
+    while (!date.isAfter(period.endDate)) {
+        aggregateDaily(habits, progress, date)?.let { dailyScores.add(it.score) }
+        date = date.plusDays(1)
+    }
+    return dailyScores.takeIf { it.isNotEmpty() }?.average()?.toInt()
 }

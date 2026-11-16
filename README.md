@@ -126,6 +126,11 @@ Custom-drawn concentric rings in `PersonalAnalyticsScreen`:
 - **Dynamic Color Intensity**: Arc opacity smoothly scales from `0.4f` at 0% to `1.0f` at 100% progress.
 - **Viewport-Aware Bounce Animation**: Progress rings execute a slow, bouncy spring loading animation (`Spring.DampingRatioMediumBouncy`) upon entering view.
 
+### 2.6.1 Insights Graphs
+- Main and category charts use schedule-aware daily habit scores, grouped consistently by the selected Days, Weeks, Months, or Year range.
+- Periods without any scheduled habits are omitted instead of being displayed as zero-progress data.
+- Personal habit charts plot only scheduled dates inside the selected time window and open the nearest plotted date when tapped.
+
 ---
 
 ### 2.7 BMI Special Tracking Feature

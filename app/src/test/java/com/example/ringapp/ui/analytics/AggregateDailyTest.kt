@@ -70,6 +70,43 @@ class AggregateDailyTest {
         assertNull(aggregateDaily(listOf(weeklyHabit), listOf(record), date))
     }
 
+    @Test
+    fun analyticsRangesProduceExpectedPeriodCounts() {
+        val today = LocalDate.of(2026, 11, 16)
+
+        assertEquals(11, analyticsPeriods("Days", today).size)
+        assertEquals(7, analyticsPeriods("Weeks", today).size)
+        assertEquals(7, analyticsPeriods("Months", today).size)
+        assertEquals(12, analyticsPeriods("Year", today).size)
+    }
+
+    @Test
+    fun periodScoreAveragesOnlyScheduledDaysAndTheirRecordedProgress() {
+        val start = LocalDate.of(2026, 9, 7)
+        val timestamp = { date: LocalDate ->
+            date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        }
+        val weeklyHabit = habit(id = 3, target = 10.0).copy(
+            scheduleType = ScheduleType.WEEKLY,
+            scheduleDays = listOf(1, 3),
+            startDate = timestamp(start)
+        )
+        val progress = listOf(
+            progress(weeklyHabit.id, timestamp(start), 10.0, 4.0, 40),
+            progress(weeklyHabit.id, timestamp(start.plusDays(2)), 10.0, 8.0, 80)
+        )
+        val period = AnalyticsPeriod(start, start.plusDays(6), "7 Sep")
+
+        assertEquals(60, aggregatePeriodScore(listOf(weeklyHabit), progress, period))
+        assertNull(
+            aggregatePeriodScore(
+                listOf(weeklyHabit),
+                progress,
+                AnalyticsPeriod(start.minusDays(7), start.minusDays(1), "31 Aug")
+            )
+        )
+    }
+
     // Documentation note: this declaration is part of the application's structure and behavior remains unchanged.
 
 // Manages the habit flow without changing runtime behavior.
