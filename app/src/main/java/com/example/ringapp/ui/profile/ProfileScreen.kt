@@ -63,7 +63,7 @@ fun ProfileScreen(appViewModel: AppViewModel, onEdit: () -> Unit, onAppearance: 
     val textColor = MaterialTheme.colorScheme.onBackground
     val bgColor = MaterialTheme.colorScheme.background
 
-    Surface(modifier = Modifier.fillMaxSize(), color = bgColor, contentColor = textColor) {
+    Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent, contentColor = textColor) {
         LazyColumn(
             Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 16.dp), 
             contentPadding = PaddingValues(top = 16.dp, bottom = 100.dp), 
@@ -395,7 +395,7 @@ fun EditProfileScreen(onBack: () -> Unit, viewModel: ProfileViewModel = hiltView
     val textColor = MaterialTheme.colorScheme.onBackground
     val bgColor = MaterialTheme.colorScheme.background
 
-    Surface(modifier = Modifier.fillMaxSize(), color = bgColor, contentColor = textColor) {
+    Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent, contentColor = textColor) {
         Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
             Row(Modifier.fillMaxWidth().padding(top = 24.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { 
                 IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back", tint = textColor) }
@@ -421,7 +421,7 @@ fun EditProfileScreen(onBack: () -> Unit, viewModel: ProfileViewModel = hiltView
     val textColor = MaterialTheme.colorScheme.onBackground
     val bgColor = MaterialTheme.colorScheme.background
 
-    Surface(modifier = Modifier.fillMaxSize(), color = bgColor, contentColor = textColor) {
+    Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent, contentColor = textColor) {
         LazyColumn(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 20.dp), contentPadding = PaddingValues(top = 24.dp, bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) { 
             item { 
                 Row(verticalAlignment = Alignment.CenterVertically) { 
@@ -451,7 +451,7 @@ fun EditProfileScreen(onBack: () -> Unit, viewModel: ProfileViewModel = hiltView
     val textColor = MaterialTheme.colorScheme.onBackground
     val bgColor = MaterialTheme.colorScheme.background
 
-    Surface(modifier = Modifier.fillMaxSize(), color = bgColor, contentColor = textColor) {
+    Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent, contentColor = textColor) {
         Column(Modifier.fillMaxSize().statusBarsPadding().padding(20.dp)) { 
             Row(verticalAlignment = Alignment.CenterVertically) { 
                 IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back", tint = textColor) }

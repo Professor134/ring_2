@@ -6,7 +6,7 @@
 
 package com.example.ringapp.ui.theme
 
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,30 +14,31 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
-import com.example.ringapp.R
-import com.example.ringapp.ui.theme.isAppDarkTheme
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+
 @Composable
-// Handles the app background logic for this component without modifying runtime behavior.
-// Manages the app background flow without changing runtime behavior.
 fun AppBackground(
     modifier: Modifier = Modifier,
+    contentColor: Color = MaterialTheme.colorScheme.onBackground,
     content: @Composable BoxScope.() -> Unit
 ) {
     val isDark = isAppDarkTheme()
     val bgColor = MaterialTheme.colorScheme.background
 
-    Surface(modifier = modifier.fillMaxSize(), color = bgColor) {
+    Surface(modifier = modifier.fillMaxSize(), color = bgColor, contentColor = contentColor) {
         Box(modifier = Modifier.fillMaxSize()) {
             if (isDark) {
-                Image(
-                    painter = painterResource(R.drawable.ic_launcher_background),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colors = listOf(CyberNeonBlue.copy(alpha = 0.08f), Color.Transparent),
+                            center = Offset(size.width * 0.8f, size.height * 0.2f),
+                            radius = size.width
+                        )
+                    )
+                }
             }
             content()
         }

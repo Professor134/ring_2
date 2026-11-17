@@ -200,7 +200,6 @@ fun AddTaskScreen(
     var confirmDelete by remember { mutableStateOf(false) }
 
     val isDark = com.example.ringapp.ui.theme.isAppDarkTheme()
-    val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
     val textColor = if (isDark) Color.White else MaterialTheme.colorScheme.onBackground
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (!granted) reminder = false
@@ -246,7 +245,7 @@ fun AddTaskScreen(
         }, { error = it })
     }
 
-    Surface(modifier = Modifier.fillMaxSize(), color = bgColor, contentColor = textColor) {
+    Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent, contentColor = textColor) {
         Column(
             Modifier
                 .fillMaxSize()

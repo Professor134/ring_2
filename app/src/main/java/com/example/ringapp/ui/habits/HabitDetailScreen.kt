@@ -77,10 +77,9 @@ private fun HabitDetailContent(
     val average = if (activeDays > 0) (completedCount * 100 / activeDays).coerceIn(0, 100) else 0
     
     val isDark = com.example.ringapp.ui.theme.isAppDarkTheme()
-    val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
     val textColor = if (isDark) Color.White else MaterialTheme.colorScheme.onBackground
 
-    Surface(modifier = Modifier.fillMaxSize(), color = bgColor, contentColor = textColor) {
+    Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent, contentColor = textColor) {
         LazyColumn(Modifier.fillMaxSize().padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(16.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 48.dp, bottom = 32.dp)) {
             item {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {

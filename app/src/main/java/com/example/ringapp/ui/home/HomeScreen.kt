@@ -9,7 +9,6 @@ package com.example.ringapp.ui.home
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -31,7 +30,6 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -48,9 +46,6 @@ import com.example.ringapp.data.local.entities.CategoryConstants
 import com.example.ringapp.domain.engine.ScheduleEngine
 import com.example.ringapp.ui.analytics.BmiMeasurementDialog
 import com.example.ringapp.ui.onboarding.RingSplashScreen
-import com.example.ringapp.ui.theme.CyberNeonBlue
-import com.example.ringapp.ui.theme.SpaceBlack
-import com.example.ringapp.ui.theme.isAppDarkTheme
 import com.example.ringapp.ui.theme.rememberViewportAnimationTrigger
 import java.time.LocalDate
 import java.time.ZoneId
@@ -80,137 +75,143 @@ fun HomeScreen(
         label = "elite-points"
     )
     
-    val isDark = isAppDarkTheme()
-    val bgColor = MaterialTheme.colorScheme.background
     val textColor = MaterialTheme.colorScheme.onBackground
 
     if (state.isLoading) { 
-        Box(Modifier.fillMaxSize().background(bgColor), contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             RingSplashScreen(isLoading = true)
-        }; return 
+        }
+        return
     }
     
     val error = state.errorMessage
     if (error != null) { 
-        Box(Modifier.fillMaxSize().background(bgColor), contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(error, color = MaterialTheme.colorScheme.error)
-        }; return 
+        }
+        return
     }
 
-    Surface(modifier = Modifier.fillMaxSize(), color = bgColor) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            // Background Glow
-            if (isDark) {
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    drawCircle(
-                        brush = Brush.radialGradient(
-                            colors = listOf(CyberNeonBlue.copy(alpha = 0.08f), Color.Transparent),
-                            center = Offset(size.width * 0.8f, size.height * 0.2f),
-                            radius = size.width
-                        )
+    LazyColumn(
+        Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .padding(horizontal = 16.dp),
+        contentPadding = PaddingValues(top = 16.dp, bottom = 100.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        state.greeting,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = textColor
+                    )
+                    Text(
+                        state.date.uppercase(),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = textColor.copy(alpha = 0.5f),
+                        letterSpacing = 1.5.sp
                     )
                 }
-            }
 
-            LazyColumn(
-                Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding()
-                    .padding(horizontal = 16.dp),
-                contentPadding = PaddingValues(top = 16.dp, bottom = 100.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                item {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Column {
-                            Text(
-                                state.greeting, 
-                                style = MaterialTheme.typography.headlineMedium, 
-                                fontWeight = FontWeight.ExtraBold, 
-                                color = textColor
-                            )
-                            Text(
-                                state.date.uppercase(), 
-                                style = MaterialTheme.typography.labelMedium,
-                                color = textColor.copy(alpha = 0.5f),
-                                letterSpacing = 1.5.sp
-                            )
-                        }
-                        
-                        val glowAlpha by animateFloatAsState(
-                            targetValue = if (pointsVisibility.hasEnteredViewport) 0.3f else 0.12f,
-                            animationSpec = tween(280),
-                            label = "points-border"
+                val glowAlpha by animateFloatAsState(
+                    targetValue = if (pointsVisibility.hasEnteredViewport) 0.3f else 0.12f,
+                    animationSpec = tween(280),
+                    label = "points-border"
+                )
+
+                Surface(
+                    modifier = pointsVisibility.modifier,
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                    shape = RoundedCornerShape(16.dp),
+                    tonalElevation = 0.dp,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = glowAlpha))
+                ) {
+                    Column(
+                        Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "ELITE POINTS",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = textColor.copy(alpha = 0.6f)
                         )
-
-                        Surface(
-                            modifier = pointsVisibility.modifier,
-                            color = MaterialTheme.colorScheme.surfaceContainerLow,
-                            shape = RoundedCornerShape(16.dp), 
-                            tonalElevation = 0.dp,
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = glowAlpha))
-                        ) {
-                            Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("ELITE POINTS", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = textColor.copy(alpha = 0.6f))
-                                Text(
-                                    displayedPoints.toString(), 
-                                    style = MaterialTheme.typography.titleLarge, 
-                                    color = MaterialTheme.colorScheme.primary, 
-                                    fontWeight = FontWeight.Black,
-                                    modifier = Modifier.graphicsLayer {
-                                        shadowElevation = 8f
-                                    }
-                                )
-                            }
-                        }
+                        Text(
+                            displayedPoints.toString(),
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Black,
+                            modifier = Modifier.graphicsLayer { shadowElevation = 8f }
+                        )
                     }
                 }
-                item { 
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) { 
-                        Button(
-                            onClick = onAddHabit, 
-                            Modifier.weight(1f).height(56.dp), 
-                            shape = RoundedCornerShape(16.dp),
-                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
-                        ) { 
-                            Icon(Icons.Default.Add, null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Habit", fontWeight = FontWeight.Bold) 
-                        } 
-                        OutlinedButton(
-                            onClick = onAddTask, 
-                            Modifier.weight(1f).height(56.dp), 
-                            shape = RoundedCornerShape(16.dp),
-                            border = BorderStroke(1.dp, textColor.copy(alpha = 0.2f))
-                        ) { 
-                            Icon(Icons.Default.Task, null, tint = textColor)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Task", color = textColor, fontWeight = FontWeight.Bold) 
-                        } 
-                    } 
+            }
+        }
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Button(
+                    onClick = onAddHabit,
+                    Modifier.weight(1f).height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+                ) {
+                    Icon(Icons.Default.Add, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Habit", fontWeight = FontWeight.Bold)
                 }
-                item { SectionHeader("DASHBOARD", onSeeAllHabits, textColor) }
-                if (state.habits.isEmpty()) item { EmptyState("INITIATE YOUR JOURNEY", "The first ring is the hardest. Create a habit to begin.", onAddHabit, textColor) }
-                else items(state.habits, key = { "habit_${it.id}" }) { habit ->
-                    HomeHabitCard(
-                        habit = habit, 
-                        categories = state.categories, 
-                        progress = state.todayProgress.firstOrNull { it.habitId == habit.id }, 
-                        history = state.allProgress.filter { it.habitId == habit.id },
-                        onHabitClick = { onHabitClick(habit.id) }, 
-                        onComplete = {
-                            when {
-                                habit.isBmiHabit() -> showBmiDialog = true
-                                habit.type == HabitType.MEASURABLE -> measurableHabit = habit
-                                else -> viewModel.onEvent(HomeEvent.CompleteHabit(habit))
-                            }
-                        },
-                        textColor = textColor
-                    )
+                OutlinedButton(
+                    onClick = onAddTask,
+                    Modifier.weight(1f).height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, textColor.copy(alpha = 0.2f))
+                ) {
+                    Icon(Icons.Default.Task, null, tint = textColor)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Task", color = textColor, fontWeight = FontWeight.Bold)
                 }
-                item { SectionHeader("TASKS", onSeeAllTasks, textColor) }
-                if (state.tasks.isEmpty()) item { EmptyState("ALL CLEAR", "No pending tasks for today.", null, textColor) }
-                else items(state.tasks, key = { "task_${it.id}" }) { task -> HomeTaskCard(task, textColor, onToggle = { viewModel.onEvent(HomeEvent.ToggleTask(task)) }, onClick = { onTaskClick(task.id) }) }
+            }
+        }
+        item { SectionHeader("DASHBOARD", onSeeAllHabits, textColor) }
+        if (state.habits.isEmpty()) {
+            item { EmptyState("INITIATE YOUR JOURNEY", "The first ring is the hardest. Create a habit to begin.", onAddHabit, textColor) }
+        } else {
+            items(state.habits, key = { "habit_${it.id}" }) { habit ->
+                HomeHabitCard(
+                    habit = habit,
+                    categories = state.categories,
+                    progress = state.todayProgress.firstOrNull { it.habitId == habit.id },
+                    history = state.allProgress.filter { it.habitId == habit.id },
+                    onHabitClick = { onHabitClick(habit.id) },
+                    onComplete = {
+                        when {
+                            habit.isBmiHabit() -> showBmiDialog = true
+                            habit.type == HabitType.MEASURABLE -> measurableHabit = habit
+                            else -> viewModel.onEvent(HomeEvent.CompleteHabit(habit))
+                        }
+                    },
+                    textColor = textColor
+                )
+            }
+        }
+        item { SectionHeader("TASKS", onSeeAllTasks, textColor) }
+        if (state.tasks.isEmpty()) {
+            item { EmptyState("ALL CLEAR", "No pending tasks for today.", null, textColor) }
+        } else {
+            items(state.tasks, key = { "task_${it.id}" }) { task ->
+                HomeTaskCard(
+                    task,
+                    textColor,
+                    onToggle = { viewModel.onEvent(HomeEvent.ToggleTask(task)) },
+                    onClick = { onTaskClick(task.id) }
+                )
             }
         }
     }
@@ -242,7 +243,7 @@ fun HomeScreen(
     } 
 }
 
-@Composable private fun HomeHabitCard(
+@Composable internal fun HomeHabitCard(
     habit: HabitEntity, 
     categories: List<CategoryEntity>, 
     progress: HabitProgressEntity?, 

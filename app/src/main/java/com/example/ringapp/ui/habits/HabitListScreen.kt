@@ -101,6 +101,8 @@ import com.example.ringapp.domain.usecase.ObserveUserProgressUseCase
 import com.example.ringapp.domain.usecase.RecordHabitProgressUseCase
 import com.example.ringapp.domain.usecase.ToggleHabitUseCase
 import com.example.ringapp.ui.analytics.BmiMeasurementDialog
+import com.example.ringapp.ui.home.HomeHabitCard
+import com.example.ringapp.ui.theme.AppBackground
 import com.example.ringapp.ui.theme.isAppDarkTheme
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalDate
@@ -168,15 +170,14 @@ fun HabitListScreen(
         matchesQuery && matchesCategory
     }
 
-    val bgColor = MaterialTheme.colorScheme.background
     val textColor = MaterialTheme.colorScheme.onBackground
 
-    Surface(modifier = Modifier.fillMaxSize(), color = bgColor) {
+    Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent, contentColor = textColor) {
         Scaffold(
             topBar = {
                 Column(
                     Modifier
-                        .background(bgColor)
+                        .background(Color.Transparent)
                         .statusBarsPadding()
                         .padding(horizontal = 16.dp)
                         .padding(top = 16.dp, bottom = 8.dp)
@@ -261,7 +262,7 @@ fun HabitListScreen(
                     Icon(Icons.Default.Add, "Add Habit", tint = Color.Black)
                 }
             },
-            containerColor = bgColor
+            containerColor = Color.Transparent
         ) { padding ->
             if (filtered.isEmpty()) {
                 Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
@@ -287,13 +288,23 @@ fun HabitListScreen(
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     items(filtered, key = { it.id }) { habit ->
-                        HabitRow(habit, state.categories, state.progress, onHabitClick, textColor) {
-                            when {
-                                habit.isBmiHabit() -> showBmiDialog = true
-                                habit.type == HabitType.MEASURABLE -> measurableHabit = habit
-                                else -> viewModel.complete(habit)
-                            }
-                        }
+                        HomeHabitCard(
+                            habit = habit,
+                            categories = state.categories,
+                            progress = state.progress.firstOrNull {
+                                it.habitId == habit.id && it.date == todayTimestamp()
+                            },
+                            history = state.progress.filter { it.habitId == habit.id },
+                            onHabitClick = { onHabitClick(habit.id) },
+                            onComplete = {
+                                when {
+                                    habit.isBmiHabit() -> showBmiDialog = true
+                                    habit.type == HabitType.MEASURABLE -> measurableHabit = habit
+                                    else -> viewModel.complete(habit)
+                                }
+                            },
+                            textColor = textColor
+                        )
                     }
                     item { Spacer(Modifier.height(100.dp)) }
                 }

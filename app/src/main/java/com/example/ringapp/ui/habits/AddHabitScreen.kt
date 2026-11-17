@@ -322,12 +322,11 @@ fun AddHabitScreen(
     }
 
     val isDark = com.example.ringapp.ui.theme.isAppDarkTheme()
-    val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
     val textColor = if (isDark) Color.White else MaterialTheme.colorScheme.onBackground
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = bgColor,
+        color = Color.Transparent,
         contentColor = textColor
     ) {
         Column(

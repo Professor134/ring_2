@@ -49,7 +49,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.ringapp.ui.theme.AppBackground
 @Composable
 // Handles the backup restore screen logic for this component without modifying runtime behavior.
 // Manages the backup restore screen flow without changing runtime behavior.
@@ -74,8 +73,7 @@ fun BackupRestoreScreen(
         }
     }
 
-    AppBackground {
-        Surface(Modifier.fillMaxSize(), color = Color.Transparent) {
+    Surface(Modifier.fillMaxSize(), color = Color.Transparent) {
             Column(
                 Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 12.dp),
@@ -157,7 +155,6 @@ fun BackupRestoreScreen(
                 Spacer(Modifier.height(8.dp))
             }
         }
-    }
 
     if (confirmRestore && selectedBackup != null) {
         AlertDialog(

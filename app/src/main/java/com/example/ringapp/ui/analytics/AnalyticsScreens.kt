@@ -80,7 +80,7 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
         listOf(null to "All Categories") + filteredCategories.map { it.id to it.name }
 
     val isDark = com.example.ringapp.ui.theme.isAppDarkTheme()
-    val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
+    val bgColor = MaterialTheme.colorScheme.background
     val textColor = if (isDark) Color.White else MaterialTheme.colorScheme.onBackground
 
     val displayedPoints by animateIntAsState(
@@ -89,7 +89,7 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
         label = "animatedMainPoints"
     )
 
-    Surface(modifier = Modifier.fillMaxSize(), color = bgColor, contentColor = textColor) {
+    Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent, contentColor = textColor) {
         AnimatedVisibility(
             visible = true,
             enter = fadeIn(tween(1000)) + slideInVertically(initialOffsetY = { 50 })
@@ -347,10 +347,10 @@ fun MainAnalyticsScreen(onPersonal: () -> Unit = {}, viewModel: AnalyticsViewMod
         )
 
         val isDark = com.example.ringapp.ui.theme.isAppDarkTheme()
-    val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
+    val bgColor = MaterialTheme.colorScheme.background
         val textColor = if (isDark) Color.White else MaterialTheme.colorScheme.onBackground
 
-        Surface(modifier = Modifier.fillMaxSize(), color = bgColor, contentColor = textColor) {
+        Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent, contentColor = textColor) {
         LazyColumn(
                     Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 20.dp),
                     contentPadding = PaddingValues(top = 24.dp, bottom = 36.dp),
@@ -1428,7 +1428,7 @@ fun BmiAnalyticsScreen(
 
     val orangeColor = Color(0xFFFF6D00)
     val isDark = com.example.ringapp.ui.theme.isAppDarkTheme()
-    val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
+    val bgColor = MaterialTheme.colorScheme.background
     val textColor = if (isDark) Color.White else MaterialTheme.colorScheme.onBackground
 
     val measurements = remember(profile?.bodyMeasurements, profile?.updatedAt) {
@@ -1462,7 +1462,7 @@ fun BmiAnalyticsScreen(
 
     val latest = measurements.lastOrNull()
 
-    Surface(modifier = Modifier.fillMaxSize(), color = bgColor, contentColor = textColor) {
+    Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent, contentColor = textColor) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()

@@ -73,7 +73,6 @@ import com.example.ringapp.data.local.entities.TaskEntity
 import com.example.ringapp.domain.usecase.ObserveProfileUseCase
 import com.example.ringapp.domain.usecase.ObserveTasksUseCase
 import com.example.ringapp.domain.usecase.UpdateTaskUseCase
-import com.example.ringapp.ui.theme.AppBackground
 import com.example.ringapp.work.BmiReminderScheduler
 import com.example.ringapp.work.TaskReminderScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -433,12 +432,11 @@ fun NotificationsScreen(
         Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
-    AppBackground {
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            containerColor = Color.Transparent,
-            snackbarHost = { SnackbarHost(snackbarHostState) }
-        ) { contentPadding ->
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = Color.Transparent,
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { contentPadding ->
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(contentPadding).statusBarsPadding(),
                 contentPadding = PaddingValues(start = 20.dp, top = 14.dp, end = 20.dp, bottom = 32.dp),
@@ -605,7 +603,6 @@ fun NotificationsScreen(
                 }
             }
         }
-    }
 }
 @Composable
 // Handles the overview metric logic for this component without modifying runtime behavior.

@@ -146,12 +146,12 @@ fun TaskDetailScreen(
     val transactions by viewModel.transactions.collectAsStateWithLifecycle()
     val errorMsg by viewModel.errorMessage.collectAsStateWithLifecycle()
     val isDark = com.example.ringapp.ui.theme.isAppDarkTheme()
-    val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
+    val bgColor = MaterialTheme.colorScheme.background
     val textColor = if (isDark) Color.White else MaterialTheme.colorScheme.onBackground
     var confirmDelete by remember { mutableStateOf(false) }
 
     if (task == null) {
-        Surface(Modifier.fillMaxSize(), color = bgColor) {
+        Surface(Modifier.fillMaxSize(), color = Color.Transparent) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
@@ -187,7 +187,7 @@ fun TaskDetailScreen(
         list.sortedByDescending { it.iterationDate }
     }
 
-    Surface(modifier = Modifier.fillMaxSize(), color = bgColor, contentColor = textColor) {
+    Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent, contentColor = textColor) {
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),

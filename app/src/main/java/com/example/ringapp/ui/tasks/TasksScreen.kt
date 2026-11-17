@@ -52,10 +52,9 @@ fun TasksScreen(onAddTask: () -> Unit, onTaskClick: (Long) -> Unit, viewModel: T
     }
     
     val isDark = com.example.ringapp.ui.theme.isAppDarkTheme()
-    val bgColor = if (isDark) Color.Black else MaterialTheme.colorScheme.background
     val textColor = if (isDark) Color.White else MaterialTheme.colorScheme.onBackground
 
-    Surface(modifier = Modifier.fillMaxSize(), color = bgColor, contentColor = textColor) {
+    Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent, contentColor = textColor) {
         Scaffold(
             topBar = {
                 Column(Modifier.statusBarsPadding().padding(horizontal = 16.dp).padding(top = 16.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -89,7 +88,7 @@ fun TasksScreen(onAddTask: () -> Unit, onTaskClick: (Long) -> Unit, viewModel: T
                     shape = RoundedCornerShape(16.dp)
                 ) { Icon(Icons.Default.Add, null, tint = SpaceBlack) }
             },
-            containerColor = bgColor
+            containerColor = Color.Transparent
         ) { padding ->
             if (filtered.isEmpty()) Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) { Text("NO TASKS IN QUEUE", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = textColor.copy(alpha = 0.2f)); Button(onClick = onAddTask, shape = RoundedCornerShape(12.dp)) { Text("ADD TASK") } } }
             else {

@@ -63,7 +63,7 @@ fun RingSplashScreen(
         }
     }
 
-    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+    Surface(modifier = Modifier.fillMaxSize(), color = androidx.compose.ui.graphics.Color.Transparent) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center

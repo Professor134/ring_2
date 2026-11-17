@@ -64,6 +64,7 @@ import com.example.ringapp.ui.profile.PointHistoryScreen
 import com.example.ringapp.ui.profile.NotificationsScreen
 import com.example.ringapp.ui.profile.BackupRestoreScreen
 import com.example.ringapp.ui.analytics.PersonalAnalyticsScreen
+import com.example.ringapp.ui.theme.AppBackground
 
 @Composable
 // Handles the app nav graph logic for this component without modifying runtime behavior.
@@ -77,42 +78,47 @@ fun AppNavGraph(viewModel: AppViewModel = hiltViewModel()) {
     }
 
     if (!state.ready || (!state.onboardingComplete && !state.firstLaunchSplashSeen)) {
-        RingSplashScreen(
-            isLoading = !state.ready,
-            onFinished = if (state.ready) finishSplash else null
-        )
+        AppBackground {
+            RingSplashScreen(
+                isLoading = !state.ready,
+                onFinished = if (state.ready) finishSplash else null
+            )
+        }
         return
     }
 
     if (!state.onboardingComplete) {
-        OnboardingScreen(
-            isSaving = onboardingSaving,
-            errorMessage = onboardingError,
-            onComplete = { details ->
-                onboardingSaving = true
-                onboardingError = null
-                viewModel.completeOnboarding(
-                    details = details,
-                    onComplete = { onboardingSaving = false },
-                    onError = { message ->
-                        onboardingSaving = false
-                        onboardingError = message
-                    }
-                )
-            }
-        )
+        AppBackground {
+            OnboardingScreen(
+                isSaving = onboardingSaving,
+                errorMessage = onboardingError,
+                onComplete = { details ->
+                    onboardingSaving = true
+                    onboardingError = null
+                    viewModel.completeOnboarding(
+                        details = details,
+                        onComplete = { onboardingSaving = false },
+                        onError = { message ->
+                            onboardingSaving = false
+                            onboardingError = message
+                        }
+                    )
+                }
+            )
+        }
         return
     }
 
     val navController = rememberNavController()
-    NavHost(
-        navController = navController,
-        startDestination = NavigationDestination.HOME.route,
-        enterTransition = { fadeIn(tween(350)) + slideInHorizontally(tween(400)) { it / 14 } },
-        exitTransition = { fadeOut(tween(250)) + slideOutHorizontally(tween(300)) { -it / 24 } },
-        popEnterTransition = { fadeIn(tween(350)) + slideInHorizontally(tween(400)) { -it / 14 } },
-        popExitTransition = { fadeOut(tween(250)) + slideOutHorizontally(tween(300)) { it / 24 } }
-    ) {
+    AppBackground {
+        NavHost(
+            navController = navController,
+            startDestination = NavigationDestination.HOME.route,
+            enterTransition = { fadeIn(tween(350)) + slideInHorizontally(tween(400)) { it / 14 } },
+            exitTransition = { fadeOut(tween(250)) + slideOutHorizontally(tween(300)) { -it / 24 } },
+            popEnterTransition = { fadeIn(tween(350)) + slideInHorizontally(tween(400)) { -it / 14 } },
+            popExitTransition = { fadeOut(tween(250)) + slideOutHorizontally(tween(300)) { it / 24 } }
+        ) {
         composable(Screen.HabitDetail, arguments = listOf(navArgument("habitId") { type = NavType.StringType })) {
             PersonalAnalyticsScreen(onBack = { navController.popBackStack() }, onEdit = { navController.navigate(Screen.editHabit(it)) })
         }
@@ -174,6 +180,7 @@ fun AppNavGraph(viewModel: AppViewModel = hiltViewModel()) {
         }
     }
 }
+}
 
 @Composable
 // Handles the adaptive navigation scaffold logic for this component without modifying runtime behavior.
@@ -187,6 +194,7 @@ private fun AdaptiveNavigationScaffold(
         val isCompact = this.maxWidth < 600.dp
         if (isCompact) {
             Scaffold(
+                containerColor = Color.Transparent,
                 bottomBar = {
                     NavigationBar(
                         modifier = Modifier
