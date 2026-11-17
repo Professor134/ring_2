@@ -47,13 +47,15 @@ class HabitRepository @Inject constructor(
 
     suspend fun create(habit: HabitEntity): Long = database.withTransaction {
         val habitId = dao.insert(habit)
-        pointRepository.record(
-            type = TransactionType.HABIT_CREATE,
-            amount = -25,
-            reference = "habit-create-$habitId",
-            description = "Created habit: ${habit.name}",
-            habitId = habitId
-        )
+        if (!habit.isBmiHabit()) {
+            pointRepository.record(
+                type = TransactionType.HABIT_CREATE,
+                amount = -25,
+                reference = "habit-create-$habitId",
+                description = "Created habit: ${habit.name}",
+                habitId = habitId
+            )
+        }
         habitId
     }
 
@@ -61,7 +63,7 @@ class HabitRepository @Inject constructor(
         val original = dao.observeById(habit.id).first() ?: return@withTransaction
         check(!original.isStepsHabit()) { "The Steps habit cannot be edited" }
         val now = System.currentTimeMillis()
-        if (original.target != habit.target) {
+        if (!original.isBmiHabit() && original.target != habit.target) {
             if (habit.target < original.target) {
                 pointRepository.record(
                     type = TransactionType.CHANGE_TARGET,
@@ -135,6 +137,7 @@ class HabitRepository @Inject constructor(
 
     suspend fun recordProgress(habit: HabitEntity, date: Long, actual: Double, note: String?) = database.withTransaction {
         check(!habit.isStepsHabit()) { "Steps are recorded automatically" }
+        check(!habit.isBmiHabit()) { "BMI is recorded by entering weight and height." }
         val now = System.currentTimeMillis()
         val existing = dao.progressForDate(habit.id, date)
         val completed = actual >= habit.target
@@ -264,6 +267,7 @@ class HabitRepository @Inject constructor(
     }
 
     suspend fun toggleHabit(habit: HabitEntity, date: Long) = database.withTransaction {
+        check(!habit.isBmiHabit()) { "BMI is recorded by entering weight and height." }
         val existing = dao.progressForDate(habit.id, date)
         if (existing?.completed == true) {
             recordProgress(habit, date, 0.0, existing.note)
@@ -376,14 +380,16 @@ class HabitRepository @Inject constructor(
     suspend fun delete(habitId: Long, deletedAt: Long) = database.withTransaction {
         val habit = dao.observeById(habitId).first() ?: return@withTransaction
         check(!habit.isStepsHabit()) { "The Steps habit cannot be deleted" }
-        pointRepository.record(
-            type = TransactionType.HABIT_DELETE,
-            amount = -30,
-            reference = "habit-delete-$habitId-$deletedAt",
-            description = "Deleted habit: ${habit.name}",
-            habitId = habitId,
-            timestamp = deletedAt
-        )
+        if (!habit.isBmiHabit()) {
+            pointRepository.record(
+                type = TransactionType.HABIT_DELETE,
+                amount = -30,
+                reference = "habit-delete-$habitId-$deletedAt",
+                description = "Deleted habit: ${habit.name}",
+                habitId = habitId,
+                timestamp = deletedAt
+            )
+        }
         dao.softDelete(habitId, deletedAt)
     }
 }

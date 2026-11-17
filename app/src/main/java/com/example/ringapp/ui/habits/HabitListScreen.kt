@@ -100,6 +100,7 @@ import com.example.ringapp.domain.usecase.ObserveProgressRangeUseCase
 import com.example.ringapp.domain.usecase.ObserveUserProgressUseCase
 import com.example.ringapp.domain.usecase.RecordHabitProgressUseCase
 import com.example.ringapp.domain.usecase.ToggleHabitUseCase
+import com.example.ringapp.ui.analytics.BmiMeasurementDialog
 import com.example.ringapp.ui.theme.isAppDarkTheme
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalDate
@@ -158,6 +159,7 @@ fun HabitListScreen(
     var query by remember { mutableStateOf("") }
     var categoryFilter by remember { mutableStateOf("All") }
     var measurableHabit by remember { mutableStateOf<HabitEntity?>(null) }
+    var showBmiDialog by remember { mutableStateOf(false) }
 
     // Removed repetition-based filters per Requirement 5
     val filtered = state.habits.filter { habit ->
@@ -286,7 +288,11 @@ fun HabitListScreen(
                 ) {
                     items(filtered, key = { it.id }) { habit ->
                         HabitRow(habit, state.categories, state.progress, onHabitClick, textColor) {
-                            if (habit.type == HabitType.MEASURABLE) measurableHabit = habit else viewModel.complete(habit)
+                            when {
+                                habit.isBmiHabit() -> showBmiDialog = true
+                                habit.type == HabitType.MEASURABLE -> measurableHabit = habit
+                                else -> viewModel.complete(habit)
+                            }
                         }
                     }
                     item { Spacer(Modifier.height(100.dp)) }
@@ -306,6 +312,9 @@ fun HabitListScreen(
                 measurableHabit = null
             }
         )
+    }
+    if (showBmiDialog) {
+        BmiMeasurementDialog(onDismiss = { showBmiDialog = false })
     }
 }
 
@@ -413,7 +422,7 @@ private fun HabitRow(
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f, fill = false).padding(end = 8.dp)
                         )
-                        if (!isSteps) {
+                        if (!isSteps && !isBmi) {
                             Surface(color = Color(0xFFFF3131).copy(alpha = 0.1f), shape = CircleShape) {
                                 Text(
                                     "🔥 ${habit.currentStreak}",
@@ -443,6 +452,13 @@ private fun HabitRow(
                             Spacer(Modifier.width(12.dp))
                             Text("+$points PTS", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(bottom = 4.dp))
                         }
+                    } else if (isBmi) {
+                        Text(
+                            "Record weight + height.",
+                            color = textColor.copy(alpha = 0.72f),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Medium
+                        )
                     } else {
                         Text(
                             String.format(Locale.US, "%.0f / %.0f %s", todayProgress?.actual ?: 0.0, todayTarget, habit.unit.orEmpty()).trim(),
@@ -462,7 +478,7 @@ private fun HabitRow(
                             )
                         }
                     }
-                    if (!active && !isSteps) {
+                    if (!active && !isSteps && !isBmi) {
                         Text(
                             "INACTIVE CYCLE",
                             color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
@@ -479,8 +495,8 @@ private fun HabitRow(
                 }
 
                 IconButton(
-                    onClick = { if (!isSteps) onAction() },
-                    enabled = (active && !isSteps) || isSteps,
+                    onClick = { if (isBmi || !isSteps) onAction() },
+                    enabled = isBmi || (active && !isSteps) || isSteps,
                     modifier = Modifier
                         .size(48.dp)
                         .background(
@@ -497,11 +513,11 @@ private fun HabitRow(
                             else -> Icons.Default.Add
                         },
                         contentDescription = null,
-                        tint = if (isSteps || active && (isCompleted || isPartial)) Color.White else if (active) baseColor else textColor.copy(alpha = 0.2f)
+                        tint = if (isSteps) Color.White else if (isBmi || active) baseColor else textColor.copy(alpha = 0.2f)
                     )
                 }
             }
-            HistoryRow(habit, progress, baseColor)
+            if (!isBmi) HistoryRow(habit, progress, baseColor)
         }
     }
 }

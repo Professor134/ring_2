@@ -34,13 +34,10 @@ import com.example.ringapp.data.PreferencesDataStore
 import com.example.ringapp.data.local.dao.HabitDao
 import com.example.ringapp.data.local.dao.ProfileDao
 import com.example.ringapp.data.local.entities.HabitEntity
-import com.example.ringapp.data.local.entities.HabitProgressEntity
 import com.example.ringapp.data.local.entities.ProfileEntity
 import com.example.ringapp.work.BmiReminderScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.time.LocalDate
-import java.time.ZoneId
 import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
@@ -110,37 +107,23 @@ class BmiTrackingViewModel @Inject constructor(
                     )
                 )
 
-                val bmiHabit = habitDao.observeActive().first().firstOrNull { it.isBmiHabit() }
-                    ?: HabitEntity(
-                        id = HabitEntity.BMI_HABIT_ID,
-                        name = HabitEntity.BMI_HABIT_NAME,
-                        categoryId = null,
-                        type = com.example.ringapp.data.local.entities.HabitType.MEASURABLE,
-                        target = 25.0,
-                        unit = "BMI",
-                        scheduleType = com.example.ringapp.data.local.entities.ScheduleType.DAILY,
-                        startDate = now,
-                        color = 0xFFFF6D00.toInt(),
-                        createdAt = now,
-                        updatedAt = now
-                    ).also { habitDao.insert(it) }
-
-                val dayStart = LocalDate.now().atStartOfDay(ZoneId.systemDefault())
-                    .toInstant().toEpochMilli()
-                val existing = habitDao.progressForDate(bmiHabit.id, dayStart)
-                habitDao.upsertProgress(
-                    HabitProgressEntity(
-                        id = existing?.id ?: 0L,
-                        habitId = bmiHabit.id,
-                        date = dayStart,
-                        target = bmi,
-                        actual = bmi,
-                        percentage = 100,
-                        completed = true,
-                        createdAt = existing?.createdAt ?: now,
-                        updatedAt = now
+                if (habitDao.observeActive().first().none { it.isBmiHabit() }) {
+                    habitDao.insert(
+                        HabitEntity(
+                            id = HabitEntity.BMI_HABIT_ID,
+                            name = HabitEntity.BMI_HABIT_NAME,
+                            categoryId = null,
+                            type = com.example.ringapp.data.local.entities.HabitType.MEASURABLE,
+                            target = 0.0,
+                            unit = "BMI",
+                            scheduleType = com.example.ringapp.data.local.entities.ScheduleType.DAILY,
+                            startDate = now,
+                            color = 0xFFFF6D00.toInt(),
+                            createdAt = now,
+                            updatedAt = now
+                        )
                     )
-                )
+                }
             }
 
             // Schedule 30-day reminder relative to the new measurement date

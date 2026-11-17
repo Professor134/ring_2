@@ -46,11 +46,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ringapp.data.local.entities.*
 import com.example.ringapp.data.local.entities.CategoryConstants
 import com.example.ringapp.domain.engine.ScheduleEngine
+import com.example.ringapp.ui.analytics.BmiMeasurementDialog
+import com.example.ringapp.ui.onboarding.RingSplashScreen
 import com.example.ringapp.ui.theme.CyberNeonBlue
 import com.example.ringapp.ui.theme.SpaceBlack
 import com.example.ringapp.ui.theme.isAppDarkTheme
 import com.example.ringapp.ui.theme.rememberViewportAnimationTrigger
-import com.example.ringapp.ui.onboarding.RingSplashScreen
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZoneOffset
@@ -71,6 +72,7 @@ fun HomeScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var measurableHabit by remember { mutableStateOf<HabitEntity?>(null) }
+    var showBmiDialog by remember { mutableStateOf(false) }
     val pointsVisibility = rememberViewportAnimationTrigger()
     val displayedPoints by animateIntAsState(
         targetValue = if (pointsVisibility.hasEnteredViewport) state.points else 0,
@@ -196,7 +198,13 @@ fun HomeScreen(
                         progress = state.todayProgress.firstOrNull { it.habitId == habit.id }, 
                         history = state.allProgress.filter { it.habitId == habit.id },
                         onHabitClick = { onHabitClick(habit.id) }, 
-                        onComplete = { if (habit.type == HabitType.MEASURABLE) measurableHabit = habit else viewModel.onEvent(HomeEvent.CompleteHabit(habit)) }, 
+                        onComplete = {
+                            when {
+                                habit.isBmiHabit() -> showBmiDialog = true
+                                habit.type == HabitType.MEASURABLE -> measurableHabit = habit
+                                else -> viewModel.onEvent(HomeEvent.CompleteHabit(habit))
+                            }
+                        },
                         textColor = textColor
                     )
                 }
@@ -207,6 +215,9 @@ fun HomeScreen(
         }
     }
     measurableHabit?.let { habit -> ProgressDialog(habit, state.todayProgress.firstOrNull { it.habitId == habit.id }, { measurableHabit = null }) { value, note -> viewModel.onEvent(HomeEvent.RecordProgress(habit, todayTimestamp(), value, note)); measurableHabit = null } }
+    if (showBmiDialog) {
+        BmiMeasurementDialog(onDismiss = { showBmiDialog = false })
+    }
 }
 
 @Composable private fun SectionHeader(title: String, onSeeAll: () -> Unit, textColor: Color) { 
@@ -311,7 +322,7 @@ fun HomeScreen(
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f, fill = false).padding(end = 8.dp)
                         )
-                        if (!isSteps) {
+                        if (!isSteps && !isBmi) {
                             Surface(color = Color(0xFFFF3131).copy(alpha = 0.1f), shape = CircleShape) {
                                 Text("🔥 ${habit.currentStreak}", modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = Color(0xFFFF3131), fontWeight = FontWeight.Black, style = MaterialTheme.typography.labelSmall)
                             }
@@ -329,6 +340,13 @@ fun HomeScreen(
                             Spacer(Modifier.width(12.dp))
                             Text("+$points PTS", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(bottom = 4.dp))
                         }
+                    } else if (isBmi) {
+                        Text(
+                            "Record weight + height.",
+                            color = textColor.copy(alpha = 0.72f),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Medium
+                        )
                     } else {
                         Text(
                             String.format(Locale.US, "%.0f / %.0f %s", progress?.actual ?: 0.0, todayTarget, habit.unit.orEmpty()).trim(),
@@ -351,10 +369,10 @@ fun HomeScreen(
                 }
 
                 IconButton(
-                    onClick = { if (!isSteps) onComplete() }, 
-                    enabled = isSteps || ScheduleEngine.isActiveOnDate(habit, LocalDate.now()),
-                    modifier = Modifier.size(48.dp).background(if (isSteps) baseColor.copy(alpha = 0.2f) else buttonColor, CircleShape)
-                        .border(1.dp, if (isSteps) baseColor else Color.Transparent, CircleShape)
+                    onClick = { if (isBmi || !isSteps) onComplete() },
+                    enabled = isSteps || isBmi || ScheduleEngine.isActiveOnDate(habit, LocalDate.now()),
+                    modifier = Modifier.size(48.dp).background(if (isSteps || isBmi) baseColor.copy(alpha = 0.2f) else buttonColor, CircleShape)
+                        .border(1.dp, if (isSteps || isBmi) baseColor else Color.Transparent, CircleShape)
                 ) { 
                     Icon(
                         imageVector = when {
@@ -364,13 +382,14 @@ fun HomeScreen(
                             else -> Icons.Default.Add
                         }, 
                         contentDescription = "Action", 
-                        tint = if (isCompleted || isPartial) Color.White else baseColor
+                        tint = if (!isBmi && (isCompleted || isPartial)) Color.White else baseColor
                     ) 
                 } 
             }
             
-            Spacer(Modifier.height(16.dp))
+            if (!isBmi) Spacer(Modifier.height(16.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (!isBmi) {
                 Text("LOG", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = textColor.copy(alpha = 0.3f))
                 
                 val today = LocalDate.now()
@@ -420,6 +439,7 @@ fun HomeScreen(
                         activeDaysFound++
                     }
                     dayOffset++
+                }
                 }
             }
         } 

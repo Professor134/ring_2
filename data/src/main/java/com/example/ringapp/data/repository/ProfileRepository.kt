@@ -10,7 +10,6 @@ import androidx.room.withTransaction
 import com.example.ringapp.data.db.AppDatabase
 import com.example.ringapp.data.local.dao.ProfileDao
 import com.example.ringapp.data.local.entities.HabitEntity
-import com.example.ringapp.data.local.entities.HabitProgressEntity
 import com.example.ringapp.data.local.entities.HabitType
 import com.example.ringapp.data.local.entities.ProfileEntity
 import com.example.ringapp.data.local.entities.ScheduleType
@@ -65,7 +64,7 @@ class ProfileRepository @Inject constructor(
                 name = HabitEntity.BMI_HABIT_NAME,
                 categoryId = null,
                 type = HabitType.MEASURABLE,
-                target = 25.0,
+                target = 0.0,
                 unit = "BMI",
                 scheduleType = ScheduleType.DAILY,
                 startDate = now,
@@ -73,24 +72,6 @@ class ProfileRepository @Inject constructor(
                 createdAt = now,
                 updatedAt = now
             ).also { habitDao.insert(it) }
-        val dayStart = java.time.LocalDate.now()
-            .atStartOfDay(java.time.ZoneId.systemDefault())
-            .toInstant()
-            .toEpochMilli()
-        val existing = habitDao.progressForDate(bmiHabit.id, dayStart)
-        habitDao.upsertProgress(
-            HabitProgressEntity(
-                id = existing?.id ?: 0L,
-                habitId = bmiHabit.id,
-                date = dayStart,
-                target = bmiHabit.target,
-                actual = bmi,
-                percentage = (bmi / bmiHabit.target * 100).toInt().coerceIn(0, 100),
-                completed = true,
-                createdAt = existing?.createdAt ?: now,
-                updatedAt = now
-            )
-        )
         dao.insert(
             profile.copy(
                 name = name.trim(),
